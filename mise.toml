@@ -1,0 +1,5 @@
+[tools]
+node = "22"
+
+[env]
+COMMIT_MESSAGE_ENGLISH = 1
