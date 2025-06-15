@@ -17,7 +17,9 @@
 	},
 	"scripts": {
 		"build": "tsdown",
-		"dev": "tsdown --watch"
+		"dev": "tsdown --watch",
+		"test": "bun test",
+		"test:watch": "bun test --watch"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
@@ -29,6 +31,7 @@
 	},
 	"packageManager": "pnpm@10.8.1+sha512.c50088ba998c67b8ca8c99df8a5e02fd2ae2e2b29aaf238feaa9e124248d3f48f9fb6db2424949ff901cffbb5e0f0cc1ad6aedb602cd29450751d11c35023677",
 	"dependencies": {
+		"clipboardy": "^4.0.0",
 		"find-process": "^1.4.10",
 		"gunshi": "^0.26.3",
 		"inquirer": "^12.6.3"

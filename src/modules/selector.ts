@@ -9,6 +9,10 @@ interface ProcessChoice {
 function formatProcessChoice(proc: ClaudeProcess, index: number): ProcessChoice {
 	const parts = [`PID: ${proc.pid}`];
 	
+	if (proc.tmuxSession) {
+		parts.push(`Tmux: ${proc.tmuxSession}:${proc.tmuxWindow}.${proc.tmuxPane}`);
+	}
+	
 	if (proc.cwd) {
 		parts.push(`Directory: ${proc.cwd}`);
 	}
