@@ -164,9 +164,6 @@ export async function sendContentToProcess(
 			);
 			return;
 		}
-
-		// Fallback: start new claude
-		// await startNewClaude(content);
 	} catch (error) {
 		console.log(
 			`Failed to send to process. Content copied to clipboard. Error: ${error instanceof Error ? error.message : "Unknown error"}`,

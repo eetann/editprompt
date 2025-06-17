@@ -2,7 +2,7 @@
 
 WIP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-A CLI tool that lets you write prompts for Claude Code using your favorite text editor.
+A CLI tool that lets you write prompts for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) using your favorite text editor.
 
 ## Features
 
@@ -131,14 +131,8 @@ When Claude is running in a tmux session, ccsender uses `tmux send-keys` to send
 
 ### Fallback Strategy
 
-ccsender implements a robust three-tier fallback strategy:
+ccsender implements fallback strategy:
 
 1. **Tmux Integration**: Direct input to tmux panes (when available)
 <!-- 2. **New Process**: Launch new Claude instance with piped input -->
 2. **Clipboard**: Copy content to clipboard with error notification
-
-
-## Related Projects
-
-- [Claude Code](https://claude.ai/code) - The official Claude CLI
-- [Gunshi](https://gunshi.dev/) - CLI framework used for argument parsing

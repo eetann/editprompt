@@ -3,6 +3,9 @@
 	"version": "0.0.1",
 	"author": "eetann",
 	"description": "A CLI tool that lets you write prompts for Claude Code using your favorite text editor",
+	"publishConfig": {
+		"access": "public"
+	},
 	"type": "module",
 	"files": ["dist"],
 	"main": "./dist/index.js",
