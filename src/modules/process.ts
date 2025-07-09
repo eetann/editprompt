@@ -110,20 +110,37 @@ export async function getTmuxPanes(): Promise<TmuxPane[]> {
 }
 
 export async function findClaudeInTmux(): Promise<ClaudeProcess[]> {
-	const tmuxPanes = await getTmuxPanes();
-	console.log({ tmuxPanes });
-	const claudePanes = tmuxPanes.filter(
-		(pane) =>
-			pane.command === PROCESS_NAME || pane.command.includes(PROCESS_NAME),
-	);
+	// First, find all processes with matching name
+	const processes = await find("name", PROCESS_NAME);
+	const claudeProcesses = processes.filter((p) => p.name === PROCESS_NAME);
 
-	return claudePanes.map((pane) => ({
-		pid: pane.pid,
-		name: PROCESS_NAME,
-		tmuxSession: pane.session,
-		tmuxWindow: pane.window,
-		tmuxPane: pane.pane,
-	}));
+	if (claudeProcesses.length === 0) {
+		return [];
+	}
+
+	// Get tmux panes
+	const tmuxPanes = await getTmuxPanes();
+	if (tmuxPanes.length === 0) {
+		return [];
+	}
+
+	// Match processes with tmux panes by PID
+	const matchedProcesses: ClaudeProcess[] = [];
+	for (const process of claudeProcesses) {
+		const matchingPane = tmuxPanes.find((pane) => pane.pid === process.ppid);
+		if (matchingPane) {
+			matchedProcesses.push({
+				pid: process.pid,
+				name: process.name,
+				cmd: process.cmd,
+				tmuxSession: matchingPane.session,
+				tmuxWindow: matchingPane.window,
+				tmuxPane: matchingPane.pane,
+			});
+		}
+	}
+
+	return matchedProcesses;
 }
 
 export async function sendToTmuxPane(
@@ -137,12 +154,6 @@ export async function sendToTmuxPane(
 	await execAsync(
 		`tmux send-keys -t '${target}' '${content.replace(/'/g, "'\\''")}' C-m`,
 	);
-}
-
-export async function startNewClaude(content: string): Promise<void> {
-	// TODO: これはプロセスを置き換えないとだめ
-	// Start new claude process with content piped to it
-	await execAsync(`echo '${content.replace(/'/g, "'\\''")}' | claude`);
 }
 
 export async function copyToClipboard(content: string): Promise<void> {
