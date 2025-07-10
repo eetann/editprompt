@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "ccsender",
+      "name": "editprompt",
       "dependencies": {
         "clipboardy": "^4.0.0",
         "find-process": "^1.4.10",

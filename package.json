@@ -1,5 +1,5 @@
 {
-	"name": "ccsender",
+	"name": "editprompt",
 	"version": "0.0.1",
 	"author": "eetann",
 	"description": "A CLI tool that lets you write prompts for Claude Code using your favorite text editor",
@@ -16,7 +16,7 @@
 		"./package.json": "./package.json"
 	},
 	"bin": {
-		"ccsender": "./dist/index.js"
+		"editprompt": "./dist/index.js"
 	},
 	"scripts": {
 		"build": "tsdown",

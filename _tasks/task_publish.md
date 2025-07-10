@@ -29,14 +29,14 @@ npmパッケージとして公開したいので、その手順をチェック�
 
 - [ ] G: npmアカウントにログインしているか確認する（npm whoami）
 - [ ] H: 2FAが設定されている場合は認証の準備をする
-- [ ] I: パッケージ名が利用可能かチェックする（npm search ccsender）
+- [ ] I: パッケージ名が利用可能かチェックする（npm search editprompt）
 
 ### 4. 公開実行
 
 - [ ] J: プロダクションビルドを実行する（npm run build）
 - [ ] K: パッケージの内容を最終確認する（npm pack --dry-run）
 - [ ] L: 実際にnpmに公開する（npm publish）
-- [ ] M: 公開後に実際にインストールできるか確認する（npm install -g ccsender）
+- [ ] M: 公開後に実際にインストールできるか確認する（npm install -g editprompt）
 
 ### 5. 公開後の確認・保守
 

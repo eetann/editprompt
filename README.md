@@ -1,4 +1,4 @@
-# ccsender
+# editprompt
 
 WIP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -18,10 +18,10 @@ WIP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ```bash
 # Install globally via npm
-npm install -g ccsender
+npm install -g editprompt
 
 # Or use with npx
-npx ccsender
+npx editprompt
 ```
 
 ## Usage
@@ -30,17 +30,17 @@ npx ccsender
 
 ```bash
 # Use with your default editor (from $EDITOR)
-ccsender
+editprompt
 
 # Specify a different editor
-ccsender --editor vim
-ccsender -e code
+editprompt --editor vim
+editprompt -e code
 
 # Show help
-ccsender --help
+editprompt --help
 
 # Show version
-ccsender --version
+editprompt --version
 ```
 
 ### How it Works
@@ -72,7 +72,7 @@ The display shows:
 
 ### Editor Selection
 
-ccsender respects the following editor priority:
+editprompt respects the following editor priority:
 
 1. `--editor/-e` command line option
 2. `$EDITOR` environment variable  
@@ -92,8 +92,8 @@ ccsender respects the following editor priority:
 
 ```bash
 # Clone the repository
-git clone https://github.com/eetann/ccsender.git
-cd ccsender
+git clone https://github.com/eetann/editprompt.git
+cd editprompt
 
 # Install dependencies
 bun install
@@ -127,11 +127,11 @@ src/
 
 ### Tmux Integration
 
-When Claude is running in a tmux session, ccsender uses `tmux send-keys` to send input directly to the appropriate pane. This provides seamless integration without disrupting your existing Claude session.
+When Claude is running in a tmux session, editprompt uses `tmux send-keys` to send input directly to the appropriate pane. This provides seamless integration without disrupting your existing Claude session.
 
 ### Fallback Strategy
 
-ccsender implements fallback strategy:
+editprompt implements fallback strategy:
 
 1. **Tmux Integration**: Direct input to tmux panes (when available)
 <!-- 2. **New Process**: Launch new Claude instance with piped input -->

@@ -15,7 +15,7 @@ function getFormattedDateTime(): string {
 }
 
 export async function createTempFile(): Promise<string> {
-	const tempDir = await mkdtemp(join(tmpdir(), "ccsender-"));
+	const tempDir = await mkdtemp(join(tmpdir(), "editprompt-"));
 	const fileName = `${TEMP_FILE_PREFIX}${getFormattedDateTime()}${TEMP_FILE_EXTENSION}`;
 	const filePath = join(tempDir, fileName);
 	await writeFile(filePath, "", "utf-8");

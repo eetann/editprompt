@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 import { cli } from "gunshi";
 import { openEditorAndGetContent } from "./modules/editor";
-import {
-	findClaudeProcesses,
-	sendContentToProcess,
-	startNewClaude,
-} from "./modules/process";
+import { findClaudeProcesses, sendContentToProcess } from "./modules/process";
 import { selectProcess } from "./modules/selector";
 
 const argv = process.argv.slice(2);
@@ -13,7 +9,7 @@ const argv = process.argv.slice(2);
 await cli(
 	argv,
 	{
-		name: "ccsender",
+		name: "editprompt",
 		description:
 			"A CLI tool that lets you write prompts for Claude Code using your favorite text editor",
 		args: {
@@ -37,11 +33,7 @@ await cli(
 				const processes = await findClaudeProcesses();
 
 				if (processes.length === 0) {
-					console.log(
-						"No Claude process found. Starting new Claude session...",
-					);
-					await startNewClaude(content);
-					console.log("Content sent to new Claude session.");
+					console.log("No Claude process found.");
 				} else {
 					const selectedProcess = await selectProcess(processes);
 
