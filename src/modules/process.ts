@@ -152,7 +152,7 @@ export async function sendToTmuxPane(
 	const target = `${session}:${window}.${pane}`;
 	// Send content and press Enter
 	await execAsync(
-		`tmux send-keys -t '${target}' '${content.replace(/'/g, "'\\''")}' C-m`,
+		`tmux send-keys -t '${target}' '${content.replace(/'/g, "'\\''")}'`,
 	);
 }
 
