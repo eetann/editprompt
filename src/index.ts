@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { cli } from "gunshi";
 import { openEditorAndGetContent } from "./modules/editor";
-import { findClaudeProcesses, sendContentToProcess } from "./modules/process";
+import { findTargetProcesses, sendContentToProcess } from "./modules/process";
 import { selectProcess } from "./modules/selector";
+import { DEFAULT_PROCESS_NAME } from "./config/constants";
 
 const argv = process.argv.slice(2);
 
@@ -18,6 +19,11 @@ await cli(
 				description: "Editor to use (overrides $EDITOR)",
 				type: "string",
 			},
+			process: {
+				short: "p",
+				description: "Process name to target (default: claude)",
+				type: "string",
+			},
 		},
 		async run(ctx) {
 			try {
@@ -29,11 +35,12 @@ await cli(
 					return;
 				}
 
-				console.log("Searching for Claude processes...");
-				const processes = await findClaudeProcesses();
+				const processName = ctx.values.process || DEFAULT_PROCESS_NAME;
+				console.log(`Searching for ${processName} processes...`);
+				const processes = await findTargetProcesses(processName);
 
 				if (processes.length === 0) {
-					console.log("No Claude process found.");
+					console.log(`No ${processName} process found.`);
 				} else {
 					const selectedProcess = await selectProcess(processes);
 
@@ -49,7 +56,7 @@ await cli(
 					}
 					console.log(`Selected process: ${processInfo.join(" | ")}`);
 
-					console.log("Sending content to Claude process...");
+					console.log(`Sending content to ${processName} process...`);
 					await sendContentToProcess(selectedProcess, content);
 					console.log("Content sent successfully!");
 				}

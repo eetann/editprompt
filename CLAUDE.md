@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is `editprompt`, a CLI tool that lets you write prompts for Claude Code using your favorite text editor. It detects running Claude processes and sends content to them via tmux integration or clipboard fallback.
+This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using your favorite text editor. Originally designed for Claude Code, but now works with any CLI process. It detects running target processes and sends content to them via tmux integration or clipboard fallback.
 
 ## Development Commands
 
@@ -24,7 +24,7 @@ This is `editprompt`, a CLI tool that lets you write prompts for Claude Code usi
 ### Core Flow
 1. **CLI Entry** (`src/index.ts`) - Uses gunshi for CLI parsing, orchestrates the main workflow
 2. **Editor Module** (`src/modules/editor.ts`) - Handles editor launching and content extraction
-3. **Process Detection** (`src/modules/process.ts`) - Finds Claude processes, with tmux integration priority
+3. **Process Detection** (`src/modules/process.ts`) - Finds target processes (configurable), with tmux integration priority
 4. **Process Selection** (`src/modules/selector.ts`) - Interactive selection when multiple processes found
 5. **Content Delivery** - Sends to tmux panes via `tmux send-keys` or falls back to clipboard
 
@@ -38,7 +38,7 @@ This is `editprompt`, a CLI tool that lets you write prompts for Claude Code usi
 - `process.ts`: Process discovery, tmux pane enumeration, content delivery mechanisms
 - `selector.ts`: User interaction for process selection when multiple options exist
 - `tempFile.ts`: Secure temporary file creation and cleanup
-- `constants.ts`: Configuration values (process name, file patterns, default editor)
+- `constants.ts`: Configuration values (default process name, file patterns, default editor)
 
 ### Dependencies
 - `gunshi` - CLI framework

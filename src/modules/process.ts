@@ -4,11 +4,11 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import clipboardy from "clipboardy";
 import find from "find-process";
-import { PROCESS_NAME } from "../config/constants";
+import { DEFAULT_PROCESS_NAME } from "../config/constants";
 
 const execAsync = promisify(exec);
 
-export interface ClaudeProcess {
+export interface TargetProcess {
 	pid: number;
 	name: string;
 	cmd?: string;
@@ -39,12 +39,12 @@ export async function getProcessCwd(pid: number): Promise<string | undefined> {
 	}
 }
 
-export async function findClaudeProcesses(): Promise<ClaudeProcess[]> {
+export async function findTargetProcesses(processName: string = DEFAULT_PROCESS_NAME): Promise<TargetProcess[]> {
 	const tmuxAvailable = await checkTmuxAvailable();
 
 	// If tmux is available, prioritize tmux-based processes
 	if (tmuxAvailable) {
-		const tmuxProcesses = await findClaudeInTmux();
+		const tmuxProcesses = await findTargetInTmux(processName);
 		if (tmuxProcesses.length > 0) {
 			// Enhance tmux processes with cwd info
 			return Promise.all(
@@ -57,9 +57,9 @@ export async function findClaudeProcesses(): Promise<ClaudeProcess[]> {
 	}
 
 	// Fallback to regular process search
-	const processes = await find("name", PROCESS_NAME);
+	const processes = await find("name", processName);
 
-	const claudeProcesses: ClaudeProcess[] = await Promise.all(
+	const targetProcesses: TargetProcess[] = await Promise.all(
 		processes.map(async (proc) => {
 			const cwd = await getProcessCwd(proc.pid);
 			return {
@@ -71,7 +71,7 @@ export async function findClaudeProcesses(): Promise<ClaudeProcess[]> {
 		}),
 	);
 
-	return claudeProcesses.filter((p) => p.name === PROCESS_NAME);
+	return targetProcesses.filter((p) => p.name === processName);
 }
 
 export async function checkTmuxAvailable(): Promise<boolean> {
@@ -109,12 +109,12 @@ export async function getTmuxPanes(): Promise<TmuxPane[]> {
 	}
 }
 
-export async function findClaudeInTmux(): Promise<ClaudeProcess[]> {
+export async function findTargetInTmux(processName: string = DEFAULT_PROCESS_NAME): Promise<TargetProcess[]> {
 	// First, find all processes with matching name
-	const processes = await find("name", PROCESS_NAME);
-	const claudeProcesses = processes.filter((p) => p.name === PROCESS_NAME);
+	const processes = await find("name", processName);
+	const targetProcesses = processes.filter((p) => p.name === processName);
 
-	if (claudeProcesses.length === 0) {
+	if (targetProcesses.length === 0) {
 		return [];
 	}
 
@@ -125,8 +125,8 @@ export async function findClaudeInTmux(): Promise<ClaudeProcess[]> {
 	}
 
 	// Match processes with tmux panes by PID
-	const matchedProcesses: ClaudeProcess[] = [];
-	for (const process of claudeProcesses) {
+	const matchedProcesses: TargetProcess[] = [];
+	for (const process of targetProcesses) {
 		const matchingPane = tmuxPanes.find((pane) => pane.pid === process.ppid);
 		if (matchingPane) {
 			matchedProcesses.push({
@@ -161,7 +161,7 @@ export async function copyToClipboard(content: string): Promise<void> {
 }
 
 export async function sendContentToProcess(
-	process: ClaudeProcess,
+	process: TargetProcess,
 	content: string,
 ): Promise<void> {
 	try {

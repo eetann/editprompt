@@ -1,16 +1,15 @@
 import { describe, test, expect, mock, beforeEach } from "bun:test";
 import { 
 	getProcessCwd,
-	findClaudeProcesses,
+	findTargetProcesses,
 	checkTmuxAvailable,
 	getTmuxPanes,
-	findClaudeInTmux,
+	findTargetInTmux,
 	sendToTmuxPane,
-	startNewClaude,
 	copyToClipboard,
 	sendContentToProcess,
 } from "../../src/modules/process";
-import type { ClaudeProcess } from "../../src/modules/process";
+import type { TargetProcess } from "../../src/modules/process";
 
 // Mock external dependencies
 mock.module("node:fs/promises", () => ({
@@ -148,7 +147,7 @@ describe("Process Module", () => {
 			}));
 
 			await sendToTmuxPane("main", "0", "0", "test content");
-			expect(execMock).toHaveBeenCalledWith("tmux send-keys -t 'main:0.0' 'test content' C-m");
+			expect(execMock).toHaveBeenCalledWith("tmux send-keys -t 'main:0.0' 'test content'");
 		});
 
 		test("should escape single quotes in content", async () => {
@@ -161,7 +160,7 @@ describe("Process Module", () => {
 			}));
 
 			await sendToTmuxPane("main", "0", "0", "test 'quoted' content");
-			expect(execMock).toHaveBeenCalledWith("tmux send-keys -t 'main:0.0' 'test '\\''quoted'\\'' content' C-m");
+			expect(execMock).toHaveBeenCalledWith("tmux send-keys -t 'main:0.0' 'test '\\''quoted'\\'' content'");
 		});
 	});
 
@@ -189,7 +188,7 @@ describe("Process Module", () => {
 				promisify: mock(() => execMock),
 			}));
 
-			const process: ClaudeProcess = {
+			const process: TargetProcess = {
 				pid: 1234,
 				name: "claude",
 				tmuxSession: "main",
@@ -198,28 +197,27 @@ describe("Process Module", () => {
 			};
 
 			await sendContentToProcess(process, "test content");
-			expect(execMock).toHaveBeenCalledWith("tmux send-keys -t 'main:0.0' 'test content' C-m");
+			expect(execMock).toHaveBeenCalledWith("tmux send-keys -t 'main:0.0' 'test content'");
 		});
 
-		test("should fallback to new claude when no tmux info", async () => {
-			const execMock = mock(() => Promise.resolve({ stdout: "", stderr: "" }));
-			mock.module("node:child_process", () => ({
-				exec: execMock,
-			}));
-			mock.module("node:util", () => ({
-				promisify: mock(() => execMock),
+		test("should fallback to clipboard when no tmux info", async () => {
+			const writeMock = mock(() => Promise.resolve());
+			mock.module("clipboardy", () => ({
+				default: {
+					write: writeMock,
+				},
 			}));
 
-			const process: ClaudeProcess = {
+			const process: TargetProcess = {
 				pid: 1234,
 				name: "claude",
 			};
 
 			await sendContentToProcess(process, "test content");
-			expect(execMock).toHaveBeenCalledWith("echo 'test content' | claude");
+			expect(writeMock).toHaveBeenCalledWith("test content");
 		});
 
-		test("should copy to clipboard when all methods fail", async () => {
+		test("should copy to clipboard when tmux fails", async () => {
 			const execMock = mock(() => Promise.reject(new Error("Command failed")));
 			mock.module("node:child_process", () => ({
 				exec: execMock,
@@ -235,7 +233,7 @@ describe("Process Module", () => {
 				},
 			}));
 
-			const process: ClaudeProcess = {
+			const process: TargetProcess = {
 				pid: 1234,
 				name: "claude",
 				tmuxSession: "main",
@@ -243,8 +241,7 @@ describe("Process Module", () => {
 				tmuxPane: "0",
 			};
 
-			await expect(sendContentToProcess(process, "test content"))
-				.rejects.toThrow("Failed to send to process. Content copied to clipboard");
+			await sendContentToProcess(process, "test content");
 			expect(writeMock).toHaveBeenCalledWith("test content");
 		});
 	});

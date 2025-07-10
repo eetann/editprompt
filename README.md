@@ -2,13 +2,13 @@
 
 WIP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-A CLI tool that lets you write prompts for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) using your favorite text editor.
+A CLI tool that lets you write prompts for CLI tools using your favorite text editor. Originally designed for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview), but works with any CLI process.
 
 ## Features
 
 - 🖊️ **Editor Integration**: Use your preferred text editor to write prompts  
-- 🔍 **Process Detection**: Automatically detects running Claude Code processes
-- 🖥️ **Tmux Support**: Send prompts directly to tmux sessions running Claude
+- 🔍 **Process Detection**: Automatically detects running CLI processes (configurable)
+- 🖥️ **Tmux Support**: Send prompts directly to tmux sessions
 - 📋 **Clipboard Fallback**: Automatically copies to clipboard if sending fails
 - ⚡ **Smart Fallbacks**: Multiple fallback strategies ensure your prompt gets delivered
 
@@ -33,8 +33,12 @@ npx editprompt
 editprompt
 
 # Specify a different editor
-editprompt --editor vim
-editprompt -e code
+editprompt --editor nvim
+editprompt -e nvim
+
+# Target a different process (default: claude)
+editprompt --process foobar
+editprompt -p foobar
 
 # Show help
 editprompt --help
@@ -43,22 +47,36 @@ editprompt --help
 editprompt --version
 ```
 
+It is useful to configure tmux as follows.
+
+```tmux
+bind -n M-q split-window -v -l 10 \
+  -c '#{pane_current_path}' \
+  'editprompt --editor nvim'
+```
+
+If you prefer popup, you can configure it as follows.
+```tmux
+bind -n M-q display-popup -E \
+  -d '#{pane_current_path}' \
+  'editprompt --editor nvim'
+```
+
 ### How it Works
 
 1. **Opens your editor** with a temporary markdown file
 2. **Write your prompt** and save/exit the editor  
-3. **Detects Claude processes** running on your system
+3. **Detects target processes** running on your system (default: claude)
 4. **Sends the prompt** using the best available method:
    - 🎯 **Tmux sessions**: Direct input via `tmux send-keys`
-   - 🆕 **New Claude instance**: Pipes content to `claude` command
    - 📋 **Clipboard**: Copies content as final fallback
 
 ### Process Selection
 
-When multiple Claude processes are detected, you'll see an interactive selection menu:
+When multiple processes are detected, you'll see an interactive selection menu:
 
 ```
-? Select a Claude process:
+? Select a process:
   1. PID: 12345 | Tmux: main:0.1 | Directory: /home/user/project1
   2. PID: 67890 | Directory: /home/user/project2
 ```
@@ -85,7 +103,7 @@ editprompt respects the following editor priority:
 ## Requirements
 
 - Node.js 18+ or Bun
-- Claude Code CLI (`claude` command)
+- Target CLI process (default: `claude` command)
 - Optional: tmux (for direct session integration)
 
 ## Development
@@ -127,7 +145,7 @@ src/
 
 ### Tmux Integration
 
-When Claude is running in a tmux session, editprompt uses `tmux send-keys` to send input directly to the appropriate pane. This provides seamless integration without disrupting your existing Claude session.
+When the target process is running in a tmux session, editprompt uses `tmux send-keys` to send input directly to the appropriate pane. This provides seamless integration without disrupting your existing session.
 
 ### Fallback Strategy
 

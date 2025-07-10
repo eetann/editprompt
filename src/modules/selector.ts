@@ -1,12 +1,12 @@
 import inquirer from "inquirer";
-import type { ClaudeProcess } from "./process";
+import type { TargetProcess } from "./process";
 
 interface ProcessChoice {
 	name: string;
-	value: ClaudeProcess;
+	value: TargetProcess;
 }
 
-function formatProcessChoice(proc: ClaudeProcess, index: number): ProcessChoice {
+function formatProcessChoice(proc: TargetProcess, index: number): ProcessChoice {
 	const parts = [`PID: ${proc.pid}`];
 	
 	if (proc.tmuxSession) {
@@ -23,7 +23,7 @@ function formatProcessChoice(proc: ClaudeProcess, index: number): ProcessChoice 
 	};
 }
 
-export async function selectProcess(processes: ClaudeProcess[]): Promise<ClaudeProcess> {
+export async function selectProcess(processes: TargetProcess[]): Promise<TargetProcess> {
 	if (processes.length === 0) {
 		throw new Error("No processes to select from");
 	}
@@ -38,7 +38,7 @@ export async function selectProcess(processes: ClaudeProcess[]): Promise<ClaudeP
 		{
 			type: "list",
 			name: "selectedProcess",
-			message: "Select a Claude process:",
+			message: "Select a process:",
 			choices,
 		},
 	]);

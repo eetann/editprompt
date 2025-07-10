@@ -1,6 +1,6 @@
 import { describe, test, expect, mock, beforeEach } from "bun:test";
 import { selectProcess } from "../../src/modules/selector";
-import type { ClaudeProcess } from "../../src/modules/process";
+import type { TargetProcess } from "../../src/modules/process";
 
 // Mock inquirer
 mock.module("inquirer", () => ({
@@ -21,7 +21,7 @@ describe("Selector Module", () => {
 		});
 
 		test("should return single process without prompting", async () => {
-			const process: ClaudeProcess = {
+			const process: TargetProcess = {
 				pid: 1234,
 				name: "claude",
 				cwd: "/home/user/project",
@@ -32,7 +32,7 @@ describe("Selector Module", () => {
 		});
 
 		test("should prompt user when multiple processes available", async () => {
-			const processes: ClaudeProcess[] = [
+			const processes: TargetProcess[] = [
 				{
 					pid: 1234,
 					name: "claude",
@@ -62,7 +62,7 @@ describe("Selector Module", () => {
 				{
 					type: "list",
 					name: "selectedProcess",
-					message: "Select a Claude process:",
+					message: "Select a process:",
 					choices: [
 						{
 							name: "1. PID: 1234 | Directory: /home/user/project1",
@@ -78,7 +78,7 @@ describe("Selector Module", () => {
 		});
 
 		test("should format process choice correctly with tmux info", async () => {
-			const processes: ClaudeProcess[] = [
+			const processes: TargetProcess[] = [
 				{
 					pid: 1234,
 					name: "claude",
@@ -110,7 +110,7 @@ describe("Selector Module", () => {
 		});
 
 		test("should format process choice with both tmux and directory info", async () => {
-			const processes: ClaudeProcess[] = [
+			const processes: TargetProcess[] = [
 				{
 					pid: 1234,
 					name: "claude",

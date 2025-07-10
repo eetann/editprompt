@@ -100,21 +100,21 @@ describe("Integration Tests", () => {
 		test("should be able to import all modules without errors", async () => {
 			// Test that all modules can be imported
 			const { getEditor } = await import("../src/modules/editor");
-			const { findClaudeProcesses } = await import("../src/modules/process");
+			const { findTargetProcesses } = await import("../src/modules/process");
 			const { selectProcess } = await import("../src/modules/selector");
 			const { createTempFile } = await import("../src/utils/tempFile");
 
 			expect(typeof getEditor).toBe("function");
-			expect(typeof findClaudeProcesses).toBe("function");
+			expect(typeof findTargetProcesses).toBe("function");
 			expect(typeof selectProcess).toBe("function");
 			expect(typeof createTempFile).toBe("function");
 		});
 
 		test("should handle edge cases in process detection", async () => {
-			const { findClaudeProcesses } = await import("../src/modules/process");
+			const { findTargetProcesses } = await import("../src/modules/process");
 
 			// Should not throw error even if no processes found
-			const processes = await findClaudeProcesses();
+			const processes = await findTargetProcesses();
 			expect(Array.isArray(processes)).toBe(true);
 		});
 
