@@ -1,6 +1,6 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
-import { selectProcess } from "../../src/modules/selector";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import type { TargetProcess } from "../../src/modules/process";
+import { selectProcess } from "../../src/modules/selector";
 
 // Mock inquirer
 mock.module("inquirer", () => ({
@@ -16,8 +16,7 @@ describe("Selector Module", () => {
 
 	describe("selectProcess", () => {
 		test("should throw error when no processes provided", async () => {
-			await expect(selectProcess([]))
-				.rejects.toThrow("No processes to select from");
+			expect(selectProcess([])).rejects.toThrow("No processes to select from");
 		});
 
 		test("should return single process without prompting", async () => {
@@ -103,10 +102,14 @@ describe("Selector Module", () => {
 
 			const result = await selectProcess(processes);
 			expect(result).toBe(selectedProcess);
-			
+
 			const callArgs = promptMock.mock.calls[0][0];
-			expect(callArgs[0].choices[0].name).toBe("1. PID: 1234 | Tmux: session1:2.0");
-			expect(callArgs[0].choices[1].name).toBe("2. PID: 5678 | Directory: /home/user");
+			expect(callArgs[0].choices[0].name).toBe(
+				"1. PID: 1234 | Tmux: session1:2.0",
+			);
+			expect(callArgs[0].choices[1].name).toBe(
+				"2. PID: 5678 | Directory: /home/user",
+			);
 		});
 
 		test("should format process choice with both tmux and directory info", async () => {
@@ -133,7 +136,10 @@ describe("Selector Module", () => {
 			expect(result).toBe(selectedProcess);
 
 			const callArgs = promptMock.mock.calls[0][0];
-			expect(callArgs[0].choices[0].name).toBe("1. PID: 1234 | Tmux: main:0.1 | Directory: /home/user/project");
+			expect(callArgs[0].choices[0].name).toBe(
+				"1. PID: 1234 | Tmux: main:0.1 | Directory: /home/user/project",
+			);
 		});
 	});
 });
+

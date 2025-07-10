@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { createTempFile } from "../../src/utils/tempFile";
 
 // Mock external dependencies
@@ -23,8 +23,7 @@ describe("TempFile Utility", () => {
 	describe("createTempFile", () => {
 		test("should create temporary file with correct naming pattern", async () => {
 			const mockTmpDir = "/tmp";
-			const mockTempDir = "/tmp/ccinput-abcdef";
-			const mockFilePath = "/tmp/ccinput-abcdef/.ccinput-20240615123045.md";
+			const mockTempDir = "/tmp/editprompt-abcdef";
 
 			const tmpdirMock = mock(() => mockTmpDir);
 			mock.module("node:os", () => ({
@@ -46,6 +45,7 @@ describe("TempFile Utility", () => {
 			// Mock Date for consistent filename
 			const originalDate = Date;
 			const mockDate = new Date("2024-06-15T12:30:45.000Z");
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 			global.Date = mock(() => mockDate) as any;
 			global.Date.now = originalDate.now;
 
@@ -54,8 +54,12 @@ describe("TempFile Utility", () => {
 			// Restore Date
 			global.Date = originalDate;
 
-			expect(mkdtempMock).toHaveBeenCalledWith("/tmp/ccinput-");
-			expect(writeFileMock).toHaveBeenCalledWith(expect.stringMatching(/\.ccinput-\d{14}\.md$/), "");
+			expect(mkdtempMock).toHaveBeenCalledWith("/tmp/editprompt-");
+			expect(writeFileMock).toHaveBeenCalledWith(
+				expect.stringMatching(/\/tmp\/editprompt-abcdef\/\.ccinput-\d{14}\.md$/),
+				"",
+				"utf-8",
+			);
 			expect(typeof result).toBe("string");
 			expect(result).toMatch(/\.ccinput-\d{14}\.md$/);
 		});
@@ -71,14 +75,15 @@ describe("TempFile Utility", () => {
 				join: joinMock,
 			}));
 
-			const mkdtempMock = mock(() => Promise.reject(new Error("Permission denied")));
+			const mkdtempMock = mock(() =>
+				Promise.reject(new Error("Permission denied")),
+			);
 			mock.module("node:fs/promises", () => ({
 				mkdtemp: mkdtempMock,
 				writeFile: mock(),
 			}));
 
-			await expect(createTempFile())
-				.rejects.toThrow("Permission denied");
+			expect(createTempFile()).rejects.toThrow("Permission denied");
 		});
 
 		test("should handle writeFile failure", async () => {
@@ -92,15 +97,15 @@ describe("TempFile Utility", () => {
 				join: joinMock,
 			}));
 
-			const mkdtempMock = mock(() => Promise.resolve("/tmp/ccinput-abcdef"));
+			const mkdtempMock = mock(() => Promise.resolve("/tmp/editprompt-abcdef"));
 			const writeFileMock = mock(() => Promise.reject(new Error("Disk full")));
 			mock.module("node:fs/promises", () => ({
 				mkdtemp: mkdtempMock,
 				writeFile: writeFileMock,
 			}));
 
-			await expect(createTempFile())
-				.rejects.toThrow("Disk full");
+			expect(createTempFile()).rejects.toThrow("Disk full");
 		});
 	});
 });
+

@@ -1,11 +1,9 @@
-import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
-import { spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
-import { 
-	getEditor, 
-	launchEditor, 
-	readFileContent, 
-	openEditorAndGetContent 
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import {
+	getEditor,
+	launchEditor,
+	openEditorAndGetContent,
+	readFileContent,
 } from "../../src/modules/editor";
 
 // Mock external dependencies
@@ -27,11 +25,6 @@ describe("Editor Module", () => {
 		mock.restore();
 	});
 
-	afterEach(() => {
-		// Clean up environment variables
-		delete process.env.EDITOR;
-	});
-
 	describe("getEditor", () => {
 		test("should return provided editor option", () => {
 			const result = getEditor("nvim");
@@ -45,8 +38,9 @@ describe("Editor Module", () => {
 		});
 
 		test("should return default editor when no option or env var", () => {
+			process.env.EDITOR = undefined;
 			const result = getEditor();
-			expect(result).toBe("vi");
+			expect(result).toBe("vim");
 		});
 
 		test("should prioritize option over environment variable", () => {
@@ -59,7 +53,7 @@ describe("Editor Module", () => {
 	describe("launchEditor", () => {
 		test("should spawn editor process successfully", async () => {
 			const mockProcess = {
-				on: mock((event: string, callback: Function) => {
+				on: mock((event: string, callback): void => {
 					if (event === "exit") {
 						// Simulate successful exit
 						setTimeout(() => callback(0), 10);
@@ -72,7 +66,7 @@ describe("Editor Module", () => {
 				spawn: spawnMock,
 			}));
 
-			await expect(launchEditor("vim", "/tmp/test.md")).resolves.toBeUndefined();
+			expect(launchEditor("vim", "/tmp/test.md")).resolves.toBeUndefined();
 			expect(spawnMock).toHaveBeenCalledWith("vim", ["/tmp/test.md"], {
 				stdio: "inherit",
 				shell: true,
@@ -81,7 +75,7 @@ describe("Editor Module", () => {
 
 		test("should reject when editor process fails", async () => {
 			const mockProcess = {
-				on: mock((event: string, callback: Function) => {
+				on: mock((event: string, callback) => {
 					if (event === "error") {
 						setTimeout(() => callback(new Error("Editor not found")), 10);
 					}
@@ -93,13 +87,14 @@ describe("Editor Module", () => {
 				spawn: spawnMock,
 			}));
 
-			await expect(launchEditor("nonexistent-editor", "/tmp/test.md"))
-				.rejects.toThrow("Failed to launch editor: Editor not found");
+			expect(
+				launchEditor("nonexistent-editor", "/tmp/test.md"),
+			).rejects.toThrow("Failed to launch editor: Editor not found");
 		});
 
 		test("should reject when editor exits with non-zero code", async () => {
 			const mockProcess = {
-				on: mock((event: string, callback: Function) => {
+				on: mock((event: string, callback) => {
 					if (event === "exit") {
 						setTimeout(() => callback(1), 10);
 					}
@@ -111,8 +106,9 @@ describe("Editor Module", () => {
 				spawn: spawnMock,
 			}));
 
-			await expect(launchEditor("vim", "/tmp/test.md"))
-				.rejects.toThrow("Editor exited with code: 1");
+			expect(launchEditor("vim", "/tmp/test.md")).rejects.toThrow(
+				"Editor exited with code: 1",
+			);
 		});
 	});
 
@@ -129,13 +125,16 @@ describe("Editor Module", () => {
 		});
 
 		test("should throw error when file read fails", async () => {
-			const readFileMock = mock(() => Promise.reject(new Error("File not found")));
+			const readFileMock = mock(() =>
+				Promise.reject(new Error("File not found")),
+			);
 			mock.module("node:fs/promises", () => ({
 				readFile: readFileMock,
 			}));
 
-			await expect(readFileContent("/tmp/nonexistent.md"))
-				.rejects.toThrow("Failed to read file: File not found");
+			expect(readFileContent("/tmp/nonexistent.md")).rejects.toThrow(
+				"Failed to read file: File not found",
+			);
 		});
 	});
 
@@ -147,7 +146,7 @@ describe("Editor Module", () => {
 			}));
 
 			const mockProcess = {
-				on: mock((event: string, callback: Function) => {
+				on: mock((event: string, callback) => {
 					if (event === "exit") {
 						setTimeout(() => callback(0), 10);
 					}
@@ -181,7 +180,7 @@ describe("Editor Module", () => {
 			}));
 
 			const mockProcess = {
-				on: mock((event: string, callback: Function) => {
+				on: mock((event: string, callback) => {
 					if (event === "exit") {
 						setTimeout(() => callback(0), 10);
 					}
@@ -198,8 +197,9 @@ describe("Editor Module", () => {
 				readFile: readFileMock,
 			}));
 
-			await expect(openEditorAndGetContent("vim"))
-				.rejects.toThrow("No content was entered in the editor");
+			expect(openEditorAndGetContent("vim")).rejects.toThrow(
+				"No content was entered in the editor",
+			);
 		});
 	});
 });

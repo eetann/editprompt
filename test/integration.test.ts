@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { spawn } from "node:child_process";
 
 describe("Integration Tests", () => {
@@ -10,7 +10,11 @@ describe("Integration Tests", () => {
 
 	describe("CLI Integration", () => {
 		test("should show help when --help flag is used", async () => {
-			const result = await new Promise<{stdout: string, stderr: string, exitCode: number}>((resolve) => {
+			const result = await new Promise<{
+				stdout: string;
+				stderr: string;
+				exitCode: number;
+			}>((resolve) => {
 				const process = spawn("node", [CLI_PATH, "--help"], {
 					stdio: ["ignore", "pipe", "pipe"],
 				});
@@ -38,7 +42,11 @@ describe("Integration Tests", () => {
 		});
 
 		test("should show version when --version flag is used", async () => {
-			const result = await new Promise<{stdout: string, stderr: string, exitCode: number}>((resolve) => {
+			const result = await new Promise<{
+				stdout: string;
+				stderr: string;
+				exitCode: number;
+			}>((resolve) => {
 				const process = spawn("node", [CLI_PATH, "--version"], {
 					stdio: ["ignore", "pipe", "pipe"],
 				});
@@ -64,10 +72,18 @@ describe("Integration Tests", () => {
 		});
 
 		test("should handle non-existent editor gracefully", async () => {
-			const result = await new Promise<{stdout: string, stderr: string, exitCode: number}>((resolve) => {
-				const process = spawn("node", [CLI_PATH, "--editor", "nonexistent-editor-12345"], {
-					stdio: ["ignore", "pipe", "pipe"],
-				});
+			const result = await new Promise<{
+				stdout: string;
+				stderr: string;
+				exitCode: number;
+			}>((resolve) => {
+				const process = spawn(
+					"node",
+					[CLI_PATH, "--editor", "nonexistent-editor-12345"],
+					{
+						stdio: ["ignore", "pipe", "pipe"],
+					},
+				);
 
 				let stdout = "";
 				let stderr = "";
@@ -121,22 +137,13 @@ describe("Integration Tests", () => {
 		test("should handle editor environment variable detection", async () => {
 			const { getEditor } = await import("../src/modules/editor");
 
-			// Save original environment
-			const originalEditor = process.env.EDITOR;
-
 			// Test with custom environment
 			process.env.EDITOR = "test-editor";
 			expect(getEditor()).toBe("test-editor");
 
 			// Test with option override
 			expect(getEditor("override-editor")).toBe("override-editor");
-
-			// Restore original environment
-			if (originalEditor) {
-				process.env.EDITOR = originalEditor;
-			} else {
-				delete process.env.EDITOR;
-			}
 		});
 	});
 });
+
