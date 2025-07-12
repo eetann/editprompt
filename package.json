@@ -3,6 +3,24 @@
 	"version": "0.0.1",
 	"author": "eetann",
 	"description": "A CLI tool that lets you write prompts for CLI tools using your favorite text editor",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/eetann/editprompt.git"
+	},
+	"homepage": "https://github.com/eetann/editprompt",
+	"bugs": {
+		"url": "https://github.com/eetann/editprompt/issues"
+	},
+	"keywords": [
+		"cli",
+		"editor",
+		"prompt",
+		"tmux",
+		"clipboard",
+		"command-line",
+		"text-editor"
+	],
 	"publishConfig": {
 		"access": "public"
 	},

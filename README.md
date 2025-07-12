@@ -1,7 +1,5 @@
 # editprompt
 
-WIP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 A CLI tool that lets you write prompts for CLI tools using your favorite text editor. Originally designed for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview), but works with any CLI process.
 
 ## Features
@@ -13,8 +11,6 @@ A CLI tool that lets you write prompts for CLI tools using your favorite text ed
 - ⚡ **Smart Fallbacks**: Multiple fallback strategies ensure your prompt gets delivered
 
 ## Installation
-
-WIP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ```bash
 # Install globally via npm
