@@ -56,12 +56,12 @@ describe("TempFile Utility", () => {
 
 			expect(mkdtempMock).toHaveBeenCalledWith("/tmp/editprompt-");
 			expect(writeFileMock).toHaveBeenCalledWith(
-				expect.stringMatching(/\/tmp\/editprompt-abcdef\/\.ccinput-\d{14}\.md$/),
+				expect.stringMatching(/\/tmp\/editprompt-abcdef\/\.editprompt-\d{14}\.md$/),
 				"",
 				"utf-8",
 			);
 			expect(typeof result).toBe("string");
-			expect(result).toMatch(/\.ccinput-\d{14}\.md$/);
+			expect(result).toMatch(/\.editprompt-\d{14}\.md$/);
 		});
 
 		test("should handle mkdtemp failure", async () => {
@@ -83,7 +83,7 @@ describe("TempFile Utility", () => {
 				writeFile: mock(),
 			}));
 
-			expect(createTempFile()).rejects.toThrow("Permission denied");
+			await expect(createTempFile()).rejects.toThrow("Permission denied");
 		});
 
 		test("should handle writeFile failure", async () => {
@@ -104,7 +104,7 @@ describe("TempFile Utility", () => {
 				writeFile: writeFileMock,
 			}));
 
-			expect(createTempFile()).rejects.toThrow("Disk full");
+			await expect(createTempFile()).rejects.toThrow("Disk full");
 		});
 	});
 });

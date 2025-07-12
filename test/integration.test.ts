@@ -15,7 +15,7 @@ describe("Integration Tests", () => {
 				stderr: string;
 				exitCode: number;
 			}>((resolve) => {
-				const process = spawn("node", [CLI_PATH, "--help"], {
+				const process = spawn("bun", [CLI_PATH, "--help"], {
 					stdio: ["ignore", "pipe", "pipe"],
 				});
 
@@ -47,7 +47,7 @@ describe("Integration Tests", () => {
 				stderr: string;
 				exitCode: number;
 			}>((resolve) => {
-				const process = spawn("node", [CLI_PATH, "--version"], {
+				const process = spawn("bun", [CLI_PATH, "--version"], {
 					stdio: ["ignore", "pipe", "pipe"],
 				});
 
@@ -78,7 +78,7 @@ describe("Integration Tests", () => {
 				exitCode: number;
 			}>((resolve) => {
 				const process = spawn(
-					"node",
+					"bun",
 					[CLI_PATH, "--editor", "nonexistent-editor-12345"],
 					{
 						stdio: ["ignore", "pipe", "pipe"],
@@ -146,4 +146,3 @@ describe("Integration Tests", () => {
 		});
 	});
 });
-
