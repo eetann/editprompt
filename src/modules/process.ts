@@ -20,11 +20,11 @@ export interface TargetProcess {
 }
 
 export interface TmuxPane {
-	session: string;
-	window: string;
-	pane: string;
-	pid: number;
-	command: string;
+	session: string | undefined;
+	window: string | undefined;
+	pane: string | undefined;
+	pid: number | undefined;
+	command: string | undefined;
 }
 
 export async function getProcessCwd(pid: number): Promise<string | undefined> {
@@ -96,13 +96,17 @@ export async function getTmuxPanes(): Promise<TmuxPane[]> {
 			.split("\n")
 			.map((line) => {
 				const [session, windowPane, pid, command] = line.split(":");
-				const [window, pane] = windowPane.split(".");
+				let win = undefined;
+				let pane = undefined;
+				if (windowPane) {
+					[win, pane] = windowPane.split(".");
+				}
 
 				return {
 					session,
-					window,
+					window: win,
 					pane,
-					pid: Number.parseInt(pid, 10),
+					pid: pid ? Number.parseInt(pid, 10) : undefined,
 					command,
 				};
 			});
@@ -132,7 +136,7 @@ export async function findTargetInTmux(
 	const matchedProcesses: TargetProcess[] = [];
 	for (const process of targetProcesses) {
 		const matchingPane = tmuxPanes.find((pane) => pane.pid === process.ppid);
-		if (matchingPane) {
+		if (matchingPane?.session && matchingPane.window && matchingPane.pane) {
 			matchedProcesses.push({
 				pid: process.pid,
 				name: process.name,

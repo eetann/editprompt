@@ -47,7 +47,8 @@ describe("Selector Module", () => {
 				},
 			];
 
-			const selectedProcess = processes[1];
+			// biome-ignore lint/style/noNonNullAssertion: test
+			const selectedProcess = processes[1]!;
 			const promptMock = mock(() => Promise.resolve({ selectedProcess }));
 			mock.module("inquirer", () => ({
 				default: {
@@ -92,7 +93,8 @@ describe("Selector Module", () => {
 				},
 			];
 
-			const selectedProcess = processes[0];
+			// biome-ignore lint/style/noNonNullAssertion: test
+			const selectedProcess = processes[0]!;
 			const promptMock = mock(() => Promise.resolve({ selectedProcess }));
 			mock.module("inquirer", () => ({
 				default: {
@@ -103,7 +105,10 @@ describe("Selector Module", () => {
 			const result = await selectProcess(processes);
 			expect(result).toBe(selectedProcess);
 
-			const callArgs = promptMock.mock.calls[0][0];
+			expect(promptMock).toHaveBeenCalledTimes(1);
+			// biome-ignore lint/suspicious/noExplicitAny: test
+			const callArgs = (promptMock.mock.calls[0] as any[])?.[0];
+			expect(callArgs).toBeDefined();
 			expect(callArgs[0].choices[0].name).toBe(
 				"1. PID: 1234 | Tmux: session1:2.0",
 			);
@@ -124,7 +129,8 @@ describe("Selector Module", () => {
 				},
 			];
 
-			const selectedProcess = processes[0];
+			// biome-ignore lint/style/noNonNullAssertion: test
+			const selectedProcess = processes[0]!;
 			const promptMock = mock(() => Promise.resolve({ selectedProcess }));
 			mock.module("inquirer", () => ({
 				default: {
@@ -132,10 +138,14 @@ describe("Selector Module", () => {
 				},
 			}));
 
-			const result = await selectProcess([processes[0], processes[0]]);
+			// biome-ignore lint/style/noNonNullAssertion: test
+			const result = await selectProcess([processes[0]!, processes[0]!]);
 			expect(result).toBe(selectedProcess);
 
-			const callArgs = promptMock.mock.calls[0][0];
+			expect(promptMock).toHaveBeenCalledTimes(1);
+			// biome-ignore lint/suspicious/noExplicitAny: test
+			const callArgs = (promptMock.mock.calls[0] as any[])?.[0];
+			expect(callArgs).toBeDefined();
 			expect(callArgs[0].choices[0].name).toBe(
 				"1. PID: 1234 | Tmux: main:0.1 | Directory: /home/user/project",
 			);

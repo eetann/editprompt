@@ -43,6 +43,9 @@ await cli(
 					console.log(`No ${processName} process found.`);
 				} else {
 					const selectedProcess = await selectProcess(processes);
+					if (!selectedProcess) {
+						return;
+					}
 
 					// Display selected process info
 					const processInfo = [`PID ${selectedProcess.pid}`];

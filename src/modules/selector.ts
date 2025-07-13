@@ -34,7 +34,8 @@ export async function selectProcess(
 	}
 
 	if (processes.length === 1) {
-		return processes[0];
+		// biome-ignore lint/style/noNonNullAssertion: length === 1
+		return processes[0]!;
 	}
 
 	const choices = processes.map((proc, index) =>
@@ -49,6 +50,10 @@ export async function selectProcess(
 			choices,
 		},
 	]);
+
+	if (!selectedProcess) {
+		throw new Error("No process was selected");
+	}
 
 	return selectedProcess;
 }
