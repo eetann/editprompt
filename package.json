@@ -62,7 +62,6 @@
 		"gunshi": "^0.26.3",
 		"inquirer": "^12.6.3"
 	},
-	"private": true,
 	"peerDependencies": {
 		"typescript": "^5"
 	}
