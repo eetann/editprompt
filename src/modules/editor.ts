@@ -64,4 +64,3 @@ export async function openEditorAndGetContent(
 		throw new Error("An unknown error occurred");
 	}
 }
-

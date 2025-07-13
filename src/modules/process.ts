@@ -39,7 +39,9 @@ export async function getProcessCwd(pid: number): Promise<string | undefined> {
 	}
 }
 
-export async function findTargetProcesses(processName: string = DEFAULT_PROCESS_NAME): Promise<TargetProcess[]> {
+export async function findTargetProcesses(
+	processName: string = DEFAULT_PROCESS_NAME,
+): Promise<TargetProcess[]> {
 	const tmuxAvailable = await checkTmuxAvailable();
 
 	// If tmux is available, prioritize tmux-based processes
@@ -109,7 +111,9 @@ export async function getTmuxPanes(): Promise<TmuxPane[]> {
 	}
 }
 
-export async function findTargetInTmux(processName: string = DEFAULT_PROCESS_NAME): Promise<TargetProcess[]> {
+export async function findTargetInTmux(
+	processName: string = DEFAULT_PROCESS_NAME,
+): Promise<TargetProcess[]> {
 	// First, find all processes with matching name
 	const processes = await find("name", processName);
 	const targetProcesses = processes.filter((p) => p.name === processName);
