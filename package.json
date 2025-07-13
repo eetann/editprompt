@@ -1,6 +1,6 @@
 {
 	"name": "editprompt",
-	"version": "0.0.2",
+	"version": "0.0.5",
 	"author": "eetann",
 	"description": "A CLI tool that lets you write prompts for CLI tools using your favorite text editor",
 	"license": "MIT",
@@ -62,7 +62,6 @@
 		"gunshi": "^0.26.3",
 		"inquirer": "^12.6.3"
 	},
-	"private": true,
 	"peerDependencies": {
 		"typescript": "^5"
 	}
