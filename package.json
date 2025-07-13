@@ -41,7 +41,7 @@
 		"dev": "tsdown --watch",
 		"lint": "biome check",
 		"typecheck": "tsgo --noEmit",
-		"release": "bun lint && bun typecheck && bun test && bun run build && bumpp",
+		"release": "bun run lint && bun run typecheck && bun run test && bun run build && bumpp",
 		"test": "bun test",
 		"test:watch": "bun test --watch"
 	},
