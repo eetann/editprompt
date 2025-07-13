@@ -21,4 +21,3 @@ export async function createTempFile(): Promise<string> {
 	await writeFile(filePath, "", "utf-8");
 	return filePath;
 }
-

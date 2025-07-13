@@ -20,11 +20,11 @@ export interface TargetProcess {
 }
 
 export interface TmuxPane {
-	session: string;
-	window: string;
-	pane: string;
-	pid: number;
-	command: string;
+	session: string | undefined;
+	window: string | undefined;
+	pane: string | undefined;
+	pid: number | undefined;
+	command: string | undefined;
 }
 
 export async function getProcessCwd(pid: number): Promise<string | undefined> {
@@ -39,7 +39,9 @@ export async function getProcessCwd(pid: number): Promise<string | undefined> {
 	}
 }
 
-export async function findTargetProcesses(processName: string = DEFAULT_PROCESS_NAME): Promise<TargetProcess[]> {
+export async function findTargetProcesses(
+	processName: string = DEFAULT_PROCESS_NAME,
+): Promise<TargetProcess[]> {
 	const tmuxAvailable = await checkTmuxAvailable();
 
 	// If tmux is available, prioritize tmux-based processes
@@ -94,13 +96,17 @@ export async function getTmuxPanes(): Promise<TmuxPane[]> {
 			.split("\n")
 			.map((line) => {
 				const [session, windowPane, pid, command] = line.split(":");
-				const [window, pane] = windowPane.split(".");
+				let win = undefined;
+				let pane = undefined;
+				if (windowPane) {
+					[win, pane] = windowPane.split(".");
+				}
 
 				return {
 					session,
-					window,
+					window: win,
 					pane,
-					pid: Number.parseInt(pid, 10),
+					pid: pid ? Number.parseInt(pid, 10) : undefined,
 					command,
 				};
 			});
@@ -109,7 +115,9 @@ export async function getTmuxPanes(): Promise<TmuxPane[]> {
 	}
 }
 
-export async function findTargetInTmux(processName: string = DEFAULT_PROCESS_NAME): Promise<TargetProcess[]> {
+export async function findTargetInTmux(
+	processName: string = DEFAULT_PROCESS_NAME,
+): Promise<TargetProcess[]> {
 	// First, find all processes with matching name
 	const processes = await find("name", processName);
 	const targetProcesses = processes.filter((p) => p.name === processName);
@@ -128,7 +136,7 @@ export async function findTargetInTmux(processName: string = DEFAULT_PROCESS_NAM
 	const matchedProcesses: TargetProcess[] = [];
 	for (const process of targetProcesses) {
 		const matchingPane = tmuxPanes.find((pane) => pane.pid === process.ppid);
-		if (matchingPane) {
+		if (matchingPane?.session && matchingPane.window && matchingPane.pane) {
 			matchedProcesses.push({
 				pid: process.pid,
 				name: process.name,

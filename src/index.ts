@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { cli } from "gunshi";
+import { DEFAULT_PROCESS_NAME } from "./config/constants";
 import { openEditorAndGetContent } from "./modules/editor";
 import { findTargetProcesses, sendContentToProcess } from "./modules/process";
 import { selectProcess } from "./modules/selector";
-import { DEFAULT_PROCESS_NAME } from "./config/constants";
 
 const argv = process.argv.slice(2);
 
@@ -43,6 +43,9 @@ await cli(
 					console.log(`No ${processName} process found.`);
 				} else {
 					const selectedProcess = await selectProcess(processes);
+					if (!selectedProcess) {
+						return;
+					}
 
 					// Display selected process info
 					const processInfo = [`PID ${selectedProcess.pid}`];
