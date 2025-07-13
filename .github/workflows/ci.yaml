@@ -20,8 +20,14 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Run lint
+        run: bun run lint
+
+      - name: Run typechek
+        run: bun run typecheck
+
       - name: Run tests
-        run: bun test
+        run: bun run test
 
       - name: Build the project
         run: bun run build
