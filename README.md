@@ -33,8 +33,8 @@ editprompt --editor nvim
 editprompt -e nvim
 
 # Target a different process (default: claude)
-editprompt --process foobar
-editprompt -p foobar
+editprompt --process gemini
+editprompt -p gemini
 
 # Show help
 editprompt --help
@@ -90,7 +90,7 @@ editprompt respects the following editor priority:
 
 1. `--editor/-e` command line option
 2. `$EDITOR` environment variable  
-3. Default: `vi`
+3. Default: `nvim`
 
 ### Environment Variables
 
