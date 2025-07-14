@@ -120,7 +120,7 @@ export async function findTargetInTmux(
 ): Promise<TargetProcess[]> {
 	// First, find all processes with matching name
 	const processes = await find("name", processName);
-	const targetProcesses = processes.filter((p) => p.name === processName);
+	const targetProcesses = processes.filter((p) => p.cmd.match(processName));
 
 	if (targetProcesses.length === 0) {
 		return [];

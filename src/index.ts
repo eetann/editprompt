@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { cli } from "gunshi";
+import * as pkg from "../package.json";
 import { DEFAULT_PROCESS_NAME } from "./config/constants";
 import { openEditorAndGetContent } from "./modules/editor";
 import { findTargetProcesses, sendContentToProcess } from "./modules/process";
@@ -72,7 +73,6 @@ await cli(
 		},
 	},
 	{
-		// TODO: package.jsonから取得
-		version: "0.0.1",
+		version: pkg.version,
 	},
 );
