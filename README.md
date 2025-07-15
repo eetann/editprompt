@@ -2,6 +2,8 @@
 
 A CLI tool that lets you write prompts for CLI tools using your favorite text editor. Originally designed for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview), but works with any CLI process.
 
+https://github.com/user-attachments/assets/01bcda7c-7771-4b33-bf5c-629812d45cc4
+
 ## Features
 
 - 🖊️ **Editor Integration**: Use your preferred text editor to write prompts  
@@ -67,20 +69,6 @@ bind -n M-q display-popup -E \
    - 🎯 **Tmux sessions**: Direct input via `tmux send-keys`
    - 📋 **Clipboard**: Copies content as final fallback
 
-### Process Selection
-
-When multiple processes are detected, you'll see an interactive selection menu:
-
-```
-? Select a process:
-  1. PID: 12345 | Tmux: main:0.1 | Directory: /home/user/project1
-  2. PID: 67890 | Directory: /home/user/project2
-```
-
-The display shows:
-- **PID**: Process ID
-- **Tmux**: Session, window, and pane (if running in tmux)
-- **Directory**: Working directory of the process
 
 ## Configuration
 
@@ -96,11 +84,7 @@ editprompt respects the following editor priority:
 
 - `EDITOR`: Your preferred text editor
 
-## Requirements
-
-- Node.js 18+ or Bun
-- Target CLI process (default: `claude` command)
-- Optional: tmux (for direct session integration)
+---
 
 ## Development
 
