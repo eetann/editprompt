@@ -164,6 +164,15 @@ export async function sendToTmuxPane(
 	);
 }
 
+export async function sendToSpecificPane(
+	paneId: string,
+	content: string,
+): Promise<void> {
+	const tempContent = content.replace(/'/g, "'\\''");
+	await execAsync(`tmux load-buffer -b editprompt - <<< '${tempContent}'`);
+	await execAsync(`tmux paste-buffer -d -t '${paneId}' -b editprompt`);
+}
+
 export async function copyToClipboard(content: string): Promise<void> {
 	await clipboardy.write(content);
 }
@@ -171,9 +180,14 @@ export async function copyToClipboard(content: string): Promise<void> {
 export async function sendContentToProcess(
 	process: TargetProcess,
 	content: string,
+	targetPaneId?: string,
 ): Promise<void> {
 	try {
-		// Try tmux first if process has tmux info
+		if (targetPaneId) {
+			await sendToSpecificPane(targetPaneId, content);
+			return;
+		}
+
 		if (process.tmuxSession && process.tmuxWindow && process.tmuxPane) {
 			await sendToTmuxPane(
 				process.tmuxSession,
