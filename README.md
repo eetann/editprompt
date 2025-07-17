@@ -49,22 +49,21 @@ editprompt --help
 editprompt --version
 ```
 
-It is useful to configure tmux as follows.
+### Tmux Integration
 
+editprompt offers two modes for tmux integration:
+
+#### Recommended: Direct Pane Targeting
+Use `--target-pane #{pane_id}` to automatically send content back to the pane where you triggered the command. This is useful when using Claude Code, etc. in multiple panes.
+
+**Split window version:**
 ```tmux
-bind -n M-q split-window -v -l 10 \
-  -c '#{pane_current_path}' \
-  'editprompt --editor nvim'
+bind -n M-q run-shell 'tmux split-window -v -l 20 \
+  -c "#{pane_current_path}" \
+  "editprompt --editor nvim --target-pane #{pane_id}"'
 ```
 
-If you prefer popup, you can configure it as follows.
-```tmux
-bind -n M-q display-popup -E \
-  -d '#{pane_current_path}' \
-  'editprompt --editor nvim'
-```
-
-You can also use it with tmux popup to send content back to the original pane:
+**Popup version:**
 ```tmux
 bind -n M-q run-shell 'tmux display-popup -E \
   -d "#{pane_current_path}" \
@@ -72,14 +71,33 @@ bind -n M-q run-shell 'tmux display-popup -E \
   "editprompt --editor nvim --target-pane #{pane_id}"'
 ```
 
+#### Alternative: Process Auto-detection
+Let editprompt automatically detect and select target processes:
+
+**Split window version:**
+```tmux
+bind -n M-q split-window -v -l 10 \
+  -c '#{pane_current_path}' \
+  'editprompt --editor nvim'
+```
+
+**Popup version:**
+```tmux
+bind -n M-q display-popup -E \
+  -d '#{pane_current_path}' \
+  'editprompt --editor nvim'
+```
+
 ### How it Works
 
 1. **Opens your editor** with a temporary markdown file
 2. **Write your prompt** and save/exit the editor  
-3. **Detects target processes** running on your system (default: claude)
-4. **Sends the prompt** using the best available method:
-   - 🎯 **Tmux sessions**: Direct input via `tmux send-keys`
-   - 📋 **Clipboard**: Copies content as final fallback
+3. **Sends the prompt** using one of two modes:
+   - 🎯 **Direct pane mode** (`--target-pane`): Sends directly to specified tmux pane
+   - 🔍 **Process detection mode**: Finds target processes and sends via tmux or clipboard
+4. **Fallback strategy** ensures delivery:
+   - Tmux integration (preferred)
+   - Clipboard copy (fallback)
 
 
 ## Configuration
@@ -137,12 +155,14 @@ src/
 
 ### Tmux Integration
 
-When the target process is running in a tmux session, editprompt uses `tmux send-keys` to send input directly to the appropriate pane. This provides seamless integration without disrupting your existing session.
+editprompt supports two tmux integration modes:
+
+- **Direct pane targeting** (`--target-pane`): Bypasses process detection and sends content directly to specified pane ID
+- **Process-based targeting**: Detects target processes and links them to tmux panes for delivery
 
 ### Fallback Strategy
 
-editprompt implements fallback strategy:
+editprompt implements a robust fallback strategy:
 
 1. **Tmux Integration**: Direct input to tmux panes (when available)
-<!-- 2. **New Process**: Launch new Claude instance with piped input -->
-2. **Clipboard**: Copy content to clipboard with error notification
+2. **Clipboard**: Copy content to clipboard with user notification
