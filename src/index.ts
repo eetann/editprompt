@@ -25,6 +25,11 @@ await cli(
 				description: "Process name to target (default: claude)",
 				type: "string",
 			},
+			"target-pane": {
+				short: "t",
+				description: "Target tmux pane ID to send content to",
+				type: "string",
+			},
 		},
 		async run(ctx) {
 			try {
@@ -36,33 +41,44 @@ await cli(
 					return;
 				}
 
-				const processName = ctx.values.process || DEFAULT_PROCESS_NAME;
-				console.log(`Searching for ${processName} processes...`);
-				const processes = await findTargetProcesses(processName);
-
-				if (processes.length === 0) {
-					console.log(`No ${processName} process found.`);
-				} else {
-					const selectedProcess = await selectProcess(processes);
-					if (!selectedProcess) {
-						return;
-					}
-
-					// Display selected process info
-					const processInfo = [`PID ${selectedProcess.pid}`];
-					if (selectedProcess.tmuxSession) {
-						processInfo.push(
-							`Tmux: ${selectedProcess.tmuxSession}:${selectedProcess.tmuxWindow}.${selectedProcess.tmuxPane}`,
-						);
-					}
-					if (selectedProcess.cwd) {
-						processInfo.push(`Directory: ${selectedProcess.cwd}`);
-					}
-					console.log(`Selected process: ${processInfo.join(" | ")}`);
-
-					console.log(`Sending content to ${processName} process...`);
-					await sendContentToProcess(selectedProcess, content);
+				const targetPane = ctx.values["target-pane"];
+				if (targetPane) {
+					console.log("Sending content to specified pane...");
+					await sendContentToProcess(
+						{ pid: 0, name: "direct-pane" },
+						content,
+						targetPane,
+					);
 					console.log("Content sent successfully!");
+				} else {
+					const processName = ctx.values.process || DEFAULT_PROCESS_NAME;
+					console.log(`Searching for ${processName} processes...`);
+					const processes = await findTargetProcesses(processName);
+
+					if (processes.length === 0) {
+						console.log(`No ${processName} process found.`);
+					} else {
+						const selectedProcess = await selectProcess(processes);
+						if (!selectedProcess) {
+							return;
+						}
+
+						// Display selected process info
+						const processInfo = [`PID ${selectedProcess.pid}`];
+						if (selectedProcess.tmuxSession) {
+							processInfo.push(
+								`Tmux: ${selectedProcess.tmuxSession}:${selectedProcess.tmuxWindow}.${selectedProcess.tmuxPane}`,
+							);
+						}
+						if (selectedProcess.cwd) {
+							processInfo.push(`Directory: ${selectedProcess.cwd}`);
+						}
+						console.log(`Selected process: ${processInfo.join(" | ")}`);
+
+						console.log(`Sending content to ${processName} process...`);
+						await sendContentToProcess(selectedProcess, content);
+						console.log("Content sent successfully!");
+					}
 				}
 			} catch (error) {
 				console.error(

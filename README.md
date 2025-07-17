@@ -38,6 +38,10 @@ editprompt -e nvim
 editprompt --process gemini
 editprompt -p gemini
 
+# Send content to a specific tmux pane
+editprompt --target-pane %45
+editprompt -t %45
+
 # Show help
 editprompt --help
 
@@ -58,6 +62,14 @@ If you prefer popup, you can configure it as follows.
 bind -n M-q display-popup -E \
   -d '#{pane_current_path}' \
   'editprompt --editor nvim'
+```
+
+You can also use it with tmux popup to send content back to the original pane:
+```tmux
+bind -n M-q run-shell 'tmux display-popup -E \
+  -d "#{pane_current_path}" \
+  -w 80% -h 65% \
+  "editprompt --editor nvim --target-pane #{pane_id}"'
 ```
 
 ### How it Works
