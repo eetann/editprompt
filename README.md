@@ -42,6 +42,10 @@ editprompt -p gemini
 editprompt --target-pane %45
 editprompt -t %45
 
+# Set environment variables for the editor
+editprompt --env THEME=dark
+editprompt -E THEME=dark -E LANG=ja_JP.UTF-8
+
 # Show help
 editprompt --help
 
@@ -113,6 +117,36 @@ editprompt respects the following editor priority:
 ### Environment Variables
 
 - `EDITOR`: Your preferred text editor
+
+### Editor Integration with EDITPROMPT
+
+editprompt automatically sets `EDITPROMPT=1` when launching your editor. This allows you to detect when your editor is launched by editprompt and enable specific configurations or plugins.
+
+#### Example: Neovim Configuration
+
+```lua
+-- In your Neovim config (e.g., init.lua)
+if vim.env.EDITPROMPT then
+  vim.opt.wrap = true
+  -- Load a specific colorscheme
+  vim.cmd('colorscheme blue')
+end
+```
+
+#### Setting Custom Environment Variables
+
+You can also pass custom environment variables to your editor:
+
+```bash
+# Single environment variable
+editprompt --env THEME=dark
+
+# Multiple environment variables
+editprompt --env THEME=dark --env FOO=fooooo
+
+# Useful for editor-specific configurations
+editprompt --env NVIM_CONFIG=minimal
+```
 
 ---
 

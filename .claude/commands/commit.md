@@ -1,6 +1,6 @@
 ---
 description: "Conventional Commit"
-allowed-tools: ["Bash(git:add,commit)"]
+allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(git diff:*)
 ---
 
 # Conventional Commit Helper
@@ -41,7 +41,7 @@ Comment: [optional thoughts or supplementary information about the work]
 
 Please write the description in English.
 
-For breaking changes, add `!` after the type or include `BREAKING CHANGE:` in the footer.
+For breaking changes, add "!" after the type or include `BREAKING CHANGE:` in the footer.
 
 Do not add Claude co-author footer to commits.
 
