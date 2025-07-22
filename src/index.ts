@@ -40,7 +40,10 @@ await cli(
 		async run(ctx) {
 			try {
 				console.log("Opening editor...");
-				const content = await openEditorAndGetContent(ctx.values.editor, ctx.values.env);
+				const content = await openEditorAndGetContent(
+					ctx.values.editor,
+					ctx.values.env,
+				);
 
 				if (!content) {
 					console.log("No content entered. Exiting.");
