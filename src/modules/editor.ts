@@ -52,10 +52,6 @@ export async function openEditorAndGetContent(
 		await launchEditor(editor, tempFilePath);
 		const content = await readFileContent(tempFilePath);
 
-		if (!content) {
-			throw new Error("No content was entered in the editor");
-		}
-
 		return content;
 	} catch (error) {
 		if (error instanceof Error) {
