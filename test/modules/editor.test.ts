@@ -70,6 +70,9 @@ describe("Editor Module", () => {
 			expect(spawnMock).toHaveBeenCalledWith("vim", ["/tmp/test.md"], {
 				stdio: "inherit",
 				shell: true,
+				env: expect.objectContaining({
+					EDITPROMPT: "1",
+				}),
 			});
 		});
 
@@ -169,6 +172,9 @@ describe("Editor Module", () => {
 			expect(spawnMock).toHaveBeenCalledWith("vim", ["/tmp/test.md"], {
 				stdio: "inherit",
 				shell: true,
+				env: expect.objectContaining({
+					EDITPROMPT: "1",
+				}),
 			});
 			expect(readFileMock).toHaveBeenCalledWith("/tmp/test.md", "utf-8");
 		});
@@ -197,9 +203,8 @@ describe("Editor Module", () => {
 				readFile: readFileMock,
 			}));
 
-			expect(openEditorAndGetContent("vim")).rejects.toThrow(
-				"No content was entered in the editor",
-			);
+			const result = await openEditorAndGetContent("vim");
+			expect(result).toBe("");
 		});
 	});
 });

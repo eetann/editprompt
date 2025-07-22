@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_EDITOR } from "../config/constants";
+import { parseEnvVars } from "../utils/envParser";
 import { createTempFile } from "../utils/tempFile";
 
 export function getEditor(editorOption?: string): string {
@@ -10,11 +11,20 @@ export function getEditor(editorOption?: string): string {
 export async function launchEditor(
 	editor: string,
 	filePath: string,
+	envVars?: Record<string, string>,
 ): Promise<void> {
 	return new Promise((resolve, reject) => {
+		// 環境変数の準備
+		const processEnv = {
+			...process.env,
+			EDITPROMPT: "1", // 常に付与
+			...envVars, // ユーザー指定の環境変数
+		};
+
 		const editorProcess = spawn(editor, [filePath], {
 			stdio: "inherit",
 			shell: true,
+			env: processEnv,
 		});
 
 		editorProcess.on("error", (error) => {
@@ -44,12 +54,14 @@ export async function readFileContent(filePath: string): Promise<string> {
 
 export async function openEditorAndGetContent(
 	editorOption?: string,
+	envVars?: string[],
 ): Promise<string> {
 	const tempFilePath = await createTempFile();
 	const editor = getEditor(editorOption);
+	const parsedEnvVars = parseEnvVars(envVars);
 
 	try {
-		await launchEditor(editor, tempFilePath);
+		await launchEditor(editor, tempFilePath, parsedEnvVars);
 		const content = await readFileContent(tempFilePath);
 
 		return content;

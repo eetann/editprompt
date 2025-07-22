@@ -30,11 +30,17 @@ await cli(
 				description: "Target tmux pane ID to send content to",
 				type: "string",
 			},
+			env: {
+				short: "E",
+				description: "Environment variables to set (e.g., KEY=VALUE)",
+				type: "string",
+				multiple: true,
+			},
 		},
 		async run(ctx) {
 			try {
 				console.log("Opening editor...");
-				const content = await openEditorAndGetContent(ctx.values.editor);
+				const content = await openEditorAndGetContent(ctx.values.editor, ctx.values.env);
 
 				if (!content) {
 					console.log("No content entered. Exiting.");
