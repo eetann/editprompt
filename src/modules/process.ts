@@ -169,7 +169,9 @@ export async function sendToSpecificPane(
 	content: string,
 ): Promise<void> {
 	const tempContent = content.replace(/'/g, "'\\''");
-	await execAsync(`tmux load-buffer -b editprompt - <<< '${tempContent}'`);
+	await execAsync(
+		`printf %s '${tempContent}' | tmux load-buffer -b editprompt -`,
+	);
 	await execAsync(`tmux paste-buffer -d -t '${paneId}' -b editprompt`);
 }
 
