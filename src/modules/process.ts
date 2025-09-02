@@ -183,10 +183,15 @@ export async function sendContentToProcess(
 	process: TargetProcess,
 	content: string,
 	targetPaneId?: string,
+	alwaysCopy?: boolean,
 ): Promise<void> {
 	try {
 		if (targetPaneId) {
 			await sendToSpecificPane(targetPaneId, content);
+			if (alwaysCopy) {
+				await copyToClipboard(content);
+				console.log("Copy!");
+			}
 			return;
 		}
 
@@ -197,6 +202,10 @@ export async function sendContentToProcess(
 				process.tmuxPane,
 				content,
 			);
+			if (alwaysCopy) {
+				await copyToClipboard(content);
+				console.log("Copy!");
+			}
 			return;
 		}
 	} catch (error) {

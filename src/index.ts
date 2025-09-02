@@ -36,6 +36,11 @@ await cli(
 				type: "string",
 				multiple: true,
 			},
+			"always-copy": {
+				description:
+					"Always copy content to clipboard, even if tmux pane is available",
+				type: "boolean",
+			},
 		},
 		async run(ctx) {
 			try {
@@ -51,12 +56,14 @@ await cli(
 				}
 
 				const targetPane = ctx.values["target-pane"];
+				const alwaysCopy = ctx.values["always-copy"];
 				if (targetPane) {
 					console.log("Sending content to specified pane...");
 					await sendContentToProcess(
 						{ pid: 0, name: "direct-pane" },
 						content,
 						targetPane,
+						alwaysCopy,
 					);
 					console.log("Content sent successfully!");
 				} else {
@@ -85,7 +92,12 @@ await cli(
 						console.log(`Selected process: ${processInfo.join(" | ")}`);
 
 						console.log(`Sending content to ${processName} process...`);
-						await sendContentToProcess(selectedProcess, content);
+						await sendContentToProcess(
+							selectedProcess,
+							content,
+							undefined,
+							alwaysCopy,
+						);
 						console.log("Content sent successfully!");
 					}
 				}

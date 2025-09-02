@@ -10,6 +10,7 @@ https://github.com/user-attachments/assets/01bcda7c-7771-4b33-bf5c-629812d45cc4
 - 🔍 **Process Detection**: Automatically detects running CLI processes (configurable)
 - 🖥️ **Tmux Support**: Send prompts directly to tmux sessions
 - 📋 **Clipboard Fallback**: Automatically copies to clipboard if sending fails
+- 📋 **Always Copy Option**: Copy to clipboard even after successful tmux delivery (`--always-copy`)
 - ⚡ **Smart Fallbacks**: Multiple fallback strategies ensure your prompt gets delivered
 
 ## Installation
@@ -45,6 +46,9 @@ editprompt -t %45
 # Set environment variables for the editor
 editprompt --env THEME=dark
 editprompt -E THEME=dark -E LANG=ja_JP.UTF-8
+
+# Always copy to clipboard after sending to tmux pane
+editprompt --always-copy
 
 # Show help
 editprompt --help
