@@ -3,7 +3,11 @@ import { cli } from "gunshi";
 import * as pkg from "../package.json";
 import { DEFAULT_PROCESS_NAME } from "./config/constants";
 import { openEditorAndGetContent } from "./modules/editor";
-import { findTargetProcesses, sendContentToProcess } from "./modules/process";
+import {
+	copyToClipboard,
+	findTargetProcesses,
+	sendContentToProcess,
+} from "./modules/process";
 import { selectProcess } from "./modules/selector";
 
 const argv = process.argv.slice(2);
@@ -59,12 +63,7 @@ await cli(
 				const alwaysCopy = ctx.values["always-copy"];
 				if (targetPane) {
 					console.log("Sending content to specified pane...");
-					await sendContentToProcess(
-						{ pid: 0, name: "direct-pane" },
-						content,
-						targetPane,
-						alwaysCopy,
-					);
+					await sendContentToProcess(targetPane, content, alwaysCopy);
 					console.log("Content sent successfully!");
 				} else {
 					const processName = ctx.values.process || DEFAULT_PROCESS_NAME;
@@ -92,13 +91,17 @@ await cli(
 						console.log(`Selected process: ${processInfo.join(" | ")}`);
 
 						console.log(`Sending content to ${processName} process...`);
-						await sendContentToProcess(
-							selectedProcess,
-							content,
-							undefined,
-							alwaysCopy,
-						);
-						console.log("Content sent successfully!");
+						// Use tmuxPane as pane ID
+						const paneId = selectedProcess.tmuxPane;
+
+						if (paneId) {
+							await sendContentToProcess(paneId, content, alwaysCopy);
+							console.log("Content sent successfully!");
+						} else {
+							// No tmux pane available, fall back to clipboard
+							await copyToClipboard(content);
+							console.log("No tmux pane found. Content copied to clipboard.");
+						}
 					}
 				}
 			} catch (error) {

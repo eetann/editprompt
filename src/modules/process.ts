@@ -152,62 +152,55 @@ export async function findTargetInTmux(
 }
 
 export async function sendToTmuxPane(
-	session: string,
-	window: string,
-	pane: string,
-	content: string,
-): Promise<void> {
-	const target = `${session}:${window}.${pane}`;
-	// Send content and press Enter
-	await execAsync(
-		`tmux send-keys -t '${target}' '${content.replace(/'/g, "'\\''")}'`,
-	);
-}
-
-export async function sendToSpecificPane(
 	paneId: string,
 	content: string,
 ): Promise<void> {
-	const tempContent = content.replace(/'/g, "'\\''");
+	// Send content using send-keys command
 	await execAsync(
-		`printf %s '${tempContent}' | tmux load-buffer -b editprompt -`,
+		`tmux send-keys -t '${paneId}' '${content.replace(/'/g, "'\\''")}'`,
 	);
-	await execAsync(`tmux paste-buffer -d -t '${paneId}' -b editprompt`);
+	console.log(`Content sent to tmux pane: ${paneId}`);
 }
+
+// When sending code blocks to codex using paste-buffer,
+// content gets truncated in the middle. This function is temporarily disabled.
+// Use sendToTmuxPane with send-keys instead for reliable content delivery.
+// export async function sendToSpecificPane(
+// 	paneId: string,
+// 	content: string,
+// ): Promise<void> {
+// 	const tempContent = content.replace(/'/g, "'\\''");
+// 	await execAsync(
+// 		`printf %s '${tempContent}' | tmux load-buffer -b editprompt -`,
+// 	);
+// 	await execAsync(`tmux paste-buffer -d -t '${paneId}' -b editprompt`);
+// }
 
 export async function copyToClipboard(content: string): Promise<void> {
 	await clipboardy.write(content);
 }
 
 export async function sendContentToProcess(
-	process: TargetProcess,
+	targetPaneId: string,
 	content: string,
-	targetPaneId?: string,
 	alwaysCopy?: boolean,
 ): Promise<void> {
-	try {
-		if (targetPaneId) {
-			await sendToSpecificPane(targetPaneId, content);
-			if (alwaysCopy) {
-				await copyToClipboard(content);
-				console.log("Copy!");
-			}
-			return;
-		}
+	// If no pane ID provided, fallback to clipboard
+	if (!targetPaneId) {
+		await copyToClipboard(content);
+		console.log("Copy!");
+		return;
+	}
 
-		if (process.tmuxSession && process.tmuxWindow && process.tmuxPane) {
-			await sendToTmuxPane(
-				process.tmuxSession,
-				process.tmuxWindow,
-				process.tmuxPane,
-				content,
-			);
-			if (alwaysCopy) {
-				await copyToClipboard(content);
-				console.log("Copy!");
-			}
-			return;
+	try {
+		// Send to tmux pane directly using paneId
+		await sendToTmuxPane(targetPaneId, content);
+
+		if (alwaysCopy) {
+			await copyToClipboard(content);
+			console.log("Copy!");
 		}
+		return;
 	} catch (error) {
 		console.log(
 			`Failed to send to process. Content copied to clipboard. Error: ${error instanceof Error ? error.message : "Unknown error"}`,
