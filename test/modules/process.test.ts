@@ -1,13 +1,9 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import {
-	checkTmuxAvailable,
 	copyToClipboard,
 	getProcessCwd,
-	getTmuxPanes,
 	sendContentToProcess,
-	sendToTmuxPane,
 } from "../../src/modules/process";
-import type { TargetProcess } from "../../src/modules/process";
 
 // Mock external dependencies
 mock.module("node:fs/promises", () => ({
@@ -111,7 +107,7 @@ describe("Process Module", () => {
 			// Skipping because tmux mocking is complex and not critical for core functionality
 		});
 
-		test("should fallback to clipboard when no tmux info", async () => {
+		test("should fallback to clipboard when no pane ID", async () => {
 			const writeMock = mock(() => Promise.resolve());
 			mock.module("clipboardy", () => ({
 				default: {
@@ -119,12 +115,8 @@ describe("Process Module", () => {
 				},
 			}));
 
-			const process: TargetProcess = {
-				pid: 1234,
-				name: "claude",
-			};
-
-			await sendContentToProcess(process, "test content");
+			// Pass empty string as pane ID to trigger fallback
+			await sendContentToProcess("", "test content");
 			expect(writeMock).toHaveBeenCalledWith("test content");
 		});
 
@@ -144,15 +136,9 @@ describe("Process Module", () => {
 				},
 			}));
 
-			const process: TargetProcess = {
-				pid: 1234,
-				name: "claude",
-				tmuxSession: "main",
-				tmuxWindow: "0",
-				tmuxPane: "0",
-			};
+			const paneId = "%999";
 
-			await sendContentToProcess(process, "test content");
+			await sendContentToProcess(paneId, "test content");
 			expect(writeMock).toHaveBeenCalledWith("test content");
 		});
 	});
