@@ -8,6 +8,9 @@ import { DEFAULT_PROCESS_NAME } from "../config/constants";
 
 const execAsync = promisify(exec);
 
+export type MuxType = "tmux" | "wezterm";
+export const SUPPORTED_MUXES: MuxType[] = ["tmux", "wezterm"];
+
 export interface TargetProcess {
 	pid: number;
 	name: string;
@@ -162,6 +165,17 @@ export async function sendToTmuxPane(
 	console.log(`Content sent to tmux pane: ${paneId}`);
 }
 
+export async function sendToWeztermPane(
+	paneId: string,
+	content: string,
+): Promise<void> {
+	// Send content using wezterm cli send-text command
+	await execAsync(
+		`wezterm cli send-text --no-paste --pane-id '${paneId}' '${content.replace(/'/g, "'\\''")}'`,
+	);
+	console.log(`Content sent to wezterm pane: ${paneId}`);
+}
+
 // When sending code blocks to codex using paste-buffer,
 // content gets truncated in the middle. This function is temporarily disabled.
 // Use sendToTmuxPane with send-keys instead for reliable content delivery.
@@ -180,9 +194,10 @@ export async function copyToClipboard(content: string): Promise<void> {
 	await clipboardy.write(content);
 }
 
-export async function sendContentToProcess(
+export async function sendContentToPane(
 	targetPaneId: string,
 	content: string,
+	mux: MuxType = "tmux",
 	alwaysCopy?: boolean,
 ): Promise<void> {
 	// If no pane ID provided, fallback to clipboard
@@ -193,8 +208,12 @@ export async function sendContentToProcess(
 	}
 
 	try {
-		// Send to tmux pane directly using paneId
-		await sendToTmuxPane(targetPaneId, content);
+		// Send to appropriate multiplexer pane
+		if (mux === "wezterm") {
+			await sendToWeztermPane(targetPaneId, content);
+		} else {
+			await sendToTmuxPane(targetPaneId, content);
+		}
 
 		if (alwaysCopy) {
 			await copyToClipboard(content);

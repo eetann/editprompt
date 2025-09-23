@@ -6,7 +6,7 @@ import { openEditorAndGetContent } from "./modules/editor";
 import {
 	copyToClipboard,
 	findTargetProcesses,
-	sendContentToProcess,
+	sendContentToPane,
 } from "./modules/process";
 import { selectProcess } from "./modules/selector";
 
@@ -34,6 +34,11 @@ await cli(
 				description: "Target tmux pane ID to send content to",
 				type: "string",
 			},
+			mux: {
+				short: "m",
+				description: "Multiplexer type (tmux or wezterm, default: tmux)",
+				type: "string",
+			},
 			env: {
 				short: "E",
 				description: "Environment variables to set (e.g., KEY=VALUE)",
@@ -48,6 +53,20 @@ await cli(
 		},
 		async run(ctx) {
 			try {
+				// Validate mux option
+				const mux = ctx.values.mux || "tmux";
+				const supportedMuxes = ["tmux", "wezterm"];
+				if (!supportedMuxes.includes(mux)) {
+					console.error(`Error: Invalid mux type '${mux}'. Supported values: ${supportedMuxes.join(", ")}`);
+					process.exit(1);
+				}
+
+				// Check for wezterm-specific requirements
+				if (mux === "wezterm" && !ctx.values["target-pane"]) {
+					console.error("Error: --target-pane is required when using --mux=wezterm");
+					process.exit(1);
+				}
+
 				console.log("Opening editor...");
 				const content = await openEditorAndGetContent(
 					ctx.values.editor,
@@ -63,7 +82,7 @@ await cli(
 				const alwaysCopy = ctx.values["always-copy"];
 				if (targetPane) {
 					console.log("Sending content to specified pane...");
-					await sendContentToProcess(targetPane, content, alwaysCopy);
+					await sendContentToPane(targetPane, content, mux, alwaysCopy);
 					console.log("Content sent successfully!");
 				} else {
 					const processName = ctx.values.process || DEFAULT_PROCESS_NAME;
@@ -95,7 +114,7 @@ await cli(
 						const paneId = selectedProcess.tmuxPane;
 
 						if (paneId) {
-							await sendContentToProcess(paneId, content, alwaysCopy);
+							await sendContentToPane(paneId, content, mux, alwaysCopy);
 							console.log("Content sent successfully!");
 						} else {
 							// No tmux pane available, fall back to clipboard

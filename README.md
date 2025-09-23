@@ -6,9 +6,9 @@ https://github.com/user-attachments/assets/01bcda7c-7771-4b33-bf5c-629812d45cc4
 
 ## Features
 
-- 🖊️ **Editor Integration**: Use your preferred text editor to write prompts  
+- 🖊️ **Editor Integration**: Use your preferred text editor to write prompts
 - 🔍 **Process Detection**: Automatically detects running CLI processes (configurable)
-- 🖥️ **Tmux Support**: Send prompts directly to tmux sessions
+- 🖥️ **Multiplexer Support**: Send prompts directly to tmux or WezTerm sessions
 - 📋 **Clipboard Fallback**: Automatically copies to clipboard if sending fails
 - 📋 **Always Copy Option**: Copy to clipboard even after successful tmux delivery (`--always-copy`)
 - ⚡ **Smart Fallbacks**: Multiple fallback strategies ensure your prompt gets delivered
@@ -42,6 +42,10 @@ editprompt -p gemini
 # Send content to a specific tmux pane
 editprompt --target-pane %45
 editprompt -t %45
+
+# Use WezTerm instead of tmux (requires --target-pane)
+editprompt --mux wezterm --target-pane 0
+editprompt -m wezterm -t 0
 
 # Set environment variables for the editor
 editprompt --env THEME=dark
@@ -94,6 +98,35 @@ bind -n M-q split-window -v -l 10 \
 bind -n M-q display-popup -E \
   -d '#{pane_current_path}' \
   'editprompt --editor nvim'
+```
+
+### Wezterm Integration
+```lua
+{
+    key = "q",
+    mods = "OPT",
+    action = wezterm.action_callback(function(window, pane)
+        local target_pane_id = tostring(pane:pane_id())
+        window:perform_action(
+            act.SplitPane({
+                direction = "Down",
+                size = { Cells = 10 },
+            }),
+            pane
+        )
+        wezterm.time.call_after(1, function()
+            window:perform_action(
+                act.SendString(
+                    string.format(
+                        "editprompt --editor nvim -m wezterm --target-pane %s\n",
+                        target_pane_id
+                    )
+                ),
+                window:active_pane()
+            )
+        end)
+    end),
+},
 ```
 
 ### How it Works
