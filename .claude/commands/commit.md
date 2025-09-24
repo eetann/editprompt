@@ -29,13 +29,9 @@ This command creates git commits following the Conventional Commits specificatio
 ```
 <type>: <description>
 
-Ask: [Content requested by user]
-
-Response: [Details of work actually performed]
+[Details of work actually performed]
 
 Comment: [optional thoughts or supplementary information about the work]
-
-[optional footer]
 ```
 ※ Scope is not required for this project
 
@@ -43,14 +39,11 @@ Please write the description in English.
 
 For breaking changes, add "!" after the type or include `BREAKING CHANGE:` in the footer.
 
-Do not add Claude co-author footer to commits.
+ **Do not add Claude co-author footer to commits.** 
 
 ```commit
 feat: add phone call cancel button
 
-Ask: I want to add a cancel button to the phone feature
-
-Response:
-Implemented cancel button in ../../packages/mobile/app/call.tsx.
+Implemented cancel button in `packages/mobile/app/call.tsx`.
 Also adjusted margins accordingly
 ```
