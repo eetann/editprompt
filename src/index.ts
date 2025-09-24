@@ -31,7 +31,7 @@ await cli(
 			},
 			"target-pane": {
 				short: "t",
-				description: "Target tmux pane ID to send content to",
+				description: "Target pane ID to send content to",
 				type: "string",
 			},
 			mux: {
@@ -57,13 +57,17 @@ await cli(
 				const mux = ctx.values.mux || "tmux";
 				const supportedMuxes = ["tmux", "wezterm"];
 				if (!supportedMuxes.includes(mux)) {
-					console.error(`Error: Invalid mux type '${mux}'. Supported values: ${supportedMuxes.join(", ")}`);
+					console.error(
+						`Error: Invalid mux type '${mux}'. Supported values: ${supportedMuxes.join(", ")}`,
+					);
 					process.exit(1);
 				}
 
 				// Check for wezterm-specific requirements
 				if (mux === "wezterm" && !ctx.values["target-pane"]) {
-					console.error("Error: --target-pane is required when using --mux=wezterm");
+					console.error(
+						"Error: --target-pane is required when using --mux=wezterm",
+					);
 					process.exit(1);
 				}
 

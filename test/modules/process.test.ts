@@ -3,7 +3,6 @@ import {
 	copyToClipboard,
 	getProcessCwd,
 	sendContentToPane,
-	type MuxType,
 } from "../../src/modules/process";
 
 // Mock external dependencies
@@ -179,7 +178,9 @@ describe("Process Module", () => {
 			}));
 
 			// Re-import to use mocked modules
-			const { sendContentToPane: mockedSendContentToPane } = await import("../../src/modules/process");
+			const { sendContentToPane: mockedSendContentToPane } = await import(
+				"../../src/modules/process"
+			);
 
 			const paneId = "0";
 

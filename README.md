@@ -1,19 +1,27 @@
-# editprompt
+# 📝 editprompt
 
-A CLI tool that lets you write prompts for CLI tools using your favorite text editor. Originally designed for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview), but works with any CLI process.
+A CLI tool that lets you write prompts for CLI tools using your favorite text editor. Works seamlessly with Claude Code, Codex CLI, Gemini CLI, and any other CLI process.
 
 https://github.com/user-attachments/assets/01bcda7c-7771-4b33-bf5c-629812d45cc4
 
-## Features
+
+## 🏆 Why editprompt?
+
+- **🎯 Your Editor, Your Way**: Write prompts in your favorite editor with full syntax highlighting, plugins, and customizations
+- **🚫 No Accidental Sends**: Never accidentally hit Enter and send an incomplete prompt again
+- **📋 Persistent Clipboard**: Use `--always-copy` to keep prompts in clipboard for easy reuse and iteration
+
+
+## ✨ Features
 
 - 🖊️ **Editor Integration**: Use your preferred text editor to write prompts
-- 🔍 **Process Detection**: Automatically detects running CLI processes (configurable)
 - 🖥️ **Multiplexer Support**: Send prompts directly to tmux or WezTerm sessions
+- 🖥️ **Universal Terminal Support**: Works with any terminal via clipboard - no multiplexer required
 - 📋 **Clipboard Fallback**: Automatically copies to clipboard if sending fails
 - 📋 **Always Copy Option**: Copy to clipboard even after successful tmux delivery (`--always-copy`)
-- ⚡ **Smart Fallbacks**: Multiple fallback strategies ensure your prompt gets delivered
 
-## Installation
+
+## 📦 Installation
 
 ```bash
 # Install globally via npm
@@ -23,50 +31,14 @@ npm install -g editprompt
 npx editprompt
 ```
 
-## Usage
+## 🚀 Usage
 
-### Basic Usage
+1. Run `editprompt` to open a temporary Markdown file in your editor
+2. Write your prompt and save the file
+3. Your prompt is automatically sent to the target pane or copied to clipboard if no pane is found
 
-```bash
-# Use with your default editor (from $EDITOR)
-editprompt
 
-# Specify a different editor
-editprompt --editor nvim
-editprompt -e nvim
-
-# Target a different process (default: claude)
-editprompt --process gemini
-editprompt -p gemini
-
-# Send content to a specific tmux pane
-editprompt --target-pane %45
-editprompt -t %45
-
-# Use WezTerm instead of tmux (requires --target-pane)
-editprompt --mux wezterm --target-pane 0
-editprompt -m wezterm -t 0
-
-# Set environment variables for the editor
-editprompt --env THEME=dark
-editprompt -E THEME=dark -E LANG=ja_JP.UTF-8
-
-# Always copy to clipboard after sending to tmux pane
-editprompt --always-copy
-
-# Show help
-editprompt --help
-
-# Show version
-editprompt --version
-```
-
-### Tmux Integration
-
-editprompt offers two modes for tmux integration:
-
-#### Recommended: Direct Pane Targeting
-Use `--target-pane #{pane_id}` to automatically send content back to the pane where you triggered the command. This is useful when using Claude Code, etc. in multiple panes.
+### 🖥️ Tmux Integration
 
 **Split window version:**
 ```tmux
@@ -83,24 +55,8 @@ bind -n M-q run-shell 'tmux display-popup -E \
   "editprompt --editor nvim --target-pane #{pane_id}"'
 ```
 
-#### Alternative: Process Auto-detection
-Let editprompt automatically detect and select target processes:
 
-**Split window version:**
-```tmux
-bind -n M-q split-window -v -l 10 \
-  -c '#{pane_current_path}' \
-  'editprompt --editor nvim'
-```
-
-**Popup version:**
-```tmux
-bind -n M-q display-popup -E \
-  -d '#{pane_current_path}' \
-  'editprompt --editor nvim'
-```
-
-### Wezterm Integration
+### 🖼️ WezTerm Integration
 ```lua
 {
     key = "q",
@@ -118,7 +74,7 @@ bind -n M-q display-popup -E \
             window:perform_action(
                 act.SendString(
                     string.format(
-                        "editprompt --editor nvim -m wezterm --target-pane %s\n",
+                        "editprompt --editor nvim --mux wezterm --target-pane %s\n",
                         target_pane_id
                     )
                 ),
@@ -129,21 +85,39 @@ bind -n M-q display-popup -E \
 },
 ```
 
-### How it Works
+### 💡 Basic Usage
 
-1. **Opens your editor** with a temporary markdown file
-2. **Write your prompt** and save/exit the editor  
-3. **Sends the prompt** using one of two modes:
-   - 🎯 **Direct pane mode** (`--target-pane`): Sends directly to specified tmux pane
-   - 🔍 **Process detection mode**: Finds target processes and sends via tmux or clipboard
-4. **Fallback strategy** ensures delivery:
-   - Tmux integration (preferred)
-   - Clipboard copy (fallback)
+```bash
+# Use with your default editor (from $EDITOR)
+editprompt
+
+# Specify a different editor
+editprompt --editor nvim
+editprompt -e nvim
+
+# Send content to a specific tmux pane
+editprompt --target-pane %45
+editprompt -t %45
+
+# Use WezTerm instead of tmux (requires --target-pane)
+editprompt --mux wezterm --target-pane 0
+editprompt -m wezterm -t 0
+
+# Always copy to clipboard after sending to tmux pane
+editprompt --always-copy
+
+# Show help
+editprompt --help
+
+# Show version
+editprompt --version
+```
 
 
-## Configuration
 
-### Editor Selection
+## ⚙️ Configuration
+
+### 📝 Editor Selection
 
 editprompt respects the following editor priority:
 
@@ -151,15 +125,15 @@ editprompt respects the following editor priority:
 2. `$EDITOR` environment variable  
 3. Default: `nvim`
 
-### Environment Variables
+### 🌍 Environment Variables
 
 - `EDITOR`: Your preferred text editor
 
-### Editor Integration with EDITPROMPT
+### 🔧 Editor Integration with EDITPROMPT
 
 editprompt automatically sets `EDITPROMPT=1` when launching your editor. This allows you to detect when your editor is launched by editprompt and enable specific configurations or plugins.
 
-#### Example: Neovim Configuration
+#### 🔍 Example: Neovim Configuration
 
 ```lua
 -- In your Neovim config (e.g., init.lua)
@@ -170,7 +144,7 @@ if vim.env.EDITPROMPT then
 end
 ```
 
-#### Setting Custom Environment Variables
+#### 🛠️ Setting Custom Environment Variables
 
 You can also pass custom environment variables to your editor:
 
@@ -187,7 +161,7 @@ editprompt --env NVIM_CONFIG=minimal
 
 ---
 
-## Development
+## 🔧 Development
 
 ```bash
 # Clone the repository
@@ -207,7 +181,7 @@ bun test
 bun run dev
 ```
 
-### Project Structure
+### 📁 Project Structure
 
 ```
 src/
@@ -222,16 +196,9 @@ src/
 └── index.ts                  # CLI entry point
 ```
 
-## Technical Details
+## 🔍 Technical Details
 
-### Tmux Integration
-
-editprompt supports two tmux integration modes:
-
-- **Direct pane targeting** (`--target-pane`): Bypasses process detection and sends content directly to specified pane ID
-- **Process-based targeting**: Detects target processes and links them to tmux panes for delivery
-
-### Fallback Strategy
+### 🔄 Fallback Strategy
 
 editprompt implements a robust fallback strategy:
 
