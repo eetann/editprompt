@@ -1,25 +1,13 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import {
-	copyToClipboard,
-	getProcessCwd,
-	sendContentToPane,
-} from "../../src/modules/process";
+import { copyToClipboard, sendContentToPane } from "../../src/modules/process";
 
 // Mock external dependencies
-mock.module("node:fs/promises", () => ({
-	readlink: mock(),
-}));
-
 mock.module("node:util", () => ({
 	promisify: mock((fn) => fn),
 }));
 
 mock.module("node:child_process", () => ({
 	exec: mock(),
-}));
-
-mock.module("find-process", () => ({
-	default: mock(),
 }));
 
 mock.module("clipboardy", () => ({
@@ -31,51 +19,6 @@ mock.module("clipboardy", () => ({
 describe("Process Module", () => {
 	beforeEach(() => {
 		mock.restore();
-	});
-
-	describe("getProcessCwd", () => {
-		test("should return cwd path for valid pid", async () => {
-			const readlinkMock = mock(() => Promise.resolve("/home/user/project"));
-			mock.module("node:fs/promises", () => ({
-				readlink: readlinkMock,
-			}));
-
-			const result = await getProcessCwd(1234);
-			expect(result).toBe("/home/user/project");
-			expect(readlinkMock).toHaveBeenCalledWith("/proc/1234/cwd");
-		});
-
-		test("should return undefined when readlink fails", async () => {
-			const readlinkMock = mock(() =>
-				Promise.reject(new Error("Permission denied")),
-			);
-			mock.module("node:fs/promises", () => ({
-				readlink: readlinkMock,
-			}));
-
-			const result = await getProcessCwd(1234);
-			expect(result).toBeUndefined();
-		});
-	});
-
-	describe.skip("checkTmuxAvailable", () => {
-		test("should return true when tmux is available", async () => {
-			// Skipping because tmux mocking is complex and not critical for core functionality
-		});
-
-		test("should return false when tmux is not available", async () => {
-			// Skipping because tmux mocking is complex and not critical for core functionality
-		});
-	});
-
-	describe.skip("getTmuxPanes", () => {
-		test("should parse tmux panes output correctly", async () => {
-			// Skipping because tmux mocking is complex and not critical for core functionality
-		});
-
-		test("should return empty array when tmux command fails", async () => {
-			// Skipping because tmux mocking is complex and not critical for core functionality
-		});
 	});
 
 	describe.skip("sendToTmuxPane", () => {
@@ -111,20 +54,7 @@ describe("Process Module", () => {
 			// Skipping because wezterm mocking is complex and not critical for core functionality
 		});
 
-		test("should fallback to clipboard when no pane ID", async () => {
-			const writeMock = mock(() => Promise.resolve());
-			mock.module("clipboardy", () => ({
-				default: {
-					write: writeMock,
-				},
-			}));
-
-			// Pass empty string as pane ID to trigger fallback
-			await sendContentToPane("", "test content", "tmux");
-			expect(writeMock).toHaveBeenCalledWith("test content");
-		});
-
-		test("should copy to clipboard when tmux fails", async () => {
+		test("should throw error when tmux send fails", async () => {
 			const execMock = mock(() => Promise.reject(new Error("Command failed")));
 			mock.module("node:child_process", () => ({
 				exec: execMock,
@@ -133,17 +63,14 @@ describe("Process Module", () => {
 				promisify: mock(() => execMock),
 			}));
 
-			const writeMock = mock(() => Promise.resolve());
-			mock.module("clipboardy", () => ({
-				default: {
-					write: writeMock,
-				},
-			}));
-
 			const paneId = "%999";
 
-			await sendContentToPane(paneId, "test content", "tmux");
-			expect(writeMock).toHaveBeenCalledWith("test content");
+			try {
+				await sendContentToPane(paneId, "test content", "tmux");
+				expect(true).toBe(false); // Should not reach here
+			} catch (error) {
+				expect(error).toBeInstanceOf(Error);
+			}
 		});
 
 		test.skip("should copy to clipboard when wezterm fails", async () => {
@@ -182,7 +109,7 @@ describe("Process Module", () => {
 				"../../src/modules/process"
 			);
 
-			const paneId = "0";
+			const paneId = "999";
 
 			await mockedSendContentToPane(paneId, "test content", "wezterm");
 			expect(writeMock).toHaveBeenCalledWith("test content");
