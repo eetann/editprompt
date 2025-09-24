@@ -9,6 +9,10 @@ import { DEFAULT_PROCESS_NAME } from "../config/constants";
 const execAsync = promisify(exec);
 
 export type MuxType = "tmux" | "wezterm";
+
+export function isMuxType(value: unknown): value is MuxType {
+	return value === "tmux" || value === "wezterm";
+}
 export const SUPPORTED_MUXES: MuxType[] = ["tmux", "wezterm"];
 
 export interface TargetProcess {

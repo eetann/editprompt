@@ -166,7 +166,7 @@ describe("Process Module", () => {
 			}));
 
 			mock.module("node:util", () => ({
-				promisify: mock(() => (cmd) => {
+				promisify: mock(() => (cmd: string) => {
 					return new Promise((resolve, reject) => {
 						if (cmd.includes("wezterm")) {
 							reject(new Error("Command failed"));

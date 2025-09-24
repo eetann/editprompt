@@ -4,8 +4,10 @@ import * as pkg from "../package.json";
 import { DEFAULT_PROCESS_NAME } from "./config/constants";
 import { openEditorAndGetContent } from "./modules/editor";
 import {
+	type MuxType,
 	copyToClipboard,
 	findTargetProcesses,
+	isMuxType,
 	sendContentToPane,
 } from "./modules/process";
 import { selectProcess } from "./modules/selector";
@@ -54,14 +56,14 @@ await cli(
 		async run(ctx) {
 			try {
 				// Validate mux option
-				const mux = ctx.values.mux || "tmux";
-				const supportedMuxes = ["tmux", "wezterm"];
-				if (!supportedMuxes.includes(mux)) {
+				const muxValue = ctx.values.mux || "tmux";
+				if (!isMuxType(muxValue)) {
 					console.error(
-						`Error: Invalid mux type '${mux}'. Supported values: ${supportedMuxes.join(", ")}`,
+						`Error: Invalid mux type '${muxValue}'. Supported values: tmux, wezterm`,
 					);
 					process.exit(1);
 				}
+				const mux: MuxType = muxValue;
 
 				// Check for wezterm-specific requirements
 				if (mux === "wezterm" && !ctx.values["target-pane"]) {
