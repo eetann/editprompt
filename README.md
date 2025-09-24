@@ -9,7 +9,8 @@ https://github.com/user-attachments/assets/01bcda7c-7771-4b33-bf5c-629812d45cc4
 
 - **🎯 Your Editor, Your Way**: Write prompts in your favorite editor with full syntax highlighting, plugins, and customizations
 - **🚫 No Accidental Sends**: Never accidentally hit Enter and send an incomplete prompt again
-- **📋 Persistent Clipboard**: Use `--always-copy` to keep prompts in clipboard for easy reuse and iteration
+- 🔄 **Reusable Prompts**: Save and iterate on prompts with `--always-copy`
+- 📝 **Multi-line Commands**: Complex SQL queries, JSON payloads
 
 
 ## ✨ Features
@@ -37,14 +38,27 @@ npx editprompt
 2. Write your prompt and save the file
 3. Your prompt is automatically sent to the target pane or copied to clipboard if no pane is found
 
+editprompt works with **any terminal** - no special setup required!
+
+```sh
+# Just run it - content will be copied to clipboard
+editprompt
+# Then paste (Ctrl+V / Cmd+V) into any CLI tool:
+# - Claude Code
+# - Codex
+# - Any REPL or interactive prompt
+```
+
+Optional integrations (Tmux/Wezterm) provide seamless auto-send.
+
 
 ### 🖥️ Tmux Integration
 
 **Split window version:**
 ```tmux
 bind -n M-q run-shell 'tmux split-window -v -l 20 \
-  -c "#{pane_current_path}" \
-  "editprompt --editor nvim --target-pane #{pane_id}"'
+-c "#{pane_current_path}" \
+"editprompt --editor nvim --always-copy --target-pane #{pane_id}"'
 ```
 
 **Popup version:**
@@ -52,7 +66,7 @@ bind -n M-q run-shell 'tmux split-window -v -l 20 \
 bind -n M-q run-shell 'tmux display-popup -E \
   -d "#{pane_current_path}" \
   -w 80% -h 65% \
-  "editprompt --editor nvim --target-pane #{pane_id}"'
+  "editprompt --editor nvim --always-copy --target-pane #{pane_id}"'
 ```
 
 
@@ -74,7 +88,7 @@ bind -n M-q run-shell 'tmux display-popup -E \
             window:perform_action(
                 act.SendString(
                     string.format(
-                        "editprompt --editor nvim --mux wezterm --target-pane %s\n",
+                        "editprompt --editor nvim --always-copy --mux wezterm --target-pane %s\n",
                         target_pane_id
                     )
                 ),
@@ -95,22 +109,11 @@ editprompt
 editprompt --editor nvim
 editprompt -e nvim
 
-# Send content to a specific tmux pane
-editprompt --target-pane %45
-editprompt -t %45
-
-# Use WezTerm instead of tmux (requires --target-pane)
-editprompt --mux wezterm --target-pane 0
-editprompt -m wezterm -t 0
-
-# Always copy to clipboard after sending to tmux pane
+# Always copy to clipboard
 editprompt --always-copy
 
 # Show help
 editprompt --help
-
-# Show version
-editprompt --version
 ```
 
 
