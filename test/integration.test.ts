@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
+mock.module("clipboardy", () => ({
+	default: {
+		write: mock(),
+	},
+}));
+
 describe("Integration Tests", () => {
 	beforeEach(() => {
 		mock.restore();
