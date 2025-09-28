@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { TEMP_FILE_EXTENSION, TEMP_FILE_PREFIX } from "../config/constants";
@@ -15,7 +15,8 @@ function getFormattedDateTime(): string {
 }
 
 export async function createTempFile(): Promise<string> {
-	const tempDir = await mkdtemp(join(tmpdir(), "editprompt-"));
+	const tempDir = join(tmpdir(), "editprompt-prompts");
+	await mkdir(tempDir, { recursive: true });
 	const fileName = `${TEMP_FILE_PREFIX}${getFormattedDateTime()}${TEMP_FILE_EXTENSION}`;
 	const filePath = join(tempDir, fileName);
 	await writeFile(filePath, "", "utf-8");
