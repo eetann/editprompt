@@ -15,6 +15,10 @@ export async function sendToTmuxPane(
 	paneId: string,
 	content: string,
 ): Promise<void> {
+	// Exit copy mode if the pane is in copy mode
+	await execAsync(
+		`tmux if-shell -t '${paneId}' '[ "#{pane_in_mode}" = "1" ]' "copy-mode -q -t '${paneId}'"`,
+	);
 	// Send content using send-keys command
 	await execAsync(
 		`tmux send-keys -t '${paneId}' '${content.replace(/'/g, "'\\''")}'`,
