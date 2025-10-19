@@ -37,7 +37,7 @@ describe("readSendConfig", () => {
 
   test("正常系 - EDITPROMPT_MUXが未設定の場合デフォルト値tmux", () => {
     process.env.EDITPROMPT_TARGET_PANE = "%0";
-    delete process.env.EDITPROMPT_MUX;
+    process.env.EDITPROMPT_MUX = undefined;
     process.env.EDITPROMPT_ALWAYS_COPY = "0";
 
     const config = readSendConfig();

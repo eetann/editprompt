@@ -43,7 +43,7 @@ describe("Integration Tests", () => {
 
       // sendContentToPane should throw when given invalid pane
       await expect(
-        sendContentToPane("%invalid", "test", "tmux"),
+        sendContentToPane("test", "tmux", "%invalid"),
       ).rejects.toThrow();
 
       const tempFile = await createTempFile();

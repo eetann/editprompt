@@ -66,7 +66,7 @@ describe("Process Module", () => {
       const paneId = "%999";
 
       try {
-        await sendContentToPane(paneId, "test content", "tmux");
+        await sendContentToPane("test content", "tmux", paneId);
         expect(true).toBe(false); // Should not reach here
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
@@ -111,7 +111,7 @@ describe("Process Module", () => {
 
       const paneId = "999";
 
-      await mockedSendContentToPane(paneId, "test content", "wezterm");
+      await mockedSendContentToPane("test content", "wezterm", paneId);
       expect(writeMock).toHaveBeenCalledWith("test content");
     });
   });

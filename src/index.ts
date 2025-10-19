@@ -1,16 +1,9 @@
 #!/usr/bin/env node
 import { cli } from "gunshi";
 import * as pkg from "../package.json";
-import { openEditorAndGetContent } from "./modules/editor";
-import {
-  type MuxType,
-  copyToClipboard,
-  isMuxType,
-  sendContentToPane,
-} from "./modules/process";
-import type { SendConfig } from "./types/send";
-import { processContent } from "./utils/contentProcessor";
-import { readSendConfig } from "./utils/sendConfig";
+import { runOpenEditorMode } from "./modes/openEditor";
+import { runSendOnlyMode } from "./modes/sendOnly";
+import { type MuxType, isMuxType } from "./modules/process";
 
 const argv = process.argv.slice(2);
 
@@ -61,42 +54,7 @@ await cli(
 
         if (rawContent !== undefined) {
           // Send-only mode
-          const content = processContent(rawContent);
-
-          if (!content) {
-            console.log("No content to send. Exiting.");
-            return;
-          }
-
-          const config = readSendConfig();
-
-          if (!config.targetPane) {
-            console.error(
-              "Error: EDITPROMPT_TARGET_PANE environment variable is required in send-only mode",
-            );
-            process.exit(1);
-          }
-
-          try {
-            await sendContentToPane(
-              config.targetPane,
-              content,
-              config.mux,
-              config.alwaysCopy,
-            );
-            console.log("Content sent successfully!");
-          } catch (error) {
-            console.log(
-              `Failed to send to pane: ${error instanceof Error ? error.message : "Unknown error"}`,
-            );
-            console.log("Falling back to clipboard...");
-            await copyToClipboard(content);
-            console.log("Content copied to clipboard.");
-          }
-
-          // Output content to stdout
-          console.log("---");
-          console.log(content);
+          await runSendOnlyMode(rawContent);
           return;
         }
 
@@ -129,55 +87,13 @@ await cli(
           );
         }
 
-        // Create SendConfig to pass to editor
-        const sendConfig: SendConfig = {
-          targetPane: ctx.values["target-pane"],
+        await runOpenEditorMode({
           mux,
+          targetPane: ctx.values["target-pane"],
           alwaysCopy: ctx.values["always-copy"] || false,
-        };
-
-        console.log("Opening editor...");
-        const content = await openEditorAndGetContent(
-          ctx.values.editor,
-          ctx.values.env,
-          sendConfig,
-        );
-
-        if (!content) {
-          console.log("No content entered. Exiting.");
-          return;
-        }
-
-        const targetPane = ctx.values["target-pane"];
-        const alwaysCopy = ctx.values["always-copy"];
-
-        if (targetPane) {
-          try {
-            console.log("Sending content to specified pane...");
-            await sendContentToPane(targetPane, content, mux, alwaysCopy);
-            console.log("Content sent successfully!");
-          } catch (error) {
-            console.log(
-              `Failed to send to pane: ${error instanceof Error ? error.message : "Unknown error"}`,
-            );
-            console.log("Falling back to clipboard...");
-            await copyToClipboard(content);
-            console.log("Content copied to clipboard.");
-          }
-        } else {
-          try {
-            await copyToClipboard(content);
-            console.log("Content copied to clipboard.");
-          } catch (error) {
-            console.log(
-              `Failed to copy to clipboard: ${error instanceof Error ? error.message : "Unknown error"}`,
-            );
-          }
-        }
-
-        // Output content to stdout
-        console.log("---");
-        console.log(content);
+          editor: ctx.values.editor,
+          env: ctx.values.env,
+        });
       } catch (error) {
         console.error(
           `Error: ${error instanceof Error ? error.message : "Unknown error"}`,

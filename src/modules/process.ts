@@ -60,9 +60,9 @@ export async function copyToClipboard(content: string): Promise<void> {
 }
 
 export async function sendContentToPane(
-  targetPaneId: string,
   content: string,
-  mux: MuxType = "tmux",
+  mux: MuxType,
+  targetPaneId: string,
   alwaysCopy?: boolean,
 ): Promise<void> {
   try {
