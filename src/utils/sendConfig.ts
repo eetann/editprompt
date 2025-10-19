@@ -7,7 +7,6 @@ export function readSendConfig(): SendConfig {
 	const targetPane = process.env.EDITPROMPT_TARGET_PANE;
 	const muxValue = process.env.EDITPROMPT_MUX || "tmux";
 
-	// MuxTypeのバリデーション
 	if (!VALID_MUX_TYPES.includes(muxValue as MuxType)) {
 		throw new Error(
 			`Invalid EDITPROMPT_MUX value: ${muxValue}. Must be one of: ${VALID_MUX_TYPES.join(", ")}`,
