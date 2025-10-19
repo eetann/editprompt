@@ -22,7 +22,7 @@ export async function sendToTmuxPane(
 
 	// Send content using send-keys command
 	await execAsync(
-		`tmux send-keys -t '${paneId}' '${content.replace(/'/g, "'\\''")}'`,
+		`tmux send-keys -t '${paneId}' -- '${content.replace(/'/g, "'\\''")}'`,
 	);
 	console.log(`Content sent to tmux pane: ${paneId}`);
 
@@ -36,7 +36,7 @@ export async function sendToWeztermPane(
 ): Promise<void> {
 	// Send content using wezterm cli send-text command
 	await execAsync(
-		`wezterm cli send-text --no-paste --pane-id '${paneId}' '${content.replace(/'/g, "'\\''")}'`,
+		`wezterm cli send-text --no-paste --pane-id '${paneId}' -- '${content.replace(/'/g, "'\\''")}'`,
 	);
 	console.log(`Content sent to wezterm pane: ${paneId}`);
 }
