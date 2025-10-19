@@ -30,12 +30,10 @@ This command creates git commits following the Conventional Commits specificatio
 <type>: <description>
 
 [Details of work actually performed]
-
-Comment: [optional thoughts or supplementary information about the work]
 ```
 ※ Scope is not required for this project
 
-Please write the description in English.
+Please write the description **in English**.
 
 For breaking changes, add "!" after the type or include `BREAKING CHANGE:` in the footer.
 
