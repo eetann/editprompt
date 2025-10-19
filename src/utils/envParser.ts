@@ -4,23 +4,23 @@
  * @returns An object of environment variable key-value pairs.
  */
 export function parseEnvVars(envStrings?: string[]): Record<string, string> {
-	if (!envStrings || envStrings.length === 0) {
-		return {};
-	}
+  if (!envStrings || envStrings.length === 0) {
+    return {};
+  }
 
-	const result: Record<string, string> = {};
+  const result: Record<string, string> = {};
 
-	for (const envString of envStrings) {
-		const [key, ...valueParts] = envString.split("=");
+  for (const envString of envStrings) {
+    const [key, ...valueParts] = envString.split("=");
 
-		if (!key || valueParts.length === 0) {
-			throw new Error(`Invalid environment variable format: ${envString}`);
-		}
+    if (!key || valueParts.length === 0) {
+      throw new Error(`Invalid environment variable format: ${envString}`);
+    }
 
-		// Handle cases where the value includes an equals sign.
-		const value = valueParts.join("=");
-		result[key] = value;
-	}
+    // Handle cases where the value includes an equals sign.
+    const value = valueParts.join("=");
+    result[key] = value;
+  }
 
-	return result;
+  return result;
 }
