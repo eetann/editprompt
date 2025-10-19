@@ -117,7 +117,7 @@ describe("Editor Module", () => {
 
 	describe("readFileContent", () => {
 		test("should read and trim file content", async () => {
-			const readFileMock = mock(() => Promise.resolve("  Hello World  \n"));
+			const readFileMock = mock(() => Promise.resolve("Hello World\n"));
 			mock.module("node:fs/promises", () => ({
 				readFile: readFileMock,
 			}));
@@ -138,6 +138,40 @@ describe("Editor Module", () => {
 			expect(readFileContent("/tmp/nonexistent.md")).rejects.toThrow(
 				"Failed to read file: File not found",
 			);
+		});
+
+		test("should add space when content ends with @-prefixed string", async () => {
+			const readFileMock = mock(() => Promise.resolve("foo\n@path/to/file\n"));
+			mock.module("node:fs/promises", () => ({
+				readFile: readFileMock,
+			}));
+
+			const result = await readFileContent("/tmp/test.md");
+			expect(result).toBe("foo\n@path/to/file ");
+		});
+
+		test("should add space when line ends with @-prefixed string in middle", async () => {
+			const readFileMock = mock(() =>
+				Promise.resolve("foo\nbar @path/to/file\n"),
+			);
+			mock.module("node:fs/promises", () => ({
+				readFile: readFileMock,
+			}));
+
+			const result = await readFileContent("/tmp/test.md");
+			expect(result).toBe("foo\nbar @path/to/file ");
+		});
+
+		test("should not add space when @ appears in middle lines but not at the end", async () => {
+			const readFileMock = mock(() =>
+				Promise.resolve("foo @path/to/file\nbar\n"),
+			);
+			mock.module("node:fs/promises", () => ({
+				readFile: readFileMock,
+			}));
+
+			const result = await readFileContent("/tmp/test.md");
+			expect(result).toBe("foo @path/to/file\nbar");
 		});
 	});
 
