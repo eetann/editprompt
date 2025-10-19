@@ -44,7 +44,7 @@ export async function launchEditor(
 export async function readFileContent(filePath: string): Promise<string> {
 	try {
 		const content = await readFile(filePath, "utf-8");
-		return content.trim();
+		return content.replace(/\n$/, "");
 	} catch (error) {
 		throw new Error(
 			`Failed to read file: ${error instanceof Error ? error.message : "Unknown error"}`,
