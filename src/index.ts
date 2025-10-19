@@ -8,6 +8,9 @@ import {
 	isMuxType,
 	sendContentToPane,
 } from "./modules/process";
+import type { SendConfig } from "./types/send";
+import { processContent } from "./utils/contentProcessor";
+import { readSendConfig } from "./utils/sendConfig";
 
 const argv = process.argv.slice(2);
 
@@ -53,6 +56,51 @@ await cli(
 		},
 		async run(ctx) {
 			try {
+				// Check if positional argument exists (send-only mode)
+				const rawContent = ctx.positionals[0];
+
+				if (rawContent !== undefined) {
+					// Send-only mode
+					const content = processContent(rawContent);
+
+					if (!content) {
+						console.log("No content to send. Exiting.");
+						return;
+					}
+
+					const config = readSendConfig();
+
+					if (!config.targetPane) {
+						console.error(
+							"Error: EDITPROMPT_TARGET_PANE environment variable is required in send-only mode",
+						);
+						process.exit(1);
+					}
+
+					try {
+						await sendContentToPane(
+							config.targetPane,
+							content,
+							config.mux,
+							config.alwaysCopy,
+						);
+						console.log("Content sent successfully!");
+					} catch (error) {
+						console.log(
+							`Failed to send to pane: ${error instanceof Error ? error.message : "Unknown error"}`,
+						);
+						console.log("Falling back to clipboard...");
+						await copyToClipboard(content);
+						console.log("Content copied to clipboard.");
+					}
+
+					// Output content to stdout
+					console.log("---");
+					console.log(content);
+					return;
+				}
+
+				// Editor mode
 				// Validate mux option
 				const muxValue = ctx.values.mux || "tmux";
 				if (!isMuxType(muxValue)) {
@@ -71,7 +119,7 @@ await cli(
 					process.exit(1);
 				}
 
-				// processオプションの非推奨警告
+				// Deprecation warning for process option
 				if (ctx.values.process) {
 					console.warn(
 						"Warning: --process option is deprecated and will be removed in future versions.",
@@ -81,10 +129,18 @@ await cli(
 					);
 				}
 
+				// Create SendConfig to pass to editor
+				const sendConfig: SendConfig = {
+					targetPane: ctx.values["target-pane"],
+					mux,
+					alwaysCopy: ctx.values["always-copy"] || false,
+				};
+
 				console.log("Opening editor...");
 				const content = await openEditorAndGetContent(
 					ctx.values.editor,
 					ctx.values.env,
+					sendConfig,
 				);
 
 				if (!content) {
@@ -119,7 +175,7 @@ await cli(
 					}
 				}
 
-				// 全ての場合で内容を標準出力
+				// Output content to stdout
 				console.log("---");
 				console.log(content);
 			} catch (error) {
