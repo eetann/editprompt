@@ -34,22 +34,17 @@ npx editprompt
 
 ## 🚀 Usage
 
-1. Run `editprompt` to open a temporary Markdown file in your editor
-2. Write your prompt and save the file
-3. Your prompt is automatically sent to the target pane or copied to clipboard if no pane is found
-
-editprompt works with **any terminal** - no special setup required!
+- Run `editprompt` to open a temporary Markdown file in your editor
+- Write your prompt comfortably with full editor features
+- Save and close - it automatically:
+  - Sends to tmux/wezterm panes if detected
+  - Falls back to clipboard otherwise (works with **any terminal**)
 
 ```sh
-# Just run it - content will be copied to clipboard
 editprompt
-# Then paste (Ctrl+V / Cmd+V) into any CLI tool:
-# - Claude Code
-# - Codex
-# - Any REPL or interactive prompt
 ```
 
-Optional integrations (Tmux/Wezterm) provide seamless auto-send.
+**Advanced usage:** You can also send content **without closing the editor** for faster iteration. See `Send Without Closing Editor` for details.
 
 
 ### 🖥️ Tmux Integration
@@ -117,6 +112,59 @@ editprompt --help
 ```
 
 
+## 📤 Send Without Closing Editor
+
+While editprompt is running, you can send content to the target pane or clipboard without closing the editor. This allows you to iterate quickly on your prompts.
+
+### Basic Usage
+
+```bash
+# Run this command from within your editor session
+editprompt -- "your content here"
+```
+
+This sends the content to the target pane (or clipboard) while keeping your editor open, so you can continue editing and send multiple times.
+
+### Neovim Integration Example
+
+You can set up a convenient keybinding to send your buffer content:
+
+```lua
+-- Send buffer content while keeping the editor open
+if vim.env.EDITPROMPT then
+    vim.keymap.set("n", "<Space>E", function()
+        vim.cmd("silent write")
+        -- Get buffer content
+        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        local content = table.concat(lines, "\n")
+
+        -- Execute editprompt command
+        vim.system(
+            { "editprompt", "--", content },
+            { text = true },
+            function(obj)
+                vim.schedule(function()
+                    if obj.code == 0 then
+                        -- Clear buffer on success
+                        vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
+                    else
+                        -- Show error notification
+                        vim.notify("editprompt failed: " .. (obj.stderr or "unknown error"), vim.log.levels.ERROR)
+                    end
+                end)
+            end
+        )
+    end, { silent = true, desc = "Send buffer content to editprompt" })
+end
+```
+
+With this configuration:
+1. Open editprompt using the tmux/wezterm keybinding mentioned above
+2. Write your prompt in the editor
+3. Press `<Space>E` to send the content to the target pane
+4. The buffer is automatically cleared on success
+5. Continue editing to send more content
+
 
 ## ⚙️ Configuration
 
@@ -126,7 +174,7 @@ editprompt respects the following editor priority:
 
 1. `--editor/-e` command line option
 2. `$EDITOR` environment variable  
-3. Default: `nvim`
+3. Default: `vim`
 
 ### 🌍 Environment Variables
 
@@ -182,21 +230,6 @@ bun test
 
 # Development mode
 bun run dev
-```
-
-### 📁 Project Structure
-
-```
-src/
-├── config/
-│   └── constants.ts          # Configuration constants
-├── modules/
-│   ├── editor.ts             # Editor launching and file handling
-│   ├── process.ts            # Process detection and communication
-│   └── selector.ts           # Interactive process selection
-├── utils/
-│   └── tempFile.ts           # Temporary file management
-└── index.ts                  # CLI entry point
 ```
 
 ## 🔍 Technical Details
