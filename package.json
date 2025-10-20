@@ -1,64 +1,64 @@
 {
-	"name": "editprompt",
-	"version": "0.4.4",
-	"author": "eetann",
-	"description": "A CLI tool that lets you write prompts for CLI tools using your favorite text editor",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/eetann/editprompt.git"
-	},
-	"homepage": "https://github.com/eetann/editprompt",
-	"bugs": {
-		"url": "https://github.com/eetann/editprompt/issues"
-	},
-	"keywords": [
-		"cli",
-		"editor",
-		"prompt",
-		"tmux",
-		"clipboard",
-		"command-line",
-		"text-editor"
-	],
-	"publishConfig": {
-		"access": "public"
-	},
-	"type": "module",
-	"files": ["dist"],
-	"main": "./dist/index.js",
-	"module": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"exports": {
-		".": "./dist/index.js",
-		"./package.json": "./package.json"
-	},
-	"bin": {
-		"editprompt": "./dist/index.js"
-	},
-	"scripts": {
-		"build": "tsdown",
-		"dev": "tsdown --watch",
-		"lint": "biome check",
-		"formant": "biome format --write",
-		"typecheck": "tsgo --noEmit",
-		"release": "bun run lint && bun run typecheck && bun run test && bun run build && bumpp",
-		"test": "bun test",
-		"test:watch": "bun test --watch"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
-		"@types/bun": "^1.2.16",
-		"@types/node": "^24.0.1",
-		"@typescript/native-preview": "^7.0.0-dev.20250712.1",
-		"bumpp": "^10.2.0",
-		"tsdown": "latest"
-	},
-	"dependencies": {
-		"clipboardy": "^4.0.0",
-		"gunshi": "^0.26.3"
-	},
-	"peerDependencies": {
-		"typescript": "^5"
-	}
+  "name": "editprompt",
+  "version": "0.5.0",
+  "author": "eetann",
+  "description": "A CLI tool that lets you write prompts for CLI tools using your favorite text editor",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eetann/editprompt.git"
+  },
+  "homepage": "https://github.com/eetann/editprompt",
+  "bugs": {
+    "url": "https://github.com/eetann/editprompt/issues"
+  },
+  "keywords": [
+    "cli",
+    "editor",
+    "prompt",
+    "tmux",
+    "clipboard",
+    "command-line",
+    "text-editor"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "files": ["dist"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "editprompt": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "lint": "biome check",
+    "formant": "biome format --write",
+    "typecheck": "tsgo --noEmit",
+    "release": "bun run lint && bun run typecheck && bun run test && bun run build && bumpp",
+    "test": "bun test",
+    "test:watch": "bun test --watch"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/bun": "^1.2.16",
+    "@types/node": "^24.0.1",
+    "@typescript/native-preview": "^7.0.0-dev.20250712.1",
+    "bumpp": "^10.2.0",
+    "tsdown": "latest"
+  },
+  "dependencies": {
+    "clipboardy": "^4.0.0",
+    "gunshi": "^0.26.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
 }

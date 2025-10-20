@@ -1,25 +1,26 @@
 /**
- * 環境変数文字列をパースしてオブジェクトに変換
- * @param envStrings - ["KEY=VALUE", "FOO=bar"] 形式の配列
- * @returns 環境変数のキーバリューオブジェクト
+ * Parses environment variable strings into an object.
+ * @param envStrings - An array of strings in the format ["KEY=VALUE", "FOO=bar"].
+ * @returns An object of environment variable key-value pairs.
  */
 export function parseEnvVars(envStrings?: string[]): Record<string, string> {
-	if (!envStrings || envStrings.length === 0) {
-		return {};
-	}
+  if (!envStrings || envStrings.length === 0) {
+    return {};
+  }
 
-	const result: Record<string, string> = {};
+  const result: Record<string, string> = {};
 
-	for (const envString of envStrings) {
-		const [key, ...valueParts] = envString.split("=");
+  for (const envString of envStrings) {
+    const [key, ...valueParts] = envString.split("=");
 
-		if (!key || valueParts.length === 0) {
-			throw new Error(`Invalid environment variable format: ${envString}`);
-		}
+    if (!key || valueParts.length === 0) {
+      throw new Error(`Invalid environment variable format: ${envString}`);
+    }
 
-		const value = valueParts.join("="); // 値に=が含まれる場合に対応
-		result[key] = value;
-	}
+    // Handle cases where the value includes an equals sign.
+    const value = valueParts.join("=");
+    result[key] = value;
+  }
 
-	return result;
+  return result;
 }
