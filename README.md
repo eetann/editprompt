@@ -132,7 +132,7 @@ You can set up a convenient keybinding to send your buffer content:
 ```lua
 -- Send buffer content while keeping the editor open
 if vim.env.EDITPROMPT then
-    vim.keymap.set("n", "<Space>E", function()
+    vim.keymap.set("n", "<Space>x", function()
         vim.cmd("silent write")
         -- Get buffer content
         local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
@@ -161,7 +161,7 @@ end
 With this configuration:
 1. Open editprompt using the tmux/wezterm keybinding mentioned above
 2. Write your prompt in the editor
-3. Press `<Space>E` to send the content to the target pane
+3. Press `<Space>x` to send the content to the target pane
 4. The buffer is automatically cleared on success
 5. Continue editing to send more content
 
