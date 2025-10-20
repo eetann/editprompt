@@ -39,6 +39,9 @@ export async function sendToWeztermPane(
     `wezterm cli send-text --no-paste --pane-id '${paneId}' -- '${content.replace(/'/g, "'\\''")}'`,
   );
   console.log(`Content sent to wezterm pane: ${paneId}`);
+
+  // focus
+  await execAsync(`wezterm cli activate-pane --pane-id '${paneId}'`);
 }
 
 // When sending code blocks to codex using paste-buffer,
