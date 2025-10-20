@@ -1,6 +1,6 @@
 {
   "name": "editprompt",
-  "version": "0.4.4",
+  "version": "0.5.0",
   "author": "eetann",
   "description": "A CLI tool that lets you write prompts for CLI tools using your favorite text editor",
   "license": "MIT",
