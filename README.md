@@ -76,20 +76,12 @@ bind -n M-q run-shell 'tmux display-popup -E \
             act.SplitPane({
                 direction = "Down",
                 size = { Cells = 10 },
+                command = {
+                    args = { "editprompt", "--editor", "nvim", "--always-copy", "--mux", "wezterm", "--target-pane", target_pane_id },
+                },
             }),
             pane
         )
-        wezterm.time.call_after(1, function()
-            window:perform_action(
-                act.SendString(
-                    string.format(
-                        "editprompt --editor nvim --always-copy --mux wezterm --target-pane %s\n",
-                        target_pane_id
-                    )
-                ),
-                window:active_pane()
-            )
-        end)
     end),
 },
 ```
