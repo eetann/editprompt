@@ -64,6 +64,25 @@ bind -n M-q run-shell 'tmux display-popup -E \
   "editprompt --editor nvim --always-copy --target-pane #{pane_id}"'
 ```
 
+#### Alternative: Reuse an Existing Pane
+
+If you would rather reuse the editor pane instead of creating a new split each time, you can use the tmux launcher mode built into `editprompt`:
+
+```tmux
+bind -n M-q run-shell 'editprompt \
+  --tmux-launch \
+  --target-pane #{pane_id} \
+  --tmux-split "-v -l 20" \
+  --tmux-cwd "#{pane_current_path}" \
+  --launch-arg --editor \
+  --launch-arg nvim \
+  --launch-arg --always-copy'
+```
+
+- `--tmux-launch` looks up the tmux user option `@editprompt_reuse::<target>`; if a pane is already registered for that target it simply focuses it, otherwise it falls back to `tmux split-window`.
+- `--tmux-split` / `--tmux-cwd` mirror the flags you would normally pass to `split-window`.
+- `--launch-arg` forwards extra flags to `editprompt`. Pass flag name and value separately to preserve ordering.
+
 
 ### 🖼️ WezTerm Integration
 ```lua

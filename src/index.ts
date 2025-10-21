@@ -3,10 +3,48 @@ import { cli } from "gunshi";
 import * as pkg from "../package.json";
 import { runOpenEditorMode } from "./modes/openEditor";
 import { runSendOnlyMode } from "./modes/sendOnly";
+import { runTmuxLaunch } from "./modes/tmuxLaunch";
 import { type MuxType, isMuxType } from "./modules/process";
 import { extractRawContent } from "./utils/argumentParser";
 
-const argv = process.argv.slice(2);
+const COMBINE_OPTIONS = new Set(["--tmux-split", "--tmux-cwd", "--launch-arg"]);
+
+function normalizeArgv(args: string[]): string[] {
+  const normalized: string[] = [];
+
+  for (let index = 0; index < args.length; index++) {
+    const current = args[index];
+    if (!current) {
+      continue;
+    }
+
+    const eqIndex = current.indexOf("=");
+    if (eqIndex !== -1) {
+      const key = current.slice(0, eqIndex);
+      if (COMBINE_OPTIONS.has(key)) {
+        normalized.push(current);
+        continue;
+      }
+    }
+
+    if (COMBINE_OPTIONS.has(current)) {
+      const next = args[index + 1];
+      if (next !== undefined && next !== "") {
+        normalized.push(`${current}=${next}`);
+        index += 1;
+      } else {
+        normalized.push(current);
+      }
+      continue;
+    }
+
+    normalized.push(current);
+  }
+
+  return normalized;
+}
+
+const argv = normalizeArgv(process.argv.slice(2));
 
 await cli(
   argv,
@@ -47,9 +85,40 @@ await cli(
           "Always copy content to clipboard, even if tmux pane is available",
         type: "boolean",
       },
+      "tmux-launch": {
+        description:
+          "Reuse or create a tmux pane before launching the editor (tmux helpers)",
+        type: "boolean",
+      },
+      "tmux-split": {
+        description:
+          'Arguments passed to tmux split-window in --tmux-launch mode (e.g., "-v -l 30")',
+        type: "string",
+      },
+      "tmux-cwd": {
+        description:
+          "Working directory for new panes in --tmux-launch mode (tmux -c option)",
+        type: "string",
+      },
+      "launch-arg": {
+        description:
+          "Additional arguments forwarded to editprompt when creating a pane in --tmux-launch mode",
+        type: "string",
+        multiple: true,
+      },
     },
     async run(ctx) {
       try {
+        if (ctx.values["tmux-launch"]) {
+          await runTmuxLaunch({
+            targetPane: ctx.values["target-pane"],
+            splitOptions: ctx.values["tmux-split"],
+            cwd: ctx.values["tmux-cwd"],
+            launchArgs: ctx.values["launch-arg"],
+          });
+          return;
+        }
+
         // Check if positional argument exists (send-only mode)
         const rawContent = extractRawContent(ctx.rest, ctx.positionals);
 
