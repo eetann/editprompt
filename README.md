@@ -120,7 +120,7 @@ While editprompt is running, you can send content to the target pane or clipboar
 
 ```bash
 # Run this command from within your editor session
-editprompt -- "your content here"
+editprompt "your content here"
 ```
 
 This sends the content to the target pane (or clipboard) while keeping your editor open, so you can continue editing and send multiple times.
@@ -133,20 +133,21 @@ You can set up a convenient keybinding to send your buffer content:
 -- Send buffer content while keeping the editor open
 if vim.env.EDITPROMPT then
     vim.keymap.set("n", "<Space>x", function()
-        vim.cmd("silent write")
+        vim.cmd("update")
         -- Get buffer content
         local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
         local content = table.concat(lines, "\n")
 
         -- Execute editprompt command
         vim.system(
-            { "editprompt", "--", content },
+            { "editprompt", content },
             { text = true },
             function(obj)
                 vim.schedule(function()
                     if obj.code == 0 then
                         -- Clear buffer on success
                         vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
+                        vim.cmd("silent write")
                     else
                         -- Show error notification
                         vim.notify("editprompt failed: " .. (obj.stderr or "unknown error"), vim.log.levels.ERROR)
