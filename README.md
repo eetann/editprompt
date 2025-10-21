@@ -233,6 +233,17 @@ bun test
 bun run dev
 ```
 
+### 💻 Testing During Development
+
+When developing, you can test the built `dist/index.js` directly:
+
+```diff
+- { "editprompt", "--", content },
++ { "node", vim.fn.expand("~/path/to/editprompt/dist/index.js"), "--", content },
+```
+
+This allows you to make changes, run `bun run build`, and test immediately without reinstalling globally.
+
 ## 🔍 Technical Details
 
 ### 🔄 Fallback Strategy
