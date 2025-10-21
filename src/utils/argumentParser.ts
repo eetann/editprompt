@@ -7,11 +7,11 @@
  * @returns Raw content string or undefined if no content provided
  */
 export function extractRawContent(
-	rest: string[],
-	positionals: string[],
+  rest: string[],
+  positionals: string[],
 ): string | undefined {
-	if (rest.length > 0) {
-		return rest.join(" ");
-	}
-	return positionals[0];
+  if (rest.length > 0) {
+    return rest.join(" ");
+  }
+  return positionals[0];
 }
