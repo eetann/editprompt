@@ -4,6 +4,7 @@ import * as pkg from "../package.json";
 import { runOpenEditorMode } from "./modes/openEditor";
 import { runSendOnlyMode } from "./modes/sendOnly";
 import { type MuxType, isMuxType } from "./modules/process";
+import { extractRawContent } from "./utils/argumentParser";
 
 const argv = process.argv.slice(2);
 
@@ -50,7 +51,7 @@ await cli(
     async run(ctx) {
       try {
         // Check if positional argument exists (send-only mode)
-        const rawContent = ctx.positionals[0];
+        const rawContent = extractRawContent(ctx.rest, ctx.positionals);
 
         if (rawContent !== undefined) {
           // Send-only mode

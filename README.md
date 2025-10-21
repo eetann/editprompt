@@ -120,7 +120,7 @@ While editprompt is running, you can send content to the target pane or clipboar
 
 ```bash
 # Run this command from within your editor session
-editprompt "your content here"
+editprompt -- "your content here"
 ```
 
 This sends the content to the target pane (or clipboard) while keeping your editor open, so you can continue editing and send multiple times.
@@ -140,7 +140,7 @@ if vim.env.EDITPROMPT then
 
         -- Execute editprompt command
         vim.system(
-            { "editprompt", content },
+            { "editprompt", "--", content },
             { text = true },
             function(obj)
                 vim.schedule(function()
