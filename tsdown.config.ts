@@ -5,6 +5,6 @@ export default defineConfig({
   format: "esm",
   platform: "node",
   dts: {
-    isolatedDeclarations: true,
+    oxc: true,
   },
 });
