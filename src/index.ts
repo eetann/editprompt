@@ -58,7 +58,9 @@ await cli(
         // Resume mode check (highest priority)
         if (ctx.values.resume) {
           if (!ctx.values["target-pane"]) {
-            console.error("Error: --target-pane is required when using --resume");
+            console.error(
+              "Error: --target-pane is required when using --resume",
+            );
             process.exit(1);
           }
           await runResumeMode(ctx.values["target-pane"]);

@@ -1,9 +1,10 @@
 import { openEditorAndGetContent } from "../modules/editor";
 import type { MuxType } from "../modules/process";
 import {
-	clearEditorPaneId,
-	getCurrentPaneId,
-	saveEditorPaneId,
+  clearEditorPaneId,
+  getCurrentPaneId,
+  markAsEditorPane,
+  saveEditorPaneId,
 } from "../modules/tmux";
 import type { SendConfig } from "../types/send";
 import { handleContentDelivery } from "./common";
@@ -23,8 +24,9 @@ export async function runOpenEditorMode(
     try {
       const currentPaneId = await getCurrentPaneId();
       await saveEditorPaneId(options.targetPane, currentPaneId);
+      await markAsEditorPane(currentPaneId, options.targetPane);
     } catch {
-      // エラーは無視（tmux外での実行も考慮）
+      //
     }
   }
 
@@ -66,7 +68,7 @@ export async function runOpenEditorMode(
       try {
         await clearEditorPaneId(options.targetPane);
       } catch {
-        // エラーは無視
+        //
       }
     }
   }
