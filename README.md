@@ -49,12 +49,24 @@ editprompt
 
 ### 🖥️ Tmux Integration
 
-**Split window version:**
+**Split window version (with pane resume):**
 ```tmux
-bind -n M-q run-shell 'tmux split-window -v -l 20 \
--c "#{pane_current_path}" \
-"editprompt --editor nvim --always-copy --target-pane #{pane_id}"'
+bind -n M-q run-shell '\
+  editprompt --resume --target-pane #{pane_id} || \
+  tmux split-window -v -l 10 -c "#{pane_current_path}" \
+    "editprompt --editor nvim --always-copy --target-pane #{pane_id}"'
 ```
+
+**How it works:**
+- **First time**: Creates a new editor pane if one doesn't exist
+- **Subsequent times**: Focuses the existing editor pane instead of creating a new one
+- **Bidirectional**: Pressing the same keybinding from within the editor pane returns you to the original target pane
+
+This allows you to toggle between your target pane and editor pane using the same keybinding (`M-q`).
+
+**Benefits:**
+- Prevents pane proliferation and keeps your window management simple
+- Switch between your work pane and editor pane while preserving your editing content
 
 **Popup version:**
 ```tmux
