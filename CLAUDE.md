@@ -18,6 +18,7 @@ This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using
 - Format and lint using Biome (configured in `biome.jsonc`)
 - The project uses tab indentation and double quotes
 - No explicit lint/format commands in package.json - use your editor's Biome integration
+- Use English for all comments and commit messages
 
 ## Architecture
 

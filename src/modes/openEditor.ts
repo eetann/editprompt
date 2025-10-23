@@ -1,5 +1,10 @@
 import { openEditorAndGetContent } from "../modules/editor";
 import type { MuxType } from "../modules/process";
+import {
+	clearEditorPaneId,
+	getCurrentPaneId,
+	saveEditorPaneId,
+} from "../modules/tmux";
 import type { SendConfig } from "../types/send";
 import { handleContentDelivery } from "./common";
 
@@ -14,36 +19,55 @@ interface OpenEditorModeOptions {
 export async function runOpenEditorMode(
   options: OpenEditorModeOptions,
 ): Promise<void> {
-  const sendConfig: SendConfig = {
-    targetPane: options.targetPane,
-    mux: options.mux,
-    alwaysCopy: options.alwaysCopy,
-  };
-
-  console.log("Opening editor...");
-
-  const content = await openEditorAndGetContent(
-    options.editor,
-    options.env,
-    sendConfig,
-  );
-
-  if (!content) {
-    console.log("No content entered. Exiting.");
-    return;
+  if (options.targetPane && options.mux === "tmux") {
+    try {
+      const currentPaneId = await getCurrentPaneId();
+      await saveEditorPaneId(options.targetPane, currentPaneId);
+    } catch {
+      // エラーは無視（tmux外での実行も考慮）
+    }
   }
 
   try {
-    await handleContentDelivery(
-      content,
-      options.mux,
-      options.targetPane,
-      options.alwaysCopy,
+    const sendConfig: SendConfig = {
+      targetPane: options.targetPane,
+      mux: options.mux,
+      alwaysCopy: options.alwaysCopy,
+    };
+
+    console.log("Opening editor...");
+
+    const content = await openEditorAndGetContent(
+      options.editor,
+      options.env,
+      sendConfig,
     );
-  } catch (error) {
-    console.error(
-      `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-    process.exit(1);
+
+    if (!content) {
+      console.log("No content entered. Exiting.");
+      return;
+    }
+
+    try {
+      await handleContentDelivery(
+        content,
+        options.mux,
+        options.targetPane,
+        options.alwaysCopy,
+      );
+    } catch (error) {
+      console.error(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      process.exit(1);
+    }
+  } finally {
+    if (options.targetPane && options.mux === "tmux") {
+      try {
+        await clearEditorPaneId(options.targetPane);
+      } catch {
+        // エラーは無視
+      }
+    }
   }
 }

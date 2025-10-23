@@ -2,6 +2,7 @@
 import { cli } from "gunshi";
 import * as pkg from "../package.json";
 import { runOpenEditorMode } from "./modes/openEditor";
+import { runResumeMode } from "./modes/resume";
 import { runSendOnlyMode } from "./modes/sendOnly";
 import { type MuxType, isMuxType } from "./modules/process";
 import { extractRawContent } from "./utils/argumentParser";
@@ -15,6 +16,10 @@ await cli(
     description:
       "A CLI tool that lets you write prompts for Claude Code using your favorite text editor",
     args: {
+      resume: {
+        description: "Resume existing editor pane instead of creating new one",
+        type: "boolean",
+      },
       editor: {
         short: "e",
         description: "Editor to use (overrides $EDITOR)",
@@ -50,6 +55,16 @@ await cli(
     },
     async run(ctx) {
       try {
+        // Resume mode check (highest priority)
+        if (ctx.values.resume) {
+          if (!ctx.values["target-pane"]) {
+            console.error("Error: --target-pane is required when using --resume");
+            process.exit(1);
+          }
+          await runResumeMode(ctx.values["target-pane"]);
+          return;
+        }
+
         // Check if positional argument exists (send-only mode)
         const rawContent = extractRawContent(ctx.rest, ctx.positionals);
 
