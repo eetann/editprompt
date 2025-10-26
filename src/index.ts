@@ -63,7 +63,16 @@ await cli(
             );
             process.exit(1);
           }
-          await runResumeMode(ctx.values["target-pane"]);
+
+          const mux: MuxType = (ctx.values.mux as MuxType) || "tmux";
+          if (!isMuxType(mux)) {
+            console.error(
+              `Error: Invalid mux type '${mux}'. Supported values: tmux, wezterm`,
+            );
+            process.exit(1);
+          }
+
+          await runResumeMode(ctx.values["target-pane"], mux);
           return;
         }
 

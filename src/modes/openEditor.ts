@@ -6,6 +6,7 @@ import {
   markAsEditorPane,
   saveEditorPaneId,
 } from "../modules/tmux";
+import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
 import { handleContentDelivery } from "./common";
 
@@ -25,6 +26,13 @@ export async function runOpenEditorMode(
       const currentPaneId = await getCurrentPaneId();
       await saveEditorPaneId(options.targetPane, currentPaneId);
       await markAsEditorPane(currentPaneId, options.targetPane);
+    } catch {
+      //
+    }
+  } else if (options.targetPane && options.mux === "wezterm") {
+    try {
+      const currentPaneId = await wezterm.getCurrentPaneId();
+      await wezterm.markAsEditorPane(currentPaneId, options.targetPane);
     } catch {
       //
     }
@@ -67,6 +75,12 @@ export async function runOpenEditorMode(
     if (options.targetPane && options.mux === "tmux") {
       try {
         await clearEditorPaneId(options.targetPane);
+      } catch {
+        //
+      }
+    } else if (options.targetPane && options.mux === "wezterm") {
+      try {
+        await wezterm.clearEditorPaneId(options.targetPane);
       } catch {
         //
       }
