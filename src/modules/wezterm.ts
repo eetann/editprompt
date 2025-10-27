@@ -11,19 +11,9 @@ interface WeztermPane {
   is_active: boolean;
 }
 
-function getWeztermCmd(): string {
-  return (
-    process.env.WEZTERM_CLI ||
-    "/Applications/WezTerm.app/Contents/MacOS/wezterm"
-    // /Applications/WezTerm.app/Contents/MacOS/wezterm-gui
-  );
-}
-
 export async function getCurrentPaneId(): Promise<string> {
   try {
-    const { stdout } = await execAsync(
-      `${getWeztermCmd()} cli list --format json`,
-    );
+    const { stdout } = await execAsync("wezterm cli list --format json");
     const panes = JSON.parse(stdout) as WeztermPane[];
     const activePane = panes.find((pane) => pane.is_active === true);
     return String(activePane?.pane_id);
@@ -35,9 +25,7 @@ export async function getCurrentPaneId(): Promise<string> {
 
 export async function checkPaneExists(paneId: string): Promise<boolean> {
   try {
-    const { stdout } = await execAsync(
-      `${getWeztermCmd()} cli list --format json`,
-    );
+    const { stdout } = await execAsync("wezterm cli list --format json");
     console.log(stdout);
     const panes = JSON.parse(stdout) as WeztermPane[];
     return panes.some((pane) => String(pane.pane_id) === paneId);
@@ -87,7 +75,7 @@ export async function clearEditorPaneId(targetPaneId: string): Promise<void> {
 }
 
 export async function focusPane(paneId: string): Promise<void> {
-  await execAsync(`${getWeztermCmd()} cli activate-pane --pane-id '${paneId}'`);
+  await execAsync(`wezterm cli activate-pane --pane-id '${paneId}'`);
 }
 
 export function isEditorPaneFromEnv(): boolean {
