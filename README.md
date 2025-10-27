@@ -49,12 +49,24 @@ editprompt
 
 ### 🖥️ Tmux Integration
 
-**Split window version:**
+**Split window version (with pane resume):**
 ```tmux
-bind -n M-q run-shell 'tmux split-window -v -l 20 \
--c "#{pane_current_path}" \
-"editprompt --editor nvim --always-copy --target-pane #{pane_id}"'
+bind -n M-q run-shell '\
+  editprompt --resume --target-pane #{pane_id} || \
+  tmux split-window -v -l 10 -c "#{pane_current_path}" \
+    "editprompt --editor nvim --always-copy --target-pane #{pane_id}"'
 ```
+
+**How it works:**
+- **First time**: Creates a new editor pane if one doesn't exist
+- **Subsequent times**: Focuses the existing editor pane instead of creating a new one
+- **Bidirectional**: Pressing the same keybinding from within the editor pane returns you to the original target pane
+
+This allows you to toggle between your target pane and editor pane using the same keybinding (`M-q`).
+
+**Benefits:**
+- Prevents pane proliferation and keeps your window management simple
+- Switch between your work pane and editor pane while preserving your editing content
 
 **Popup version:**
 ```tmux
@@ -66,33 +78,60 @@ bind -n M-q run-shell 'tmux display-popup -E \
 
 
 ### 🖼️ WezTerm Integration
+
 ```lua
 {
     key = "q",
     mods = "OPT",
     action = wezterm.action_callback(function(window, pane)
         local target_pane_id = tostring(pane:pane_id())
-        window:perform_action(
-            act.SplitPane({
-                direction = "Down",
-                size = { Cells = 10 },
-            }),
-            pane
-        )
-        wezterm.time.call_after(1, function()
+
+        -- Try to resume existing editor pane
+        local success, stdout, stderr = wezterm.run_child_process({
+            "/bin/zsh",
+            "-lc",
+            string.format(
+                "editprompt --resume --mux wezterm --target-pane %s",
+                target_pane_id
+            ),
+        })
+
+        -- If resume failed, create new editor pane
+        if not success then
             window:perform_action(
-                act.SendString(
-                    string.format(
-                        "editprompt --editor nvim --always-copy --mux wezterm --target-pane %s\n",
-                        target_pane_id
-                    )
-                ),
-                window:active_pane()
+                act.SplitPane({
+                    direction = "Down",
+                    size = { Cells = 10 },
+                    command = {
+                        args = {
+                            "/bin/zsh",
+                            "-lc",
+                            string.format(
+                                "editprompt --editor nvim --always-copy --mux wezterm --target-pane %s",
+                                target_pane_id
+                            ),
+                        },
+                    },
+                }),
+                pane
             )
-        end)
+        end
     end),
 },
 ```
+
+**How it works:**
+- **First time**: Creates a new editor pane if one doesn't exist
+- **Subsequent times**: Focuses the existing editor pane instead of creating a new one
+- **Bidirectional**: Pressing the same keybinding from within the editor pane returns you to the original target pane
+
+This allows you to toggle between your target pane and editor pane using the same keybinding (`OPT-q`).
+
+**Benefits:**
+- Prevents pane proliferation and keeps your window management simple
+- Switch between your work pane and editor pane while preserving your editing content
+
+**Note:** The `-lc` flag ensures your shell loads the full login environment, making `editprompt` available in your PATH.
 
 ### 💡 Basic Usage
 
@@ -237,9 +276,68 @@ bun run dev
 
 When developing, you can test the built `dist/index.js` directly:
 
+#### Neovim Configuration
+
 ```diff
 - { "editprompt", "--", content },
 + { "node", vim.fn.expand("~/path/to/editprompt/dist/index.js"), "--", content },
+```
+
+#### WezTerm Configuration
+
+```lua
+-- In your wezterm.lua
+local editprompt_cmd = "node " .. os.getenv("HOME") .. "/path/to/editprompt/dist/index.js"
+
+{
+    key = "e",
+    mods = "OPT",
+    action = wezterm.action_callback(function(window, pane)
+        local target_pane_id = tostring(pane:pane_id())
+
+        local success, stdout, stderr = wezterm.run_child_process({
+            "/bin/zsh",
+            "-lc",
+            string.format(
+                "%s --resume --mux wezterm --target-pane %s",
+                editprompt_cmd,
+                target_pane_id
+            ),
+        })
+
+        if not success then
+            window:perform_action(
+                act.SplitPane({
+                    -- ...
+                    command = {
+                        args = {
+                            "/bin/zsh",
+                            "-lc",
+                            string.format(
+                                "%s --editor nvim --always-copy --mux wezterm --target-pane %s",
+                                editprompt_cmd,
+                                target_pane_id
+                            ),
+                        },
+                    },
+                }),
+                pane
+            )
+        end
+    end),
+},
+```
+
+#### tmux Configuration
+
+```tmux
+# In your .tmux.conf
+set-option -g @editprompt-cmd "node ~/path/to/editprompt/dist/index.js"
+
+bind-key -n M-q run-shell '\
+  #{@editprompt-cmd} --resume --target-pane #{pane_id} || \
+  tmux split-window -v -l 10 -c "#{pane_current_path}" \
+    "#{@editprompt-cmd} --editor nvim --always-copy --target-pane #{pane_id}"'
 ```
 
 This allows you to make changes, run `bun run build`, and test immediately without reinstalling globally.

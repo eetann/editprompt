@@ -18,34 +18,55 @@ This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using
 - Format and lint using Biome (configured in `biome.jsonc`)
 - The project uses tab indentation and double quotes
 - No explicit lint/format commands in package.json - use your editor's Biome integration
+-  **Use English for all comments and commit messages** 
 
 ## Architecture
 
 ### Core Flow
 1. **CLI Entry** (`src/index.ts`) - Uses gunshi for CLI parsing, orchestrates the main workflow
-2. **Editor Module** (`src/modules/editor.ts`) - Handles editor launching and content extraction
-3. **Process Detection** (`src/modules/process.ts`) - Finds target processes (configurable), with tmux integration priority
-4. **Process Selection** (`src/modules/selector.ts`) - Interactive selection when multiple processes found
-5. **Content Delivery** - Sends to tmux panes via `tmux send-keys` or falls back to clipboard
+2. **Mode Selection** (`src/modes/`) - Routes to appropriate mode handler (openEditor, resume, sendOnly)
+3. **Editor Module** (`src/modules/editor.ts`) - Handles editor launching and content extraction
+4. **Process Detection** (`src/modules/process.ts`) - Finds target processes (configurable)
+5. **Multiplexer Integration** (`src/modules/tmux.ts`, `src/modules/wezterm.ts`) - Handles multiplexer-specific operations
+6. **Content Delivery** - Sends to multiplexer panes via `send-keys` or falls back to clipboard
+
+### Modes
+- **openEditor**: Launches editor, waits for content, sends to target pane when editor closes
+- **resume**: Reuses existing editor panes with bidirectional focus switching
+- **sendOnly**: Sends content directly to target pane without opening editor (designed for in-editor execution)
+
+For detailed mode implementation including constraints and solutions for different multiplexers, see [`docs/modes.md`](docs/modes.md).
 
 ### Key Design Patterns
-- **Tmux-First Strategy**: Prioritizes tmux panes over regular processes for seamless integration
-- **Graceful Fallbacks**: Editor → Process Detection → Tmux → Clipboard (with user feedback)
-- **Process Matching**: Links system processes to tmux panes by parent PID for accurate targeting
+- **Multiplexer-First Strategy**: Supports both tmux and WezTerm with multiplexer-specific implementations
+- **Graceful Fallbacks**: Editor → Process Detection → Multiplexer → Clipboard (with user feedback)
+- **Process Matching**: Links system processes to multiplexer panes for accurate targeting
+- **Mode Separation**: Each mode has isolated logic for different use cases
+
+### Directory Structure
+- `modes/`: Mode implementations (openEditor, resume, sendOnly, common)
+- `modules/`: Core functionality modules (editor, process, tmux, wezterm)
+- `utils/`: Utility functions (argumentParser, contentProcessor, envParser, sendConfig, tempFile)
+- `config/`: Configuration values (constants)
+- `types/`: TypeScript type definitions
+- `docs/`: Documentation files
 
 ### Module Responsibilities
-- `editor.ts`: Editor selection ($EDITOR priority), temp file management, content extraction
-- `process.ts`: Process discovery, tmux pane enumeration, content delivery mechanisms
-- `selector.ts`: User interaction for process selection when multiple options exist
-- `tempFile.ts`: Secure temporary file creation and cleanup
-- `constants.ts`: Configuration values (default process name, file patterns, default editor)
+- `modes/openEditor.ts`: Standard editor launch and content delivery workflow
+- `modes/resume.ts`: Editor pane reuse with bidirectional focus switching
+- `modes/sendOnly.ts`: Direct content sending from within editor
+- `modules/editor.ts`: Editor selection ($EDITOR priority), temp file management, content extraction
+- `modules/process.ts`: Process discovery and content delivery mechanisms
+- `modules/tmux.ts`: tmux-specific operations (pane variables, focus switching)
+- `modules/wezterm.ts`: WezTerm-specific operations (Conf-based state management, focus switching)
+- `utils/tempFile.ts`: Secure temporary file creation and cleanup
+- `config/constants.ts`: Configuration values (default process name, file patterns, default editor)
 
 ### Dependencies
 - `gunshi` - CLI framework
-- `inquirer` - Interactive process selection
-- `find-process` - System process discovery
 - `clipboardy` - Clipboard operations
-- Native Node.js modules for tmux integration and file operations
+- `conf` - Persistent configuration storage (used for WezTerm state management)
+- Native Node.js modules for multiplexer integration and file operations
 
 ## Testing
 

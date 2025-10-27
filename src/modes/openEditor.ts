@@ -1,5 +1,12 @@
 import { openEditorAndGetContent } from "../modules/editor";
 import type { MuxType } from "../modules/process";
+import {
+  clearEditorPaneId,
+  getCurrentPaneId,
+  markAsEditorPane,
+  saveEditorPaneId,
+} from "../modules/tmux";
+import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
 import { handleContentDelivery } from "./common";
 
@@ -14,36 +21,69 @@ interface OpenEditorModeOptions {
 export async function runOpenEditorMode(
   options: OpenEditorModeOptions,
 ): Promise<void> {
-  const sendConfig: SendConfig = {
-    targetPane: options.targetPane,
-    mux: options.mux,
-    alwaysCopy: options.alwaysCopy,
-  };
-
-  console.log("Opening editor...");
-
-  const content = await openEditorAndGetContent(
-    options.editor,
-    options.env,
-    sendConfig,
-  );
-
-  if (!content) {
-    console.log("No content entered. Exiting.");
-    return;
+  if (options.targetPane && options.mux === "tmux") {
+    try {
+      const currentPaneId = await getCurrentPaneId();
+      await saveEditorPaneId(options.targetPane, currentPaneId);
+      await markAsEditorPane(currentPaneId, options.targetPane);
+    } catch {
+      //
+    }
+  } else if (options.targetPane && options.mux === "wezterm") {
+    try {
+      const currentPaneId = await wezterm.getCurrentPaneId();
+      await wezterm.markAsEditorPane(currentPaneId, options.targetPane);
+    } catch {
+      //
+    }
   }
 
   try {
-    await handleContentDelivery(
-      content,
-      options.mux,
-      options.targetPane,
-      options.alwaysCopy,
+    const sendConfig: SendConfig = {
+      targetPane: options.targetPane,
+      mux: options.mux,
+      alwaysCopy: options.alwaysCopy,
+    };
+
+    console.log("Opening editor...");
+
+    const content = await openEditorAndGetContent(
+      options.editor,
+      options.env,
+      sendConfig,
     );
-  } catch (error) {
-    console.error(
-      `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-    process.exit(1);
+
+    if (!content) {
+      console.log("No content entered. Exiting.");
+      return;
+    }
+
+    try {
+      await handleContentDelivery(
+        content,
+        options.mux,
+        options.targetPane,
+        options.alwaysCopy,
+      );
+    } catch (error) {
+      console.error(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      process.exit(1);
+    }
+  } finally {
+    if (options.targetPane && options.mux === "tmux") {
+      try {
+        await clearEditorPaneId(options.targetPane);
+      } catch {
+        //
+      }
+    } else if (options.targetPane && options.mux === "wezterm") {
+      try {
+        await wezterm.clearEditorPaneId(options.targetPane);
+      } catch {
+        //
+      }
+    }
   }
 }
