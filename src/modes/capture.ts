@@ -16,12 +16,11 @@ export async function runCaptureMode(): Promise<void> {
 
     // Get quote variable content
     const quoteContent = await getQuoteVariableContent(config.targetPane);
-
-    // Copy to clipboard
-    await clipboardy.write(quoteContent);
+    console.log(quoteContent);
 
     // Clear quote variable
     await clearQuoteVariable(config.targetPane);
+    process.exit(0);
   } catch (error) {
     console.error(
       `Error: ${error instanceof Error ? error.message : "Unknown error"}`,

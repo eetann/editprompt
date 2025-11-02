@@ -116,7 +116,9 @@ function removeWhitespaceAndMergeLines(lines: string[]): string[] {
  * 5. Adding two newlines at the end
  */
 export function processQuoteText(text: string): string {
-  const lines = text.split("\n");
+  // Remove leading and trailing newlines
+  const trimmedText = text.replace(/^\n+|\n+$/g, "");
+  const lines = trimmedText.split("\n");
 
   // Pattern detection: Check if any 2nd+ line has no leading whitespace
   const hasNoLeadingWhitespaceInLaterLines = lines

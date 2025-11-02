@@ -97,8 +97,14 @@ export async function appendToQuoteVariable(
   paneId: string,
   content: string,
 ): Promise<void> {
+  let newContent = "";
   const existingContent = await getQuoteVariableContent(paneId);
-  const newContent = existingContent + content;
+  if (existingContent.trim() !== "") {
+    // biome-ignore lint/style/useTemplate: <explanation>
+    newContent = existingContent + "\n" + content;
+  } else {
+    newContent = content;
+  }
   await execAsync(
     `tmux set-option -pt '${paneId}' @editprompt_quote '${newContent.replace(/'/g, "\\'")}'`,
   );
