@@ -100,8 +100,7 @@ export async function appendToQuoteVariable(
   let newContent = "";
   const existingContent = await getQuoteVariableContent(paneId);
   if (existingContent.trim() !== "") {
-    // biome-ignore lint/style/useTemplate: <explanation>
-    newContent = existingContent + "\n" + content;
+    newContent = `${existingContent}\n${content}`;
   } else {
     newContent = content;
   }

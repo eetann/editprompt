@@ -1,4 +1,3 @@
-import clipboardy from "clipboardy";
 import { clearQuoteVariable, getQuoteVariableContent } from "../modules/tmux";
 import { readSendConfig } from "../utils/sendConfig";
 
@@ -16,7 +15,7 @@ export async function runCaptureMode(): Promise<void> {
 
     // Get quote variable content
     const quoteContent = await getQuoteVariableContent(config.targetPane);
-    console.log(quoteContent);
+    process.stdout.write(quoteContent.replace(/\n{3,}$/, "\n\n"));
 
     // Clear quote variable
     await clearQuoteVariable(config.targetPane);
