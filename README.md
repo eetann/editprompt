@@ -72,6 +72,16 @@ Ideal for trial-and-error workflows with AI assistants.
 
 ![quote and capture with editprompt](https://github.com/user-attachments/assets/33af0702-5c80-4ccf-80d9-0ae42052e6fa)
 
+```markdown
+> Some AI agents include leading spaces in their output,which can make the copied text look a bit awkward.
+
+<!-- Write your reply here -->
+
+> Using editprompt’s quote mode or capture mode makes it easy to reply while quoting the AI agent’s output.
+
+<!-- Write your reply here -->
+```
+
 For replying to specific parts of AI responses:
 
 1. Select text in tmux copy mode and pipe it to `editprompt --quote`
