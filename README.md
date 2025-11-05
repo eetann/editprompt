@@ -1,8 +1,12 @@
+<p align="center">
+    <a href="https://www.npmjs.com/package/editprompt"><img src="https://img.shields.io/npm/v/editprompt?color=CB0200" alt="link to npm.js" /></a>
+</p>
+
 # 📝 editprompt
 
 A CLI tool that lets you write prompts for CLI tools using your favorite text editor. Works seamlessly with Claude Code, Codex CLI, Gemini CLI, and any other CLI process.
 
-https://github.com/user-attachments/assets/01bcda7c-7771-4b33-bf5c-629812d45cc4
+![send without closing editor](https://github.com/user-attachments/assets/b0e486af-78d7-4b70-8c82-64d330c22ba1)
 
 
 ## 🏆 Why editprompt?
@@ -40,7 +44,7 @@ editprompt supports three main workflows to fit different use cases:
 
 ### Workflow 1: Basic - Write and Send
 
-<!-- TODO: ここに「エディタを開いて書いて閉じると送信される」の図 -->
+![wrihte and send prompt by editprompt](https://github.com/user-attachments/assets/6587b0c4-8132-4d5c-be68-3aa32a8d4df2) 
 
 The simplest way to use editprompt:
 
@@ -53,7 +57,7 @@ Perfect for one-off prompts when you need more space than a terminal input line.
 
 ### Workflow 2: Interactive - Iterate with Editor Open
 
-<!-- TODO: ここに「エディタを開きっぱなしで何度も送信できる」の図 -->
+![send without closing editor](https://github.com/user-attachments/assets/b0e486af-78d7-4b70-8c82-64d330c22ba1)
 
 For iterating on prompts without constantly reopening the editor:
 
@@ -66,7 +70,7 @@ Ideal for trial-and-error workflows with AI assistants.
 
 ### Workflow 3: Quote - Collect and Reply
 
-<!-- TODO: ここに「テキストを選択して蓄積→取り出して編集→送信」の図 -->
+![quote and capture with editprompt](https://github.com/user-attachments/assets/33af0702-5c80-4ccf-80d9-0ae42052e6fa)
 
 For replying to specific parts of AI responses:
 
@@ -337,104 +341,3 @@ editprompt --env NVIM_CONFIG=minimal
 #### Target Pane Environment Variable
 
 When using the send-without-closing feature or quote capture, editprompt sets `EDITPROMPT_TARGET_PANE` to the target pane ID. This is automatically used by `editprompt --` and `editprompt --capture` commands.
-
----
-
-## 🔧 Development
-
-```bash
-# Clone the repository
-git clone https://github.com/eetann/editprompt.git
-cd editprompt
-
-# Install dependencies
-bun install
-
-# Build
-bun run build
-
-# Run tests
-bun test
-
-# Development mode
-bun run dev
-```
-
-### 💻 Testing During Development
-
-When developing, you can test the built `dist/index.js` directly:
-
-#### Neovim Configuration
-
-```diff
-- { "editprompt", "--", content },
-+ { "node", vim.fn.expand("~/path/to/editprompt/dist/index.js"), "--", content },
-```
-
-#### WezTerm Configuration
-
-```lua
--- In your wezterm.lua
-local editprompt_cmd = "node " .. os.getenv("HOME") .. "/path/to/editprompt/dist/index.js"
-
-{
-    key = "e",
-    mods = "OPT",
-    action = wezterm.action_callback(function(window, pane)
-        local target_pane_id = tostring(pane:pane_id())
-
-        local success, stdout, stderr = wezterm.run_child_process({
-            "/bin/zsh",
-            "-lc",
-            string.format(
-                "%s --resume --mux wezterm --target-pane %s",
-                editprompt_cmd,
-                target_pane_id
-            ),
-        })
-
-        if not success then
-            window:perform_action(
-                act.SplitPane({
-                    -- ...
-                    command = {
-                        args = {
-                            "/bin/zsh",
-                            "-lc",
-                            string.format(
-                                "%s --editor nvim --always-copy --mux wezterm --target-pane %s",
-                                editprompt_cmd,
-                                target_pane_id
-                            ),
-                        },
-                    },
-                }),
-                pane
-            )
-        end
-    end),
-},
-```
-
-#### tmux Configuration
-
-```tmux
-# In your .tmux.conf
-set-option -g @editprompt-cmd "node ~/path/to/editprompt/dist/index.js"
-
-bind-key -n M-q run-shell '\
-  #{@editprompt-cmd} --resume --target-pane #{pane_id} || \
-  tmux split-window -v -l 10 -c "#{pane_current_path}" \
-    "#{@editprompt-cmd} --editor nvim --always-copy --target-pane #{pane_id}"'
-```
-
-This allows you to make changes, run `bun run build`, and test immediately without reinstalling globally.
-
-## 🔍 Technical Details
-
-### 🔄 Fallback Strategy
-
-editprompt implements a robust fallback strategy:
-
-1. **Tmux Integration**: Direct input to tmux panes (when available)
-2. **Clipboard**: Copy content to clipboard with user notification

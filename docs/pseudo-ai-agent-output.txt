@@ -1,0 +1,7 @@
+  Some AI agents include leading spaces in their output,
+  which can make the copied text look a bit awkward.
+
+  ---meaningless sentence---
+
+  Using editprompt’s quote mode or capture mode makes
+  it easy to reply while quoting the AI agent’s output.
