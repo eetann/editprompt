@@ -1,9 +1,10 @@
 import { clearQuoteVariable, getQuoteVariableContent } from "../modules/tmux";
+import { clearQuoteText, getQuoteText } from "../modules/wezterm";
 import { readSendConfig } from "../utils/sendConfig";
 
 export async function runCaptureMode(): Promise<void> {
   try {
-    // Get target pane ID from environment variable
+    // Get config from environment variables
     const config = readSendConfig();
 
     if (!config.targetPane) {
@@ -13,12 +14,18 @@ export async function runCaptureMode(): Promise<void> {
       process.exit(1);
     }
 
-    // Get quote variable content
-    const quoteContent = await getQuoteVariableContent(config.targetPane);
-    process.stdout.write(quoteContent.replace(/\n{3,}$/, "\n\n"));
+    // Get and clear quote content based on multiplexer type
+    let quoteContent: string;
+    if (config.mux === "tmux") {
+      quoteContent = await getQuoteVariableContent(config.targetPane);
+      await clearQuoteVariable(config.targetPane);
+    } else {
+      // wezterm
+      quoteContent = await getQuoteText(config.targetPane);
+      await clearQuoteText(config.targetPane);
+    }
 
-    // Clear quote variable
-    await clearQuoteVariable(config.targetPane);
+    process.stdout.write(quoteContent.replace(/\n{3,}$/, "\n\n"));
     process.exit(0);
   } catch (error) {
     console.error(

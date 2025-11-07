@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import clipboardy from "clipboardy";
 import { cli } from "gunshi";
 import * as pkg from "../package.json";
 import { runCaptureMode } from "./modes/capture";
@@ -95,7 +94,16 @@ await cli(
             );
             process.exit(1);
           }
-          await runQuoteMode(ctx.values["target-pane"]);
+
+          const muxValue = ctx.values.mux || "tmux";
+          if (!isMuxType(muxValue)) {
+            console.error(
+              `Error: Invalid mux type '${muxValue}'. Supported values: tmux, wezterm`,
+            );
+            process.exit(1);
+          }
+
+          await runQuoteMode(muxValue, ctx.values["target-pane"]);
           return;
         }
 

@@ -4,7 +4,9 @@ import Conf from "conf";
 
 const execAsync = promisify(exec);
 
-const conf = new Conf({ projectName: "editprompt" });
+const projectName =
+	process.env.NODE_ENV === "test" ? "editprompt-test" : "editprompt";
+export const conf = new Conf({ projectName });
 
 interface WeztermPane {
   pane_id: string;
@@ -121,5 +123,61 @@ export function isEditorPaneFromConf(paneId: string): boolean {
   } catch (error) {
     console.log(error);
     return false;
+  }
+}
+
+export async function appendToQuoteText(
+  paneId: string,
+  content: string,
+): Promise<void> {
+  try {
+    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
+    let newData: Record<string, unknown>;
+
+    if (typeof data === "object" && data !== null) {
+      // Existing data exists, preserve it and add/update quote_text
+      const existingQuoteText =
+        "quote_text" in data ? String(data.quote_text) : "";
+      const newQuoteText =
+        existingQuoteText.trim() !== ""
+          ? `${existingQuoteText}\n${content}`
+          : content;
+
+      newData = {
+        ...data,
+        quote_text: newQuoteText,
+      };
+    } else {
+      // No existing data, create new
+      newData = { quote_text: content };
+    }
+
+    conf.set(`wezterm.targetPane.pane_${paneId}`, newData);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function getQuoteText(paneId: string): Promise<string> {
+  try {
+    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
+    if (typeof data === "object" && data !== null && "quote_text" in data) {
+      return String(data.quote_text);
+    }
+    return "";
+  } catch (error) {
+    console.log(error);
+    return "";
+  }
+}
+
+export async function clearQuoteText(paneId: string): Promise<void> {
+  try {
+    const key = `wezterm.targetPane.pane_${paneId}.quote_text`;
+    if (conf.has(key)) {
+      conf.delete(key);
+    }
+  } catch (error) {
+    console.log(error);
   }
 }
