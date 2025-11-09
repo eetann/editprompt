@@ -103,7 +103,20 @@ await cli(
             process.exit(1);
           }
 
-          await runQuoteMode(muxValue, ctx.values["target-pane"]);
+          // For wezterm, require positional argument
+          if (muxValue === "wezterm") {
+            const rawContent = extractRawContent(ctx.rest, ctx.positionals);
+            if (rawContent === undefined) {
+              console.error(
+                'Error: Text content is required for quote mode with wezterm. Use: editprompt --quote --mux wezterm --target-pane <id> -- "<text>"',
+              );
+              process.exit(1);
+            }
+            await runQuoteMode(muxValue, ctx.values["target-pane"], rawContent);
+          } else {
+            // For tmux, read from stdin
+            await runQuoteMode(muxValue, ctx.values["target-pane"]);
+          }
           return;
         }
 

@@ -5,7 +5,7 @@ import Conf from "conf";
 const execAsync = promisify(exec);
 
 const projectName =
-	process.env.NODE_ENV === "test" ? "editprompt-test" : "editprompt";
+  process.env.NODE_ENV === "test" ? "editprompt-test" : "editprompt";
 export const conf = new Conf({ projectName });
 
 interface WeztermPane {

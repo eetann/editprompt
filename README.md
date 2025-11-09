@@ -84,7 +84,7 @@ Ideal for trial-and-error workflows with AI assistants.
 
 For replying to specific parts of AI responses:
 
-1. Select text in tmux copy mode and pipe it to `editprompt --quote`
+1. Select text in your terminal (tmux copy mode or WezTerm selection) and trigger quote mode
 2. Repeat to collect multiple selections
 3. Run `editprompt --capture` to retrieve all collected quotes
 4. Edit and send your reply with context
@@ -238,6 +238,45 @@ bind-key -T copy-mode-vi C-e { send-keys -X pipe "editprompt --quote --target-pa
 4. Repeat to collect multiple quotes
 5. All quotes are stored in a pane variable associated with the target pane
 
+#### Collecting Quotes in WezTerm
+
+Add this event handler and keybinding to your `wezterm.lua` to collect selected text as quotes:
+
+```lua
+local wezterm = require("wezterm")
+
+wezterm.on("editprompt-quote", function(window, pane)
+  local text = window:get_selection_text_for_pane(pane)
+  local target_pane_id = tostring(pane:pane_id())
+
+  wezterm.run_child_process({
+    "/bin/zsh",
+    "-lc",
+    string.format(
+      "editprompt --quote --mux wezterm --target-pane %s -- %s",
+      target_pane_id,
+      wezterm.shell_quote_arg(text)
+    ),
+  })
+end)
+
+return {
+  keys = {
+    {
+      key = "e",
+      mods = "CTRL",
+      action = wezterm.action.EmitEvent("editprompt-quote"),
+    },
+  },
+}
+```
+
+**Usage:**
+1. Select text in WezTerm (by dragging with mouse or using copy mode)
+2. Press `Ctrl-e` to add the selection as a quote
+3. Repeat to collect multiple quotes
+4. All quotes are stored in a configuration file associated with the target pane
+
 #### Capturing Collected Quotes
 
 Run this command from within your editor pane to retrieve all collected quotes:
@@ -256,7 +295,8 @@ This copies all collected quotes to the clipboard and clears the buffer, ready f
 5. Send to AI
 
 **How quote buffering works:**
-- Quotes are stored in tmux pane variables, automatically cleaned up when the pane closes
+- **tmux**: Quotes are stored in pane variables, automatically cleaned up when the pane closes
+- **WezTerm**: Quotes are stored in a configuration file associated with the pane
 - Text is intelligently processed: removes common indentation, handles line breaks smartly
 - Each quote is prefixed with `> ` in markdown quote format
 - Multiple quotes are separated with blank lines

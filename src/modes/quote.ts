@@ -21,10 +21,18 @@ async function readStdin(): Promise<string> {
 export async function runQuoteMode(
   mux: MuxType,
   targetPaneId: string,
+  rawContent?: string,
 ): Promise<void> {
   try {
-    // Read selection from stdin
-    const selection = await readStdin();
+    let selection: string;
+
+    if (rawContent !== undefined) {
+      // Use positional argument (wezterm)
+      selection = rawContent;
+    } else {
+      // Read from stdin (tmux)
+      selection = await readStdin();
+    }
 
     // Process text
     const processedText = processQuoteText(selection);

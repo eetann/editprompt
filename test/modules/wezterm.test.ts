@@ -1,99 +1,99 @@
 import { describe, expect, test, beforeEach } from "bun:test";
 import {
-	conf,
-	appendToQuoteText,
-	getQuoteText,
-	clearQuoteText,
+  conf,
+  appendToQuoteText,
+  getQuoteText,
+  clearQuoteText,
 } from "../../src/modules/wezterm";
 
 beforeEach(() => {
-	conf.clear();
+  conf.clear();
 });
 
 describe("appendToQuoteText", () => {
-	test("should create new quote_text when it doesn't exist", async () => {
-		const paneId = "123";
-		const content = "> foo\n\n";
+  test("should create new quote_text when it doesn't exist", async () => {
+    const paneId = "123";
+    const content = "> foo\n\n";
 
-		await appendToQuoteText(paneId, content);
+    await appendToQuoteText(paneId, content);
 
-		const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
-		expect(data).toEqual({ quote_text: content });
-	});
+    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
+    expect(data).toEqual({ quote_text: content });
+  });
 
-	test("should append to existing quote_text with newline separator", async () => {
-		const paneId = "123";
-		const firstContent = "> foo\n\n";
-		const secondContent = "> bar\n\n";
+  test("should append to existing quote_text with newline separator", async () => {
+    const paneId = "123";
+    const firstContent = "> foo\n\n";
+    const secondContent = "> bar\n\n";
 
-		await appendToQuoteText(paneId, firstContent);
-		await appendToQuoteText(paneId, secondContent);
+    await appendToQuoteText(paneId, firstContent);
+    await appendToQuoteText(paneId, secondContent);
 
-		const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
-		expect(data).toEqual({ quote_text: `${firstContent}\n${secondContent}` });
-	});
+    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
+    expect(data).toEqual({ quote_text: `${firstContent}\n${secondContent}` });
+  });
 
-	test("should preserve existing editorPaneId when appending quote_text", async () => {
-		const paneId = "123";
-		const editorPaneId = "456";
-		const content = "> foo\n\n";
+  test("should preserve existing editorPaneId when appending quote_text", async () => {
+    const paneId = "123";
+    const editorPaneId = "456";
+    const content = "> foo\n\n";
 
-		// First, set editorPaneId
-		conf.set(`wezterm.targetPane.pane_${paneId}`, { editorPaneId });
+    // First, set editorPaneId
+    conf.set(`wezterm.targetPane.pane_${paneId}`, { editorPaneId });
 
-		// Then append quote_text
-		await appendToQuoteText(paneId, content);
+    // Then append quote_text
+    await appendToQuoteText(paneId, content);
 
-		const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
-		expect(data).toEqual({ editorPaneId, quote_text: content });
-	});
+    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
+    expect(data).toEqual({ editorPaneId, quote_text: content });
+  });
 });
 
 describe("getQuoteText", () => {
-	test("should get quote_text when it exists", async () => {
-		const paneId = "123";
-		const content = "> foo\n\n";
+  test("should get quote_text when it exists", async () => {
+    const paneId = "123";
+    const content = "> foo\n\n";
 
-		conf.set(`wezterm.targetPane.pane_${paneId}`, { quote_text: content });
+    conf.set(`wezterm.targetPane.pane_${paneId}`, { quote_text: content });
 
-		const result = await getQuoteText(paneId);
-		expect(result).toBe(content);
-	});
+    const result = await getQuoteText(paneId);
+    expect(result).toBe(content);
+  });
 
-	test("should return empty string when quote_text doesn't exist", async () => {
-		const paneId = "123";
+  test("should return empty string when quote_text doesn't exist", async () => {
+    const paneId = "123";
 
-		const result = await getQuoteText(paneId);
-		expect(result).toBe("");
-	});
+    const result = await getQuoteText(paneId);
+    expect(result).toBe("");
+  });
 });
 
 describe("clearQuoteText", () => {
-	test("should delete only quote_text field", async () => {
-		const paneId = "123";
-		const content = "> foo\n\n";
+  test("should delete only quote_text field", async () => {
+    const paneId = "123";
+    const content = "> foo\n\n";
 
-		conf.set(`wezterm.targetPane.pane_${paneId}`, { quote_text: content });
+    conf.set(`wezterm.targetPane.pane_${paneId}`, { quote_text: content });
 
-		await clearQuoteText(paneId);
+    await clearQuoteText(paneId);
 
-		const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
-		expect(data).toEqual({});
-	});
+    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
+    expect(data).toEqual({});
+  });
 
-	test("should preserve editorPaneId when clearing quote_text", async () => {
-		const paneId = "123";
-		const editorPaneId = "456";
-		const content = "> foo\n\n";
+  test("should preserve editorPaneId when clearing quote_text", async () => {
+    const paneId = "123";
+    const editorPaneId = "456";
+    const content = "> foo\n\n";
 
-		conf.set(`wezterm.targetPane.pane_${paneId}`, {
-			editorPaneId,
-			quote_text: content,
-		});
+    conf.set(`wezterm.targetPane.pane_${paneId}`, {
+      editorPaneId,
+      quote_text: content,
+    });
 
-		await clearQuoteText(paneId);
+    await clearQuoteText(paneId);
 
-		const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
-		expect(data).toEqual({ editorPaneId });
-	});
+    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
+    expect(data).toEqual({ editorPaneId });
+  });
 });
