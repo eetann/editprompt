@@ -1,9 +1,9 @@
-import { describe, expect, test, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import {
-  conf,
   appendToQuoteText,
-  getQuoteText,
   clearQuoteText,
+  conf,
+  getQuoteText,
 } from "../../src/modules/wezterm";
 
 beforeEach(() => {
@@ -30,7 +30,7 @@ describe("appendToQuoteText", () => {
     await appendToQuoteText(paneId, secondContent);
 
     const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
-    expect(data).toEqual({ quote_text: `${firstContent}\n${secondContent}` });
+    expect(data).toEqual({ quote_text: `${firstContent}\n\n${secondContent}` });
   });
 
   test("should preserve existing editorPaneId when appending quote_text", async () => {
