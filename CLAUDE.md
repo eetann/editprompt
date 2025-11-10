@@ -34,6 +34,8 @@ This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using
 - **openEditor**: Launches editor, waits for content, sends to target pane when editor closes
 - **resume**: Reuses existing editor panes with bidirectional focus switching
 - **sendOnly**: Sends content directly to target pane without opening editor (designed for in-editor execution)
+- **quote**: Collects text selections and stores them as quoted text (with `> ` prefix) for later retrieval
+- **capture**: Retrieves accumulated quoted text from quote mode and outputs to stdout, then clears storage
 
 For detailed mode implementation including constraints and solutions for different multiplexers, see [`docs/modes.md`](docs/modes.md).
 
