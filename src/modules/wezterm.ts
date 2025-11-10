@@ -140,7 +140,7 @@ export async function appendToQuoteText(
         "quote_text" in data ? String(data.quote_text) : "";
       const newQuoteText =
         existingQuoteText.trim() !== ""
-          ? `${existingQuoteText}\n${content}`
+          ? `${existingQuoteText}\n\n${content}`
           : content;
 
       newData = {
