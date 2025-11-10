@@ -105,7 +105,7 @@ export async function appendToQuoteVariable(
     newContent = content;
   }
   await execAsync(
-    `tmux set-option -pt '${paneId}' @editprompt_quote '${newContent.replace(/'/g, "\\'")}'`,
+    `tmux set-option -pt '${paneId}' @editprompt_quote '${newContent.replace(/'/g, "'\\''")}' `,
   );
 }
 
