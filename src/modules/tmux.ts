@@ -81,3 +81,34 @@ export async function isEditorPane(paneId: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function getQuoteVariableContent(paneId: string): Promise<string> {
+  try {
+    const { stdout } = await execAsync(
+      `tmux show -pt '${paneId}' -v @editprompt_quote`,
+    );
+    return stdout;
+  } catch {
+    return "";
+  }
+}
+
+export async function appendToQuoteVariable(
+  paneId: string,
+  content: string,
+): Promise<void> {
+  let newContent = "";
+  const existingContent = await getQuoteVariableContent(paneId);
+  if (existingContent.trim() !== "") {
+    newContent = `${existingContent}\n${content}`;
+  } else {
+    newContent = content;
+  }
+  await execAsync(
+    `tmux set-option -pt '${paneId}' @editprompt_quote '${newContent.replace(/'/g, "'\\''")}' `,
+  );
+}
+
+export async function clearQuoteVariable(targetPaneId: string): Promise<void> {
+  await execAsync(`tmux set-option -pt '${targetPaneId}' @editprompt_quote ""`);
+}

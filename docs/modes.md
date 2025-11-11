@@ -2,6 +2,14 @@
 
 This document provides technical details about how each mode works, including constraints and solutions for different terminal multiplexers.
 
+## Available Modes
+
+- openEditor
+- resume
+- sendOnly
+- quote
+- capture
+
 ---
 
 ## openEditor Mode
@@ -129,3 +137,132 @@ vim.system(
 ### Benefits
 - Send content multiple times without closing the editor
 - Environment variable inheritance happens naturally, requiring no additional configuration or arguments
+
+---
+
+## quote Mode
+
+### Purpose
+
+Collects text selections and stores them as quoted text (with `> ` prefix) in pane variables or persistent storage. Used to accumulate multiple selections for later retrieval with capture mode.
+
+### Mechanism
+
+This mode enables collecting multiple text selections while reading AI responses or terminal output, preparing them for a reply with context.
+
+#### Text Input Methods
+
+**tmux Implementation:**
+- Reads text from stdin using pipe in copy mode
+- Example: `bind-key -T copy-mode-vi C-e { send-keys -X pipe "editprompt --quote --target-pane #{pane_id}" }`
+
+**WezTerm Implementation:**
+- Receives text as a positional argument
+- Example: `editprompt --quote --mux wezterm --target-pane <id> -- "<text>"`
+- Uses `wezterm.shell_quote_arg()` for proper escaping
+
+#### Text Processing
+
+The `processQuoteText` function applies intelligent text formatting:
+
+1. **Remove leading/trailing newlines**: Cleans up selection boundaries
+2. **Pattern Detection**: Analyzes indentation structure
+   - **Pattern A** (No leading whitespace in 2nd+ lines): Preserves all line breaks, removes only leading whitespace
+   - **Pattern B** (Common leading whitespace): Removes common indentation and merges lines with exceptions:
+     - Never merges lines starting with Markdown list markers (`-`, `*`, `+`)
+     - Never merges when both lines contain colons (`:` or `：`)
+     - Adds space separator between lines only when both end/start with alphabetic characters
+3. **Add quote prefix**: Prepends `> ` to each line
+4. **Add trailing newlines**: Appends two newlines for separation between multiple quotes
+
+#### Storage Implementation
+
+**tmux Implementation:**
+- Stores accumulated quotes in `@editprompt_quote` pane variable
+- Appends new quotes to existing content with newline separator
+- Single quote escaping: Uses `'\''` pattern for shell safety
+
+```bash
+# Append to existing quote content
+tmux set-option -pt '${paneId}' @editprompt_quote '${newContent}'
+```
+
+**WezTerm Implementation:**
+- Stores quotes in Conf library under `wezterm.targetPane.pane_${paneId}.quote_text`
+- Appends new quotes to existing content with newline separator
+
+```typescript
+// Append to existing quote content
+const existingQuotes = conf.get(`wezterm.targetPane.pane_${paneId}.quote_text`) || '';
+const newQuotes = existingQuotes + '\n' + content;
+conf.set(`wezterm.targetPane.pane_${paneId}.quote_text`, newQuotes);
+```
+
+### Benefits
+- Collect multiple selections from long AI responses or terminal output
+- Intelligent text processing removes formatting artifacts
+- Quotes are automatically formatted in Markdown quote style
+- Persistent storage survives across multiple selections
+
+---
+
+## capture Mode
+
+### Purpose
+
+Retrieves all accumulated quoted text from quote mode and outputs it to stdout, then clears the storage. Designed to be executed from within an editor session to insert collected quotes.
+
+### Mechanism
+
+This mode is designed to work with the quote mode workflow, retrieving accumulated selections for editing and replying.
+
+#### Configuration Source
+
+Unlike quote mode which requires `--target-pane` argument, capture mode reads configuration from environment variables:
+- `EDITPROMPT_TARGET_PANE`: Target pane ID (required)
+- `EDITPROMPT_MUX`: Multiplexer type (`tmux` or `wezterm`)
+
+These variables are automatically set when launching the editor in openEditor mode.
+
+#### Workflow
+
+1. **Read environment variables**: Gets target pane ID and multiplexer type from environment
+2. **Retrieve quote content**: Fetches accumulated quotes from storage
+   - **tmux**: Reads from `@editprompt_quote` pane variable
+   - **WezTerm**: Reads from `wezterm.targetPane.pane_${paneId}.quote_text` in Conf
+3. **Clear storage**: Removes quote content from storage after retrieval
+   - **tmux**: Sets `@editprompt_quote` to empty string
+   - **WezTerm**: Deletes `quote_text` key from Conf
+4. **Output to stdout**: Writes retrieved content with trailing newline cleanup (max 2 newlines)
+
+```typescript
+// Output with cleaned trailing newlines
+process.stdout.write(quoteContent.replace(/\n{3,}$/, "\n\n"));
+```
+
+#### Storage Retrieval
+
+**tmux Implementation:**
+```bash
+# Get quote content
+tmux show -pt '${paneId}' -v @editprompt_quote
+
+# Clear quote content
+tmux set-option -pt '${paneId}' @editprompt_quote ""
+```
+
+**WezTerm Implementation:**
+```typescript
+// Get quote content
+const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
+const quoteContent = data?.quote_text || '';
+
+// Clear quote content
+conf.delete(`wezterm.targetPane.pane_${paneId}.quote_text`);
+```
+
+### Benefits
+- Retrieves all accumulated quotes in a single command
+- Automatically clears storage for next collection session
+- Works seamlessly from within editor via environment variable inheritance
+- No need to specify target pane or multiplexer type manually
