@@ -9,7 +9,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # for creating releases
+      contents: read
       id-token: write # for OIDC
 
     steps:
@@ -40,8 +40,19 @@ jobs:
         # In Bun, there is no `provenance`, so use npm
         # https://github.com/oven-sh/bun/issues/15601
 
+  changelog:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Create GitHub Release
-        run: bunx changelogithub
+        run: bunx changelogithub@0.12
         env:
           # Automatically provided by GitHub Actions
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
