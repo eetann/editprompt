@@ -176,9 +176,24 @@ While editprompt is running, you can send content to the target pane or clipboar
 ```bash
 # Run this command from within your editor session
 editprompt -- "your content here"
+# Sends content to target pane and moves focus there
+
+editprompt --auto-send -- "your content here"
+# Sends content, automatically submits it (presses Enter), and returns focus to editor pane
+# Perfect for iterating on prompts without leaving your editor
+
+editprompt --auto-send --send-key "C-m" -- "your content here"
+# Customize the key to send after content (tmux format example)
+# WezTerm example: --send-key "\r" (default for WezTerm is \r, tmux default is Enter)
 ```
 
 This sends the content to the target pane (or clipboard) while keeping your editor open, so you can continue editing and send multiple times.
+
+**Options:**
+- `--auto-send`: Automatically sends the content and returns focus to your editor pane (requires multiplexer)
+- `--send-key <key>`: Customize the key to send after content (requires `--auto-send`)
+  - tmux format: `Enter` (default), `C-a`, etc.
+  - WezTerm format: `\r` (default), `\x01`, etc.
 
 #### Neovim Integration Example
 

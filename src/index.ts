@@ -62,9 +62,25 @@ await cli(
         description: "Capture mode - copy pane variable to clipboard and clear",
         type: "boolean",
       },
+      "auto-send": {
+        description:
+          "Automatically send content and return focus to editor pane",
+        type: "boolean",
+      },
+      "send-key": {
+        description:
+          "Key to send after content (default: Enter, requires --auto-send)",
+        type: "string",
+      },
     },
     async run(ctx) {
       try {
+        // Validate --send-key requires --auto-send
+        if (ctx.values["send-key"] && !ctx.values["auto-send"]) {
+          console.error("Error: --send-key requires --auto-send option");
+          process.exit(1);
+        }
+
         // Resume mode check (highest priority)
         if (ctx.values.resume) {
           if (!ctx.values["target-pane"]) {
@@ -131,7 +147,11 @@ await cli(
 
         if (rawContent !== undefined) {
           // Send-only mode
-          await runSendOnlyMode(rawContent);
+          await runSendOnlyMode(
+            rawContent,
+            ctx.values["auto-send"],
+            ctx.values["send-key"],
+          );
           return;
         }
 

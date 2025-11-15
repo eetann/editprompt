@@ -181,3 +181,24 @@ export async function clearQuoteText(paneId: string): Promise<void> {
     console.log(error);
   }
 }
+
+export async function sendKeyToWeztermPane(
+  paneId: string,
+  key: string,
+): Promise<void> {
+  // Wrap user-provided key in $'...' for bash escape sequences
+  await execAsync(
+    `wezterm cli send-text --no-paste --pane-id '${paneId}' $'${key}'`,
+  );
+}
+
+export async function sendContentToWeztermPaneNoFocus(
+  paneId: string,
+  content: string,
+): Promise<void> {
+  // Send content using wezterm cli send-text command (no focus change)
+  await execAsync(
+    `wezterm cli send-text --no-paste --pane-id '${paneId}' -- '${content.replace(/'/g, "'\\''")}'`,
+  );
+  console.log(`Content sent to wezterm pane: ${paneId}`);
+}

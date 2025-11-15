@@ -3,6 +3,7 @@ import {
   copyToClipboard,
   sendContentToPane,
 } from "../modules/process";
+import { sendContentToPaneWithAutoSend } from "./sendOnly";
 
 function outputContent(content: string): void {
   console.log("---");
@@ -42,5 +43,30 @@ export async function handleContentDelivery(
     }
   }
 
+  outputContent(content);
+}
+
+export async function handleAutoSendDelivery(
+  content: string,
+  mux: MuxType,
+  targetPane: string,
+  sendKey: string,
+): Promise<void> {
+  // Validation
+  if (!content || !targetPane) {
+    throw new Error("Content and target pane are required");
+  }
+
+  try {
+    await sendContentToPaneWithAutoSend(content, mux, targetPane, sendKey);
+    console.log("Content sent and submitted successfully!");
+  } catch (error) {
+    console.error(
+      `Failed to send content: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+    throw error;
+  }
+
+  // Output content for reference
   outputContent(content);
 }
