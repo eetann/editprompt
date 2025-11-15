@@ -112,3 +112,26 @@ export async function appendToQuoteVariable(
 export async function clearQuoteVariable(targetPaneId: string): Promise<void> {
   await execAsync(`tmux set-option -pt '${targetPaneId}' @editprompt_quote ""`);
 }
+
+export async function sendKeyToTmuxPane(
+  paneId: string,
+  key: string,
+): Promise<void> {
+  await execAsync(`tmux send-keys -t '${paneId}' ${key}`);
+}
+
+export async function sendContentToTmuxPaneNoFocus(
+  paneId: string,
+  content: string,
+): Promise<void> {
+  // Exit copy mode if the pane is in copy mode
+  await execAsync(
+    `tmux if-shell -t '${paneId}' '[ "#{pane_in_mode}" = "1" ]' "copy-mode -q -t '${paneId}'"`,
+  );
+
+  // Send content using send-keys command (no focus change)
+  await execAsync(
+    `tmux send-keys -t '${paneId}' -- '${content.replace(/'/g, "'\\''")}'`,
+  );
+  console.log(`Content sent to tmux pane: ${paneId}`);
+}
