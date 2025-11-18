@@ -58,7 +58,7 @@ export async function runSendOnlyMode(
     }
 
     try {
-      const key = sendKey || (config.mux === "wezterm" ? "\\r" : "Enter");
+      const key = sendKey || (config.mux === "wezterm" ? "\\r" : "C-m");
       await handleAutoSendDelivery(content, config.mux, config.targetPane, key);
     } catch (error) {
       console.error(
