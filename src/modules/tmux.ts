@@ -117,7 +117,9 @@ export async function sendKeyToTmuxPane(
   paneId: string,
   key: string,
 ): Promise<void> {
-  await execAsync(`tmux send-keys -t '${paneId}' ${key}`);
+  // Sleep so as not to be treated as a newline (e.g., codex)
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  await execAsync(`tmux send-keys -t '${paneId}' '${key}'`);
 }
 
 export async function sendContentToTmuxPaneNoFocus(
