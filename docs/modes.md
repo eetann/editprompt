@@ -1,18 +1,18 @@
-# Mode Implementation Details
+# Subcommand Implementation Details
 
-This document provides technical details about how each mode works, including constraints and solutions for different terminal multiplexers.
+This document provides technical details about how each subcommand works, including constraints and solutions for different terminal multiplexers.
 
-## Available Modes
+## Available Subcommands
 
-- openEditor
+- open
 - resume
-- sendOnly
-- quote
-- capture
+- input
+- collect
+- dump
 
 ---
 
-## openEditor Mode
+## open Subcommand
 
 ### Purpose
 
@@ -26,7 +26,7 @@ Launches an editor, waits for content to be written, and sends it to the target 
 
 ```tmux
 # Environment variables are not inherited, so explicitly specify the editor
-bind -n M-q run-shell 'editprompt --editor nvim --target-pane #{pane_id}'
+bind -n M-q run-shell 'editprompt open --editor nvim --target-pane #{pane_id}'
 ```
 
 #### WezTerm with `SplitPane`
@@ -40,7 +40,7 @@ SplitPane({
     args = {
       "/bin/zsh",
       "-lc",
-      "editprompt --editor nvim --target-pane " .. target_pane_id,
+      "editprompt open --editor nvim --target-pane " .. target_pane_id,
     },
   },
 })
@@ -48,7 +48,7 @@ SplitPane({
 
 ---
 
-## resume Mode
+## resume Subcommand
 
 ### Purpose
 
@@ -100,7 +100,7 @@ This approach enables bidirectional focus switching in WezTerm, similar to tmux.
 
 ---
 
-## sendOnly Mode
+## input Subcommand
 
 ### Purpose
 
@@ -111,22 +111,22 @@ Sends content to the target pane without opening an editor, designed to be execu
 This mode is designed to be executed from within the editor, where environment variables are properly inherited.
 
 #### Workflow
-1. **When launching the editor in openEditor mode**:
+1. **When launching the editor in open subcommand**:
    - The following environment variables are set when launching the editor:
      - `EDITPROMPT_TARGET_PANE`: Target pane ID
      - `EDITPROMPT_MUX`: Multiplexer to use (`tmux` or `wezterm`)
      - `EDITPROMPT_ALWAYS_COPY`: Clipboard copy configuration
      - `EDITPROMPT=1`: Flag indicating launched by editprompt
 
-2. **When executing sendOnly mode from within the editor**:
-   - Execute `editprompt -- "content"` from editors like Neovim
+2. **When executing input subcommand from within the editor**:
+   - Execute `editprompt input -- "content"` from editors like Neovim
    - Inherits environment variables from the parent process (editor)
    - Reads `EDITPROMPT_TARGET_PANE` and other variables to send content to the original target pane
 
 ```lua
 -- Example execution from Neovim
 vim.system(
-  { "editprompt", "--", content },
+  { "editprompt", "input", "--", content },
   { text = true },
   function(obj)
     -- Environment variables are properly inherited when executed from the editor
@@ -140,11 +140,11 @@ vim.system(
 
 ---
 
-## quote Mode
+## collect Subcommand
 
 ### Purpose
 
-Collects text selections and stores them as quoted text (with `> ` prefix) in pane variables or persistent storage. Used to accumulate multiple selections for later retrieval with capture mode.
+Collects text selections and stores them as quoted text (with `> ` prefix) in pane variables or persistent storage. Used to accumulate multiple selections for later retrieval with dump subcommand.
 
 ### Mechanism
 
@@ -154,11 +154,11 @@ This mode enables collecting multiple text selections while reading AI responses
 
 **tmux Implementation:**
 - Reads text from stdin using pipe in copy mode
-- Example: `bind-key -T copy-mode-vi C-e { send-keys -X pipe "editprompt --quote --target-pane #{pane_id}" }`
+- Example: `bind-key -T copy-mode-vi C-e { send-keys -X pipe "editprompt collect --target-pane #{pane_id}" }`
 
 **WezTerm Implementation:**
 - Receives text as a positional argument
-- Example: `editprompt --quote --mux wezterm --target-pane <id> -- "<text>"`
+- Example: `editprompt collect --mux wezterm --target-pane <id> -- "<text>"`
 - Uses `wezterm.shell_quote_arg()` for proper escaping
 
 #### Text Processing
@@ -206,23 +206,23 @@ conf.set(`wezterm.targetPane.pane_${paneId}.quote_text`, newQuotes);
 
 ---
 
-## capture Mode
+## dump Subcommand
 
 ### Purpose
 
-Retrieves all accumulated quoted text from quote mode and outputs it to stdout, then clears the storage. Designed to be executed from within an editor session to insert collected quotes.
+Retrieves all accumulated quoted text from collect subcommand and outputs it to stdout, then clears the storage. Designed to be executed from within an editor session to insert collected quotes.
 
 ### Mechanism
 
-This mode is designed to work with the quote mode workflow, retrieving accumulated selections for editing and replying.
+This mode is designed to work with the collect subcommand workflow, retrieving accumulated selections for editing and replying.
 
 #### Configuration Source
 
-Unlike quote mode which requires `--target-pane` argument, capture mode reads configuration from environment variables:
+Unlike collect subcommand which requires `--target-pane` argument, dump subcommand reads configuration from environment variables:
 - `EDITPROMPT_TARGET_PANE`: Target pane ID (required)
 - `EDITPROMPT_MUX`: Multiplexer type (`tmux` or `wezterm`)
 
-These variables are automatically set when launching the editor in openEditor mode.
+These variables are automatically set when launching the editor in open subcommand.
 
 #### Workflow
 
