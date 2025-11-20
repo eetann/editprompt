@@ -1,4 +1,4 @@
-import type { MuxType } from "../modules/process";
+import { define } from "gunshi";
 import {
   checkPaneExists,
   clearEditorPaneId,
@@ -9,6 +9,13 @@ import {
   isEditorPane,
 } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
+import {
+  ARG_MUX,
+  ARG_TARGET_PANE,
+  validateMux,
+  validateTargetPane,
+} from "./args";
+import type { MuxType } from "./common";
 
 export async function runResumeMode(
   targetPane: string,
@@ -98,3 +105,18 @@ export async function runResumeMode(
   await focusPane(editorPaneId);
   process.exit(0);
 }
+
+export const resumeCommand = define({
+  name: "resume",
+  description: "Resume existing editor pane or focus back to target pane",
+  args: {
+    mux: ARG_MUX,
+    "target-pane": ARG_TARGET_PANE,
+  },
+  async run(ctx) {
+    const targetPane = validateTargetPane(ctx.values["target-pane"], "resume");
+    const mux = validateMux(ctx.values.mux);
+
+    await runResumeMode(targetPane, mux);
+  },
+});

@@ -1,15 +1,16 @@
+import { define } from "gunshi";
 import { clearQuoteVariable, getQuoteVariableContent } from "../modules/tmux";
 import { clearQuoteText, getQuoteText } from "../modules/wezterm";
 import { readSendConfig } from "../utils/sendConfig";
 
-export async function runCaptureMode(): Promise<void> {
+export async function runDumpMode(): Promise<void> {
   try {
     // Get config from environment variables
     const config = readSendConfig();
 
     if (!config.targetPane) {
       console.error(
-        "Error: EDITPROMPT_TARGET_PANE environment variable is required in capture mode",
+        "Error: EDITPROMPT_TARGET_PANE environment variable is required in dump mode",
       );
       process.exit(1);
     }
@@ -34,3 +35,13 @@ export async function runCaptureMode(): Promise<void> {
     process.exit(1);
   }
 }
+
+export const dumpCommand = define({
+  name: "dump",
+  description:
+    "Output and clear collected quoted text from environment variables",
+  args: {},
+  async run() {
+    await runDumpMode();
+  },
+});

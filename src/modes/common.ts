@@ -1,13 +1,40 @@
+import clipboardy from "clipboardy";
+import { focusPane as focusTmuxPane, inputToTmuxPane } from "../modules/tmux";
 import {
-  type MuxType,
-  copyToClipboard,
-  sendContentToPane,
-} from "../modules/process";
-import { sendContentToPaneWithAutoSend } from "./sendOnly";
+  focusPane as focusWeztermPane,
+  inputToWeztermPane,
+} from "../modules/wezterm";
 
-function outputContent(content: string): void {
-  console.log("---");
-  console.log(content);
+export type MuxType = "tmux" | "wezterm";
+
+export function isMuxType(value: unknown): value is MuxType {
+  return value === "tmux" || value === "wezterm";
+}
+
+export const SUPPORTED_MUXES: MuxType[] = ["tmux", "wezterm"];
+
+export async function copyToClipboard(content: string): Promise<void> {
+  await clipboardy.write(content);
+}
+
+async function inputContentToPaneWithFocus(
+  content: string,
+  mux: MuxType,
+  targetPaneId: string,
+  alwaysCopy: boolean,
+): Promise<void> {
+  if (mux === "wezterm") {
+    await inputToWeztermPane(targetPaneId, content);
+    await focusWeztermPane(targetPaneId);
+  } else {
+    await inputToTmuxPane(targetPaneId, content);
+    await focusTmuxPane(targetPaneId);
+  }
+
+  if (alwaysCopy) {
+    await copyToClipboard(content);
+    console.log("Also copied to clipboard.");
+  }
 }
 
 export async function handleContentDelivery(
@@ -22,7 +49,7 @@ export async function handleContentDelivery(
 
   if (targetPane) {
     try {
-      await sendContentToPane(content, mux, targetPane, alwaysCopy);
+      await inputContentToPaneWithFocus(content, mux, targetPane, alwaysCopy);
       console.log("Content sent successfully!");
     } catch (error) {
       console.log(
@@ -42,31 +69,4 @@ export async function handleContentDelivery(
       );
     }
   }
-
-  outputContent(content);
-}
-
-export async function handleAutoSendDelivery(
-  content: string,
-  mux: MuxType,
-  targetPane: string,
-  sendKey: string,
-): Promise<void> {
-  // Validation
-  if (!content || !targetPane) {
-    throw new Error("Content and target pane are required");
-  }
-
-  try {
-    await sendContentToPaneWithAutoSend(content, mux, targetPane, sendKey);
-    console.log("Content sent and submitted successfully!");
-  } catch (error) {
-    console.error(
-      `Failed to send content: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-    throw error;
-  }
-
-  // Output content for reference
-  outputContent(content);
 }

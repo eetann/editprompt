@@ -122,7 +122,7 @@ export async function sendKeyToTmuxPane(
   await execAsync(`tmux send-keys -t '${paneId}' '${key}'`);
 }
 
-export async function sendContentToTmuxPaneNoFocus(
+export async function inputToTmuxPane(
   paneId: string,
   content: string,
 ): Promise<void> {

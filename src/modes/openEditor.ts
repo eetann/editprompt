@@ -1,5 +1,5 @@
+import { define } from "gunshi";
 import { openEditorAndGetContent } from "../modules/editor";
-import type { MuxType } from "../modules/process";
 import {
   clearEditorPaneId,
   getCurrentPaneId,
@@ -8,7 +8,14 @@ import {
 } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
-import { handleContentDelivery } from "./common";
+import {
+  ARG_ALWAYS_COPY,
+  ARG_EDITOR,
+  ARG_MUX,
+  ARG_TARGET_PANE,
+  validateMux,
+} from "./args";
+import { type MuxType, handleContentDelivery } from "./common";
 
 interface OpenEditorModeOptions {
   mux: MuxType;
@@ -65,6 +72,10 @@ export async function runOpenEditorMode(
         options.targetPane,
         options.alwaysCopy,
       );
+
+      // Output content for reference
+      console.log("---");
+      console.log(content);
     } catch (error) {
       console.error(
         `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -87,3 +98,31 @@ export async function runOpenEditorMode(
     }
   }
 }
+
+export const openCommand = define({
+  name: "open",
+  description: "Open editor and send content to target pane",
+  args: {
+    mux: ARG_MUX,
+    "target-pane": ARG_TARGET_PANE,
+    editor: ARG_EDITOR,
+    "always-copy": ARG_ALWAYS_COPY,
+    env: {
+      short: "E",
+      description: "Environment variables to set (e.g., KEY=VALUE)",
+      type: "string",
+      multiple: true,
+    },
+  },
+  async run(ctx) {
+    const mux = validateMux(ctx.values.mux);
+
+    await runOpenEditorMode({
+      mux,
+      targetPane: ctx.values["target-pane"] as string | undefined,
+      alwaysCopy: Boolean(ctx.values["always-copy"]),
+      editor: ctx.values.editor as string | undefined,
+      env: ctx.values.env as string[] | undefined,
+    });
+  },
+});

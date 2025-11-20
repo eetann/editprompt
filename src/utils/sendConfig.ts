@@ -1,4 +1,4 @@
-import type { MuxType } from "../modules/process";
+import type { MuxType } from "../modes/common";
 import type { SendConfig } from "../types/send";
 
 const VALID_MUX_TYPES = ["tmux", "wezterm"] as const;

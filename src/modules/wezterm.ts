@@ -192,7 +192,7 @@ export async function sendKeyToWeztermPane(
   );
 }
 
-export async function sendContentToWeztermPaneNoFocus(
+export async function inputToWeztermPane(
   paneId: string,
   content: string,
 ): Promise<void> {
