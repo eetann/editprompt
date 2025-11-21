@@ -10,13 +10,11 @@ describe("readSendConfig", () => {
   });
 
   test("正常系 - すべての環境変数が設定されている", () => {
-    process.env.EDITPROMPT_TARGET_PANE = "%0";
     process.env.EDITPROMPT_MUX = "tmux";
     process.env.EDITPROMPT_ALWAYS_COPY = "1";
 
     const config = readSendConfig();
 
-    expect(config.targetPane).toBe("%0");
     expect(config.mux).toBe("tmux");
     expect(config.alwaysCopy).toBe(true);
 
@@ -25,7 +23,6 @@ describe("readSendConfig", () => {
   });
 
   test("異常系 - EDITPROMPT_MUXが不正な値", () => {
-    process.env.EDITPROMPT_TARGET_PANE = "%0";
     process.env.EDITPROMPT_MUX = "invalid";
     process.env.EDITPROMPT_ALWAYS_COPY = "1";
 
@@ -36,7 +33,6 @@ describe("readSendConfig", () => {
   });
 
   test("正常系 - EDITPROMPT_MUXが未設定の場合デフォルト値tmux", () => {
-    process.env.EDITPROMPT_TARGET_PANE = "%0";
     process.env.EDITPROMPT_MUX = undefined;
     process.env.EDITPROMPT_ALWAYS_COPY = "0";
 
@@ -49,7 +45,6 @@ describe("readSendConfig", () => {
   });
 
   test("正常系 - EDITPROMPT_ALWAYS_COPYが1の場合true", () => {
-    process.env.EDITPROMPT_TARGET_PANE = "%0";
     process.env.EDITPROMPT_MUX = "tmux";
     process.env.EDITPROMPT_ALWAYS_COPY = "1";
 
