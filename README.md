@@ -319,6 +319,20 @@ This copies all collected quotes to the clipboard and clears the buffer, ready f
 - Each quote is prefixed with `> ` in markdown quote format
 - Multiple quotes are separated with blank lines
 
+### Sending to Multiple Panes
+
+You can send content to multiple target panes simultaneously by specifying `--target-pane` multiple times:
+
+```bash
+# Send to multiple panes with open subcommand
+editprompt open --target-pane %1 --target-pane %2 --target-pane %3
+
+# Register multiple target panes for use with resume and input modes
+editprompt register --target-pane %1 --target-pane %2
+```
+
+The content will be sent sequentially to all specified panes. This is useful when you want to send the same prompt to multiple CLI sessions.
+
 #### Neovim Integration Example
 
 You can set up a convenient keybinding to capture your quote content:

@@ -5,6 +5,7 @@ This document provides technical details about how each subcommand works, includ
 ## Available Subcommands
 
 - open
+- register
 - resume
 - input
 - collect
@@ -17,6 +18,18 @@ This document provides technical details about how each subcommand works, includ
 ### Purpose
 
 Launches an editor, waits for content to be written, and sends it to the target pane when the editor closes.
+
+### Multiple Target Panes Support
+
+The `--target-pane` option can be specified multiple times. Content is sent sequentially to all specified panes.
+
+```bash
+# Example: sending to multiple panes
+editprompt open --target-pane %1 --target-pane %2 --target-pane %3
+```
+
+- If all panes receive content successfully: exit code 0
+- If some or all panes fail to receive content: exit code 1
 
 ### Constraints and Solutions
 
@@ -48,6 +61,40 @@ SplitPane({
 
 ---
 
+## register Subcommand
+
+### Purpose
+
+Registers the relationship between editor panes and target panes. Enables bidirectional focus switching in resume mode and content delivery in input mode.
+
+### Usage Examples
+
+```bash
+# Register target panes to the current pane (editor pane)
+editprompt register --target-pane %1 --target-pane %2
+
+# Explicitly specify editor pane ID for registration
+editprompt register --editor-pane %10 --target-pane %1 --target-pane %2
+```
+
+### Behavior
+
+1. **Determine editor pane**:
+   - If `--editor-pane` option is specified: Use that ID
+   - If not specified: Use the current pane as the editor pane
+   - Error if the current pane is not an editor pane
+
+2. **Merge with existing target panes**:
+   - Retrieve existing target pane IDs already registered to the editor pane
+   - Merge with newly specified target pane IDs
+   - Remove duplicates to create a unique array
+
+3. **Save relationship**:
+   - **tmux**: Save as comma-separated values in `@editprompt_target_panes` pane variable
+   - **WezTerm**: Save `targetPaneIds` as an array using Conf library
+
+---
+
 ## resume Subcommand
 
 ### Purpose
@@ -63,16 +110,18 @@ This mode needs to maintain the relationship between editor panes and target pan
 - **Variables used**:
   - `@editprompt_editor_pane`: Set on target pane, stores editor pane ID
   - `@editprompt_is_editor`: Set on editor pane, flag indicating it's an editor pane
-  - `@editprompt_target_pane`: Set on editor pane, stores original target pane ID
+  - `@editprompt_target_panes`: Set on editor pane, stores original target pane IDs as comma-separated values
 
 ```bash
 # Save editor pane ID on target pane
 tmux set-option -pt '${targetPaneId}' @editprompt_editor_pane '${editorPaneId}'
 
-# Save flag and target pane ID on editor pane
+# Save flag and multiple target pane IDs on editor pane
 tmux set-option -pt '${editorPaneId}' @editprompt_is_editor 1
-tmux set-option -pt '${editorPaneId}' @editprompt_target_pane '${targetPaneId}'
+tmux set-option -pt '${editorPaneId}' @editprompt_target_panes '${targetPaneId1},${targetPaneId2}'
 ```
+
+When switching back from the editor pane, it focuses on the first existing pane among the saved target pane IDs (retry logic).
 
 While tmux's `run-shell` does not inherit environment variables, it can access pane variables like `#{pane_id}`, making this approach work seamlessly.
 
@@ -84,7 +133,7 @@ While tmux's `run-shell` does not inherit environment variables, it can access p
   - Editor panes also run processes like nvim after launch, facing the same constraint
 - **Solution**: Use the [Conf](https://github.com/sindresorhus/conf) library to persist data to the filesystem
   - `wezterm.targetPane.pane_${targetPaneId}`: Stores editor pane ID
-  - `wezterm.editorPane.pane_${editorPaneId}`: Stores target pane ID
+  - `wezterm.editorPane.pane_${editorPaneId}`: Stores multiple target pane IDs as an array
 
 ```typescript
 // Use Conf library to save the relationship between target and editor panes
@@ -92,9 +141,11 @@ conf.set(`wezterm.targetPane.pane_${targetPaneId}`, {
   editorPaneId: editorPaneId,
 });
 conf.set(`wezterm.editorPane.pane_${editorPaneId}`, {
-  targetPaneId: targetPaneId,
+  targetPaneIds: [targetPaneId1, targetPaneId2],
 });
 ```
+
+When switching back from the editor pane, it focuses on the first existing target pane, similar to tmux.
 
 This approach enables bidirectional focus switching in WezTerm, similar to tmux.
 
@@ -108,20 +159,23 @@ Sends content to the target pane without opening an editor, designed to be execu
 
 ### Mechanism
 
-This mode is designed to be executed from within the editor, where environment variables are properly inherited.
+This mode is designed to be executed from within the editor, reading configuration from both environment variables and pane variables/Conf.
 
 #### Workflow
 1. **When launching the editor in open subcommand**:
    - The following environment variables are set when launching the editor:
-     - `EDITPROMPT_TARGET_PANE`: Target pane ID
      - `EDITPROMPT_MUX`: Multiplexer to use (`tmux` or `wezterm`)
      - `EDITPROMPT_ALWAYS_COPY`: Clipboard copy configuration
      - `EDITPROMPT=1`: Flag indicating launched by editprompt
+   - Target pane IDs are stored in pane variables or Conf:
+     - tmux: `@editprompt_target_panes` (comma-separated)
+     - wezterm: `targetPaneIds` (array)
 
 2. **When executing input subcommand from within the editor**:
    - Execute `editprompt input -- "content"` from editors like Neovim
    - Inherits environment variables from the parent process (editor)
-   - Reads `EDITPROMPT_TARGET_PANE` and other variables to send content to the original target pane
+   - Gets the current pane ID and reads multiple target pane IDs from pane variables/Conf
+   - Sends content sequentially to each target pane
 
 ```lua
 -- Example execution from Neovim
@@ -137,6 +191,7 @@ vim.system(
 ### Benefits
 - Send content multiple times without closing the editor
 - Environment variable inheritance happens naturally, requiring no additional configuration or arguments
+- Supports sending to multiple target panes
 
 ---
 
@@ -218,26 +273,31 @@ This mode is designed to work with the collect subcommand workflow, retrieving a
 
 #### Configuration Source
 
-Unlike collect subcommand which requires `--target-pane` argument, dump subcommand reads configuration from environment variables:
-- `EDITPROMPT_TARGET_PANE`: Target pane ID (required)
+Unlike collect subcommand which requires `--target-pane` argument, dump subcommand reads configuration from environment variables and pane variables/Conf:
 - `EDITPROMPT_MUX`: Multiplexer type (`tmux` or `wezterm`)
+- Multiple target pane IDs retrieved from current pane ID:
+  - tmux: `@editprompt_target_panes` (comma-separated)
+  - wezterm: `targetPaneIds` (array)
 
-These variables are automatically set when launching the editor in open subcommand.
+These configurations are automatically set when launching the editor in open subcommand.
 
 #### Workflow
 
-1. **Read environment variables**: Gets target pane ID and multiplexer type from environment
-2. **Retrieve quote content**: Fetches accumulated quotes from storage
+1. **Read environment variables**: Gets multiplexer type from environment
+2. **Get current pane ID**: Identifies the editor pane ID
+3. **Get target pane IDs**: Retrieves multiple target pane IDs from pane variables/Conf
+4. **Retrieve quote content**: Fetches accumulated quotes from all target panes
    - **tmux**: Reads from `@editprompt_quote` pane variable
    - **WezTerm**: Reads from `wezterm.targetPane.pane_${paneId}.quote_text` in Conf
-3. **Clear storage**: Removes quote content from storage after retrieval
+5. **Clear storage**: Removes quote content from storage for each target pane after retrieval
    - **tmux**: Sets `@editprompt_quote` to empty string
    - **WezTerm**: Deletes `quote_text` key from Conf
-4. **Output to stdout**: Writes retrieved content with trailing newline cleanup (max 2 newlines)
+6. **Combine and output**: Joins all quotes with newlines and writes to stdout with trailing newline cleanup (max 2 newlines)
 
 ```typescript
-// Output with cleaned trailing newlines
-process.stdout.write(quoteContent.replace(/\n{3,}$/, "\n\n"));
+// Combine and output with cleaned trailing newlines
+const combinedContent = quoteContents.join("\n");
+process.stdout.write(combinedContent.replace(/\n{3,}$/, "\n\n"));
 ```
 
 #### Storage Retrieval
@@ -263,6 +323,7 @@ conf.delete(`wezterm.targetPane.pane_${paneId}.quote_text`);
 
 ### Benefits
 - Retrieves all accumulated quotes in a single command
+- Automatically combines quotes from multiple target panes
 - Automatically clears storage for next collection session
 - Works seamlessly from within editor via environment variable inheritance
 - No need to specify target pane or multiplexer type manually
