@@ -5,7 +5,7 @@ import { extractRawContent } from "../utils/argumentParser";
 import { processQuoteText } from "../utils/quoteProcessor";
 import {
   ARG_MUX,
-  ARG_TARGET_PANE,
+  ARG_TARGET_PANE_SINGLE,
   validateMux,
   validateTargetPane,
 } from "./args";
@@ -64,7 +64,7 @@ export const collectCommand = define({
   description: "Collect and accumulate quoted text to pane variable",
   args: {
     mux: ARG_MUX,
-    "target-pane": ARG_TARGET_PANE,
+    "target-pane": ARG_TARGET_PANE_SINGLE,
   },
   async run(ctx) {
     const targetPane = validateTargetPane(ctx.values["target-pane"], "collect");

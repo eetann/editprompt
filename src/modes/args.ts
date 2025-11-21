@@ -7,10 +7,17 @@ export const ARG_MUX: ArgSchema = {
   type: "string",
 };
 
-export const ARG_TARGET_PANE: ArgSchema = {
+export const ARG_TARGET_PANE_SINGLE: ArgSchema = {
   short: "t",
   description: "Target pane ID",
   type: "string",
+};
+
+export const ARG_TARGET_PANE_MULTI: ArgSchema = {
+  short: "t",
+  description: "Target pane ID (can be specified multiple times)",
+  type: "string",
+  multiple: true,
 };
 
 export const ARG_EDITOR: ArgSchema = {
@@ -46,4 +53,14 @@ export function validateTargetPane(
     process.exit(1);
   }
   return value;
+}
+
+export function normalizeTargetPanes(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return [...new Set(value)];
+  }
+  if (typeof value === "string") {
+    return [value];
+  }
+  return [];
 }

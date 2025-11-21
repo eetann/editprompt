@@ -4,7 +4,6 @@ import {
   clearEditorPaneId,
   getCurrentPaneId,
   markAsEditorPane,
-  saveEditorPaneId,
 } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
@@ -12,14 +11,20 @@ import {
   ARG_ALWAYS_COPY,
   ARG_EDITOR,
   ARG_MUX,
-  ARG_TARGET_PANE,
+  ARG_TARGET_PANE_MULTI,
+  normalizeTargetPanes,
   validateMux,
 } from "./args";
-import { type MuxType, handleContentDelivery } from "./common";
+import {
+  type MuxType,
+  copyToClipboard,
+  focusFirstSuccessPane,
+  handleContentDelivery,
+} from "./common";
 
 interface OpenEditorModeOptions {
   mux: MuxType;
-  targetPane?: string;
+  targetPanes: string[];
   alwaysCopy: boolean;
   editor?: string;
   env?: string[];
@@ -28,18 +33,17 @@ interface OpenEditorModeOptions {
 export async function runOpenEditorMode(
   options: OpenEditorModeOptions,
 ): Promise<void> {
-  if (options.targetPane && options.mux === "tmux") {
+  if (options.targetPanes.length > 0 && options.mux === "tmux") {
     try {
       const currentPaneId = await getCurrentPaneId();
-      await saveEditorPaneId(options.targetPane, currentPaneId);
-      await markAsEditorPane(currentPaneId, options.targetPane);
+      await markAsEditorPane(currentPaneId, options.targetPanes);
     } catch {
       //
     }
-  } else if (options.targetPane && options.mux === "wezterm") {
+  } else if (options.targetPanes.length > 0 && options.mux === "wezterm") {
     try {
       const currentPaneId = await wezterm.getCurrentPaneId();
-      await wezterm.markAsEditorPane(currentPaneId, options.targetPane);
+      await wezterm.markAsEditorPane(currentPaneId, options.targetPanes);
     } catch {
       //
     }
@@ -47,7 +51,6 @@ export async function runOpenEditorMode(
 
   try {
     const sendConfig: SendConfig = {
-      targetPane: options.targetPane,
       mux: options.mux,
       alwaysCopy: options.alwaysCopy,
     };
@@ -66,16 +69,35 @@ export async function runOpenEditorMode(
     }
 
     try {
-      await handleContentDelivery(
+      const result = await handleContentDelivery(
         content,
         options.mux,
-        options.targetPane,
-        options.alwaysCopy,
+        options.targetPanes,
       );
 
       // Output content for reference
       console.log("---");
       console.log(content);
+
+      // Copy to clipboard if alwaysCopy is enabled
+      if (options.alwaysCopy && !result.allFailed) {
+        await copyToClipboard(content);
+        console.log("Also copied to clipboard.");
+      }
+
+      // Focus on the first successful pane
+      if (options.targetPanes.length > 0 && result.successCount > 0) {
+        await focusFirstSuccessPane(
+          options.mux,
+          options.targetPanes,
+          result.failedPanes,
+        );
+      }
+
+      // Exit with code 1 if not all panes succeeded (requirement 6)
+      if (!result.allSuccess) {
+        process.exit(1);
+      }
     } catch (error) {
       console.error(
         `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -83,15 +105,19 @@ export async function runOpenEditorMode(
       process.exit(1);
     }
   } finally {
-    if (options.targetPane && options.mux === "tmux") {
+    if (options.targetPanes.length > 0 && options.mux === "tmux") {
       try {
-        await clearEditorPaneId(options.targetPane);
+        for (const targetPane of options.targetPanes) {
+          await clearEditorPaneId(targetPane);
+        }
       } catch {
         //
       }
-    } else if (options.targetPane && options.mux === "wezterm") {
+    } else if (options.targetPanes.length > 0 && options.mux === "wezterm") {
       try {
-        await wezterm.clearEditorPaneId(options.targetPane);
+        for (const targetPane of options.targetPanes) {
+          await wezterm.clearEditorPaneId(targetPane);
+        }
       } catch {
         //
       }
@@ -104,7 +130,7 @@ export const openCommand = define({
   description: "Open editor and send content to target pane",
   args: {
     mux: ARG_MUX,
-    "target-pane": ARG_TARGET_PANE,
+    "target-pane": ARG_TARGET_PANE_MULTI,
     editor: ARG_EDITOR,
     "always-copy": ARG_ALWAYS_COPY,
     env: {
@@ -116,10 +142,11 @@ export const openCommand = define({
   },
   async run(ctx) {
     const mux = validateMux(ctx.values.mux);
+    const targetPanes = normalizeTargetPanes(ctx.values["target-pane"]);
 
     await runOpenEditorMode({
       mux,
-      targetPane: ctx.values["target-pane"] as string | undefined,
+      targetPanes,
       alwaysCopy: Boolean(ctx.values["always-copy"]),
       editor: ctx.values.editor as string | undefined,
       env: ctx.values.env as string[] | undefined,

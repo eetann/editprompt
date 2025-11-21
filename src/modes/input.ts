@@ -1,10 +1,20 @@
 import { define } from "gunshi";
-import { inputToTmuxPane, sendKeyToTmuxPane } from "../modules/tmux";
-import { inputToWeztermPane, sendKeyToWeztermPane } from "../modules/wezterm";
+import {
+  getCurrentPaneId,
+  getTargetPaneIds,
+  inputToTmuxPane,
+  isEditorPane,
+  sendKeyToTmuxPane,
+} from "../modules/tmux";
+import * as wezterm from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { processContent } from "../utils/contentProcessor";
 import { readSendConfig } from "../utils/sendConfig";
-import { handleContentDelivery } from "./common";
+import {
+  copyToClipboard,
+  focusFirstSuccessPane,
+  handleContentDelivery,
+} from "./common";
 
 export async function runInputMode(
   rawContent: string,
@@ -20,53 +30,90 @@ export async function runInputMode(
 
   const config = readSendConfig();
 
-  if (!config.targetPane) {
-    console.error(
-      "Error: EDITPROMPT_TARGET_PANE environment variable is required in input mode",
-    );
+  // Get current pane and check if it's an editor pane
+  let currentPaneId: string;
+  let isEditor: boolean;
+
+  if (config.mux === "tmux") {
+    currentPaneId = await getCurrentPaneId();
+    isEditor = await isEditorPane(currentPaneId);
+  } else {
+    currentPaneId = await wezterm.getCurrentPaneId();
+    isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
+  }
+
+  if (!isEditor) {
+    console.error("Error: Current pane is not an editor pane");
+    process.exit(1);
+  }
+
+  // Get target pane IDs from pane variables or Conf
+  let targetPanes: string[];
+  if (config.mux === "tmux") {
+    targetPanes = await getTargetPaneIds(currentPaneId);
+  } else {
+    targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
+  }
+
+  if (targetPanes.length === 0) {
+    console.error("Error: No target panes registered for this editor pane");
     process.exit(1);
   }
 
   // Auto-send mode
   if (autoSend) {
-    // Validate multiplexer availability
-    if (!config.mux) {
-      console.error(
-        "Error: --auto-send requires a multiplexer (tmux or wezterm)",
-      );
-      process.exit(1);
+    const key = sendKey || (config.mux === "wezterm" ? "\\r" : "C-m");
+
+    let successCount = 0;
+    for (const targetPane of targetPanes) {
+      try {
+        if (config.mux === "wezterm") {
+          await wezterm.inputToWeztermPane(targetPane, content);
+          await wezterm.sendKeyToWeztermPane(targetPane, key);
+        } else {
+          await inputToTmuxPane(targetPane, content);
+          await sendKeyToTmuxPane(targetPane, key);
+        }
+        successCount++;
+      } catch (error) {
+        console.error(
+          `Failed to send to pane ${targetPane}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      }
     }
 
-    try {
-      const key = sendKey || (config.mux === "wezterm" ? "\\r" : "C-m");
-
-      // Input content and send key (no focus change)
-      if (config.mux === "wezterm") {
-        await inputToWeztermPane(config.targetPane, content);
-        await sendKeyToWeztermPane(config.targetPane, key);
-      } else {
-        await inputToTmuxPane(config.targetPane, content);
-        await sendKeyToTmuxPane(config.targetPane, key);
-      }
-
+    if (successCount > 0) {
       console.log("Content sent and submitted successfully!");
-    } catch (error) {
-      console.error(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+    } else {
+      console.error("Error: All target panes failed to receive content");
       process.exit(1);
     }
     return;
   }
 
-  // Normal mode (with focus)
+  // Normal mode (focus on first successful pane)
   try {
-    await handleContentDelivery(
+    const result = await handleContentDelivery(
       content,
       config.mux,
-      config.targetPane,
-      config.alwaysCopy,
+      targetPanes,
     );
+
+    // Copy to clipboard if alwaysCopy is enabled
+    if (config.alwaysCopy && !result.allFailed) {
+      await copyToClipboard(content);
+      console.log("Also copied to clipboard.");
+    }
+
+    // Focus on the first successful pane
+    if (result.successCount > 0) {
+      await focusFirstSuccessPane(config.mux, targetPanes, result.failedPanes);
+    }
+
+    // Exit with code 1 if all panes failed (requirement 3)
+    if (result.allFailed) {
+      process.exit(1);
+    }
   } catch (error) {
     console.error(
       `Error: ${error instanceof Error ? error.message : "Unknown error"}`,

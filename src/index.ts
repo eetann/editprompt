@@ -5,6 +5,7 @@ import { collectCommand } from "./modes/collect";
 import { dumpCommand } from "./modes/dump";
 import { inputCommand } from "./modes/input";
 import { openCommand } from "./modes/openEditor";
+import { registerCommand } from "./modes/register";
 import { resumeCommand } from "./modes/resume";
 
 const argv = process.argv.slice(2);
@@ -38,6 +39,7 @@ await cli(
     version: pkg.version,
     subCommands: {
       open: openCommand,
+      register: registerCommand,
       resume: resumeCommand,
       input: inputCommand,
       collect: collectCommand,

@@ -1,6 +1,12 @@
 import { define } from "gunshi";
-import { clearQuoteVariable, getQuoteVariableContent } from "../modules/tmux";
-import { clearQuoteText, getQuoteText } from "../modules/wezterm";
+import {
+  clearQuoteVariable,
+  getCurrentPaneId,
+  getQuoteVariableContent,
+  getTargetPaneIds,
+  isEditorPane,
+} from "../modules/tmux";
+import * as wezterm from "../modules/wezterm";
 import { readSendConfig } from "../utils/sendConfig";
 
 export async function runDumpMode(): Promise<void> {
@@ -8,25 +14,55 @@ export async function runDumpMode(): Promise<void> {
     // Get config from environment variables
     const config = readSendConfig();
 
-    if (!config.targetPane) {
-      console.error(
-        "Error: EDITPROMPT_TARGET_PANE environment variable is required in dump mode",
-      );
+    // Get current pane and check if it's an editor pane
+    let currentPaneId: string;
+    let isEditor: boolean;
+
+    if (config.mux === "tmux") {
+      currentPaneId = await getCurrentPaneId();
+      isEditor = await isEditorPane(currentPaneId);
+    } else {
+      currentPaneId = await wezterm.getCurrentPaneId();
+      isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
+    }
+
+    if (!isEditor) {
+      console.error("Error: Current pane is not an editor pane");
       process.exit(1);
     }
 
-    // Get and clear quote content based on multiplexer type
-    let quoteContent: string;
+    // Get target pane IDs from pane variables or Conf
+    let targetPanes: string[];
     if (config.mux === "tmux") {
-      quoteContent = await getQuoteVariableContent(config.targetPane);
-      await clearQuoteVariable(config.targetPane);
+      targetPanes = await getTargetPaneIds(currentPaneId);
     } else {
-      // wezterm
-      quoteContent = await getQuoteText(config.targetPane);
-      await clearQuoteText(config.targetPane);
+      targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
     }
 
-    process.stdout.write(quoteContent.replace(/\n{3,}$/, "\n\n"));
+    if (targetPanes.length === 0) {
+      console.error("Error: No target panes registered for this editor pane");
+      process.exit(1);
+    }
+
+    // Get and clear quote content from all target panes
+    const quoteContents: string[] = [];
+    for (const targetPane of targetPanes) {
+      let content: string;
+      if (config.mux === "tmux") {
+        content = await getQuoteVariableContent(targetPane);
+        await clearQuoteVariable(targetPane);
+      } else {
+        content = await wezterm.getQuoteText(targetPane);
+        await wezterm.clearQuoteText(targetPane);
+      }
+      if (content.trim() !== "") {
+        quoteContents.push(content);
+      }
+    }
+
+    // Join all quote contents with newline
+    const combinedContent = quoteContents.join("\n");
+    process.stdout.write(combinedContent.replace(/\n{3,}$/, "\n\n"));
     process.exit(0);
   } catch (error) {
     console.error(
