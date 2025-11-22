@@ -8,6 +8,8 @@ A CLI tool that lets you write prompts for CLI tools using your favorite text ed
 
 ![send without closing editor](https://github.com/user-attachments/assets/b0e486af-78d7-4b70-8c82-64d330c22ba1)
 
+> [!IMPORTANT]
+> **📢 Migrating from v0.8.1 or earlier?** Please see the [Migration Guide](docs/migration-guide-v1.md) for upgrading to v1.0.0's subcommand-based interface.
 
 ## 🏆 Why editprompt?
 
@@ -44,11 +46,11 @@ editprompt supports three main workflows to fit different use cases:
 
 ### Workflow 1: Basic - Write and Send
 
-![wrihte and send prompt by editprompt](https://github.com/user-attachments/assets/6587b0c4-8132-4d5c-be68-3aa32a8d4df2) 
+![wrihte and send prompt by editprompt](https://github.com/user-attachments/assets/6587b0c4-8132-4d5c-be68-3aa32a8d4df2)
 
 The simplest way to use editprompt:
 
-1. Run `editprompt` to open your editor
+1. Run `editprompt open` to open your editor
 2. Write your prompt
 3. Save and close the editor
 4. Content is automatically sent to the target pane or clipboard
@@ -61,7 +63,7 @@ Perfect for one-off prompts when you need more space than a terminal input line.
 
 For iterating on prompts without constantly reopening the editor:
 
-1. Set up a keybinding to open editprompt with `--resume` mode
+1. Set up a keybinding to open editprompt with `resume` subcommand
 2. Editor pane stays open between sends
 3. Write, send, refine, send again - all without closing the editor
 4. Use the same keybinding to toggle between your work pane and editor pane
@@ -84,9 +86,9 @@ Ideal for trial-and-error workflows with AI assistants.
 
 For replying to specific parts of AI responses:
 
-1. Select text in your terminal (tmux copy mode or WezTerm selection) and trigger quote mode
+1. Select text in your terminal (tmux copy mode or WezTerm selection) and trigger collect mode
 2. Repeat to collect multiple selections
-3. Run `editprompt --capture` to retrieve all collected quotes
+3. Run `editprompt dump` to retrieve all collected quotes
 4. Edit and send your reply with context
 
 Perfect for addressing multiple points in long AI responses.
@@ -98,26 +100,27 @@ Perfect for addressing multiple points in long AI responses.
 
 ```bash
 # Use with your default editor (from $EDITOR)
-editprompt
+editprompt open
 
 # Specify a different editor
-editprompt --editor nvim
-editprompt -e nvim
+editprompt open --editor nvim
+editprompt open -e nvim
 
 # Always copy to clipboard
-editprompt --always-copy
+editprompt open --always-copy
 
 # Show help
 editprompt --help
+editprompt open --help
 ```
 
 ### Tmux Integration
 
 ```tmux
 bind -n M-q run-shell '\
-  editprompt --resume --target-pane #{pane_id} || \
+  editprompt resume --target-pane #{pane_id} || \
   tmux split-window -v -l 10 -c "#{pane_current_path}" \
-    "editprompt --editor nvim --always-copy --target-pane #{pane_id}"'
+    "editprompt open --editor nvim --always-copy --target-pane #{pane_id}"'
 ```
 
 
@@ -135,7 +138,7 @@ bind -n M-q run-shell '\
       "/bin/zsh",
       "-lc",
       string.format(
-        "editprompt --resume --mux wezterm --target-pane %s",
+        "editprompt resume --mux wezterm --target-pane %s",
         target_pane_id
       ),
     })
@@ -151,7 +154,7 @@ bind -n M-q run-shell '\
               "/bin/zsh",
               "-lc",
               string.format(
-                "editprompt --editor nvim --always-copy --mux wezterm --target-pane %s",
+                "editprompt open --editor nvim --always-copy --mux wezterm --target-pane %s",
                 target_pane_id
               ),
             },
@@ -175,14 +178,14 @@ While editprompt is running, you can send content to the target pane or clipboar
 
 ```bash
 # Run this command from within your editor session
-editprompt -- "your content here"
+editprompt input -- "your content here"
 # Sends content to target pane and moves focus there
 
-editprompt --auto-send -- "your content here"
+editprompt input --auto-send -- "your content here"
 # Sends content, automatically submits it (presses Enter), and returns focus to editor pane
 # Perfect for iterating on prompts without leaving your editor
 
-editprompt --auto-send --send-key "C-m" -- "your content here"
+editprompt input --auto-send --send-key "C-m" -- "your content here"
 # Customize the key to send after content (tmux format example)
 # WezTerm example: --send-key "\r" (default for WezTerm is \r, tmux default is Enter)
 ```
@@ -210,7 +213,7 @@ if vim.env.EDITPROMPT then
 
         -- Execute editprompt command
         vim.system(
-            { "editprompt", "--", content },
+            { "editprompt", "input", "--", content },
             { text = true },
             function(obj)
                 vim.schedule(function()
@@ -243,7 +246,7 @@ end
 Add this keybinding to your `.tmux.conf` to collect selected text as quotes:
 
 ```tmux
-bind-key -T copy-mode-vi C-e { send-keys -X pipe "editprompt --quote --target-pane #{pane_id}" }
+bind-key -T copy-mode-vi C-e { send-keys -X pipe "editprompt collect --target-pane #{pane_id}" }
 ```
 
 **Usage:**
@@ -260,7 +263,7 @@ Add this event handler and keybinding to your `wezterm.lua` to collect selected 
 ```lua
 local wezterm = require("wezterm")
 
-wezterm.on("editprompt-quote", function(window, pane)
+wezterm.on("editprompt-collect", function(window, pane)
   local text = window:get_selection_text_for_pane(pane)
   local target_pane_id = tostring(pane:pane_id())
 
@@ -268,7 +271,7 @@ wezterm.on("editprompt-quote", function(window, pane)
     "/bin/zsh",
     "-lc",
     string.format(
-      "editprompt --quote --mux wezterm --target-pane %s -- %s",
+      "editprompt collect --mux wezterm --target-pane %s -- %s",
       target_pane_id,
       wezterm.shell_quote_arg(text)
     ),
@@ -280,7 +283,7 @@ return {
     {
       key = "e",
       mods = "CTRL",
-      action = wezterm.action.EmitEvent("editprompt-quote"),
+      action = wezterm.action.EmitEvent("editprompt-collect"),
     },
   },
 }
@@ -297,7 +300,7 @@ return {
 Run this command from within your editor pane to retrieve all collected quotes:
 
 ```bash
-editprompt --capture
+editprompt dump
 ```
 
 This copies all collected quotes to the clipboard and clears the buffer, ready for your reply.
@@ -305,7 +308,7 @@ This copies all collected quotes to the clipboard and clears the buffer, ready f
 **Complete workflow:**
 1. AI responds with multiple points
 2. Select each point in copy mode and press `Ctrl-e`
-3. Open your editor pane and run `editprompt --capture`
+3. Open your editor pane and run `editprompt dump`
 4. Edit the quoted text with your responses
 5. Send to AI
 
@@ -316,6 +319,20 @@ This copies all collected quotes to the clipboard and clears the buffer, ready f
 - Each quote is prefixed with `> ` in markdown quote format
 - Multiple quotes are separated with blank lines
 
+### Sending to Multiple Panes
+
+You can send content to multiple target panes simultaneously by specifying `--target-pane` multiple times:
+
+```bash
+# Send to multiple panes with open subcommand
+editprompt open --target-pane %1 --target-pane %2 --target-pane %3
+
+# Register multiple target panes for use with resume and input modes
+editprompt register --target-pane %1 --target-pane %2
+```
+
+The content will be sent sequentially to all specified panes. This is useful when you want to send the same prompt to multiple CLI sessions.
+
 #### Neovim Integration Example
 
 You can set up a convenient keybinding to capture your quote content:
@@ -323,7 +340,7 @@ You can set up a convenient keybinding to capture your quote content:
 vim.keymap.set("n", "<Space>X", function()
   vim.cmd("update")
 
-  vim.system({ "editprompt", "--capture" }, { text = true }, function(obj)
+  vim.system({ "editprompt", "dump" }, { text = true }, function(obj)
     vim.schedule(function()
       if obj.code == 0 then
         vim.cmd("silent write")
@@ -394,15 +411,15 @@ You can also pass custom environment variables to your editor:
 
 ```bash
 # Single environment variable
-editprompt --env THEME=dark
+editprompt open --env THEME=dark
 
 # Multiple environment variables
-editprompt --env THEME=dark --env FOO=fooooo
+editprompt open --env THEME=dark --env FOO=fooooo
 
 # Useful for editor-specific configurations
-editprompt --env NVIM_CONFIG=minimal
+editprompt open --env NVIM_CONFIG=minimal
 ```
 
 #### Target Pane Environment Variable
 
-When using the send-without-closing feature or quote capture, editprompt sets `EDITPROMPT_TARGET_PANE` to the target pane ID. This is automatically used by `editprompt --` and `editprompt --capture` commands.
+When using the send-without-closing feature or dump, editprompt sets `EDITPROMPT_TARGET_PANE` to the target pane ID. This is automatically used by `editprompt input` and `editprompt dump` commands.

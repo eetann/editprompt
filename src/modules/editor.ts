@@ -20,9 +20,6 @@ export async function launchEditor(
     // 環境変数の準備
     const configEnv: Record<string, string> = {};
     if (sendConfig) {
-      if (sendConfig.targetPane) {
-        configEnv.EDITPROMPT_TARGET_PANE = sendConfig.targetPane;
-      }
       configEnv.EDITPROMPT_MUX = sendConfig.mux;
       configEnv.EDITPROMPT_ALWAYS_COPY = sendConfig.alwaysCopy ? "1" : "0";
     }

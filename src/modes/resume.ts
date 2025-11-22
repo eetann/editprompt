@@ -1,14 +1,21 @@
-import type { MuxType } from "../modules/process";
+import { define } from "gunshi";
 import {
   checkPaneExists,
   clearEditorPaneId,
   focusPane,
   getCurrentPaneId,
   getEditorPaneId,
-  getTargetPaneId,
+  getTargetPaneIds,
   isEditorPane,
 } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
+import {
+  ARG_MUX,
+  ARG_TARGET_PANE_SINGLE,
+  validateMux,
+  validateTargetPane,
+} from "./args";
+import type { MuxType } from "./common";
 
 export async function runResumeMode(
   targetPane: string,
@@ -20,19 +27,29 @@ export async function runResumeMode(
 
     if (isEditor) {
       console.log("isEditor");
-      const originalTargetPaneId = await wezterm.getTargetPaneId(currentPaneId);
-      if (!originalTargetPaneId) {
-        console.log("Not found originalTargetPaneId");
+      const originalTargetPaneIds =
+        await wezterm.getTargetPaneIds(currentPaneId);
+      if (originalTargetPaneIds.length === 0) {
+        console.log("Not found originalTargetPaneIds");
         process.exit(1);
       }
 
-      const exists = await wezterm.checkPaneExists(originalTargetPaneId);
-      if (!exists) {
-        console.log("Not exist originalTargetPaneId");
+      // Try to focus on the first available pane (retry logic)
+      let focused = false;
+      for (const paneId of originalTargetPaneIds) {
+        const exists = await wezterm.checkPaneExists(paneId);
+        if (exists) {
+          await wezterm.focusPane(paneId);
+          focused = true;
+          break;
+        }
+      }
+
+      if (!focused) {
+        console.log("All target panes do not exist");
         process.exit(1);
       }
 
-      await wezterm.focusPane(originalTargetPaneId);
       process.exit(0);
     }
     console.log("not isEditor");
@@ -67,18 +84,28 @@ export async function runResumeMode(
   const isEditor = await isEditorPane(currentPaneId);
 
   if (isEditor) {
-    // Focus back to the original target pane
-    const originalTargetPaneId = await getTargetPaneId(currentPaneId);
-    if (!originalTargetPaneId) {
+    // Focus back to the first available target pane
+    const originalTargetPaneIds = await getTargetPaneIds(currentPaneId);
+    if (originalTargetPaneIds.length === 0) {
       process.exit(1);
     }
 
-    const exists = await checkPaneExists(originalTargetPaneId);
-    if (!exists) {
+    // Try to focus on the first available pane (retry logic)
+    let focused = false;
+    for (const paneId of originalTargetPaneIds) {
+      const exists = await checkPaneExists(paneId);
+      if (exists) {
+        await focusPane(paneId);
+        focused = true;
+        break;
+      }
+    }
+
+    if (!focused) {
+      // All target panes do not exist
       process.exit(1);
     }
 
-    await focusPane(originalTargetPaneId);
     process.exit(0);
   }
 
@@ -98,3 +125,18 @@ export async function runResumeMode(
   await focusPane(editorPaneId);
   process.exit(0);
 }
+
+export const resumeCommand = define({
+  name: "resume",
+  description: "Resume existing editor pane or focus back to target pane",
+  args: {
+    mux: ARG_MUX,
+    "target-pane": ARG_TARGET_PANE_SINGLE,
+  },
+  async run(ctx) {
+    const targetPane = validateTargetPane(ctx.values["target-pane"], "resume");
+    const mux = validateMux(ctx.values.mux);
+
+    await runResumeMode(targetPane, mux);
+  },
+});

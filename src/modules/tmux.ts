@@ -50,24 +50,36 @@ export async function focusPane(paneId: string): Promise<void> {
 
 export async function markAsEditorPane(
   editorPaneId: string,
-  targetPaneId: string,
+  targetPaneIds: string[],
 ): Promise<void> {
   await execAsync(
     `tmux set-option -pt '${editorPaneId}' @editprompt_is_editor 1`,
   );
+  const uniqueTargetPaneIds = [...new Set(targetPaneIds)];
+  const targetPanesValue = uniqueTargetPaneIds.join(",");
   await execAsync(
-    `tmux set-option -pt '${editorPaneId}' @editprompt_target_pane '${targetPaneId}'`,
+    `tmux set-option -pt '${editorPaneId}' @editprompt_target_panes '${targetPanesValue}'`,
   );
+  // Save editor pane ID to each target pane
+  for (const targetPaneId of uniqueTargetPaneIds) {
+    await saveEditorPaneId(targetPaneId, editorPaneId);
+  }
 }
 
-export async function getTargetPaneId(editorPaneId: string): Promise<string> {
+export async function getTargetPaneIds(
+  editorPaneId: string,
+): Promise<string[]> {
   try {
     const { stdout } = await execAsync(
-      `tmux show -pt '${editorPaneId}' -v @editprompt_target_pane`,
+      `tmux show -pt '${editorPaneId}' -v @editprompt_target_panes`,
     );
-    return stdout.trim();
+    const value = stdout.trim();
+    if (value === "") {
+      return [];
+    }
+    return value.split(",").map((id) => id.trim());
   } catch {
-    return "";
+    return [];
   }
 }
 
@@ -122,7 +134,7 @@ export async function sendKeyToTmuxPane(
   await execAsync(`tmux send-keys -t '${paneId}' '${key}'`);
 }
 
-export async function sendContentToTmuxPaneNoFocus(
+export async function inputToTmuxPane(
   paneId: string,
   content: string,
 ): Promise<void> {

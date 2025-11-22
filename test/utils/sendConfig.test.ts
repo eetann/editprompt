@@ -5,38 +5,34 @@ describe("readSendConfig", () => {
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    // 環境変数のバックアップ
+    // Backup environment variables
     originalEnv = { ...process.env };
   });
 
-  test("正常系 - すべての環境変数が設定されている", () => {
-    process.env.EDITPROMPT_TARGET_PANE = "%0";
+  test("reads all environment variables when set", () => {
     process.env.EDITPROMPT_MUX = "tmux";
     process.env.EDITPROMPT_ALWAYS_COPY = "1";
 
     const config = readSendConfig();
 
-    expect(config.targetPane).toBe("%0");
     expect(config.mux).toBe("tmux");
     expect(config.alwaysCopy).toBe(true);
 
-    // 環境変数を復元
+    // Restore environment variables
     process.env = originalEnv;
   });
 
-  test("異常系 - EDITPROMPT_MUXが不正な値", () => {
-    process.env.EDITPROMPT_TARGET_PANE = "%0";
+  test("throws error when EDITPROMPT_MUX has invalid value", () => {
     process.env.EDITPROMPT_MUX = "invalid";
     process.env.EDITPROMPT_ALWAYS_COPY = "1";
 
     expect(() => readSendConfig()).toThrow();
 
-    // 環境変数を復元
+    // Restore environment variables
     process.env = originalEnv;
   });
 
-  test("正常系 - EDITPROMPT_MUXが未設定の場合デフォルト値tmux", () => {
-    process.env.EDITPROMPT_TARGET_PANE = "%0";
+  test("defaults to tmux when EDITPROMPT_MUX is not set", () => {
     process.env.EDITPROMPT_MUX = undefined;
     process.env.EDITPROMPT_ALWAYS_COPY = "0";
 
@@ -44,12 +40,11 @@ describe("readSendConfig", () => {
 
     expect(config.mux).toBe("tmux");
 
-    // 環境変数を復元
+    // Restore environment variables
     process.env = originalEnv;
   });
 
-  test("正常系 - EDITPROMPT_ALWAYS_COPYが1の場合true", () => {
-    process.env.EDITPROMPT_TARGET_PANE = "%0";
+  test("sets alwaysCopy to true when EDITPROMPT_ALWAYS_COPY is 1", () => {
     process.env.EDITPROMPT_MUX = "tmux";
     process.env.EDITPROMPT_ALWAYS_COPY = "1";
 
@@ -57,7 +52,7 @@ describe("readSendConfig", () => {
 
     expect(config.alwaysCopy).toBe(true);
 
-    // 環境変数を復元
+    // Restore environment variables
     process.env = originalEnv;
   });
 });

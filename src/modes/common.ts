@@ -1,38 +1,74 @@
+import clipboardy from "clipboardy";
+import { focusPane as focusTmuxPane, inputToTmuxPane } from "../modules/tmux";
 import {
-  type MuxType,
-  copyToClipboard,
-  sendContentToPane,
-} from "../modules/process";
-import { sendContentToPaneWithAutoSend } from "./sendOnly";
+  focusPane as focusWeztermPane,
+  inputToWeztermPane,
+} from "../modules/wezterm";
 
-function outputContent(content: string): void {
-  console.log("---");
-  console.log(content);
+export type MuxType = "tmux" | "wezterm";
+
+export function isMuxType(value: unknown): value is MuxType {
+  return value === "tmux" || value === "wezterm";
+}
+
+export const SUPPORTED_MUXES: MuxType[] = ["tmux", "wezterm"];
+
+export interface DeliveryResult {
+  successCount: number;
+  totalCount: number;
+  allSuccess: boolean;
+  allFailed: boolean;
+  failedPanes: string[];
+}
+
+export async function copyToClipboard(content: string): Promise<void> {
+  await clipboardy.write(content);
+}
+
+async function inputContentToPane(
+  content: string,
+  mux: MuxType,
+  targetPaneId: string,
+): Promise<void> {
+  if (mux === "wezterm") {
+    await inputToWeztermPane(targetPaneId, content);
+  } else {
+    await inputToTmuxPane(targetPaneId, content);
+  }
+}
+
+export async function focusFirstSuccessPane(
+  mux: MuxType,
+  targetPanes: string[],
+  failedPanes: string[],
+): Promise<void> {
+  const firstSuccessPane = targetPanes.find((p) => !failedPanes.includes(p));
+  if (firstSuccessPane) {
+    if (mux === "tmux") {
+      await focusTmuxPane(firstSuccessPane);
+    } else {
+      await focusWeztermPane(firstSuccessPane);
+    }
+  }
 }
 
 export async function handleContentDelivery(
   content: string,
   mux: MuxType,
-  targetPane: string | undefined,
-  alwaysCopy: boolean,
-): Promise<void> {
+  targetPanes: string[],
+): Promise<DeliveryResult> {
   if (!content) {
-    return;
+    return {
+      successCount: 0,
+      totalCount: 0,
+      allSuccess: true,
+      allFailed: false,
+      failedPanes: [],
+    };
   }
 
-  if (targetPane) {
-    try {
-      await sendContentToPane(content, mux, targetPane, alwaysCopy);
-      console.log("Content sent successfully!");
-    } catch (error) {
-      console.log(
-        `Failed to send to pane: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-      console.log("Falling back to clipboard...");
-      await copyToClipboard(content);
-      console.log("Content copied to clipboard.");
-    }
-  } else {
+  // If no target panes, only copy to clipboard
+  if (targetPanes.length === 0) {
     try {
       await copyToClipboard(content);
       console.log("Content copied to clipboard.");
@@ -41,32 +77,53 @@ export async function handleContentDelivery(
         `Failed to copy to clipboard: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
+    return {
+      successCount: 0,
+      totalCount: 0,
+      allSuccess: true,
+      allFailed: false,
+      failedPanes: [],
+    };
   }
 
-  outputContent(content);
-}
-
-export async function handleAutoSendDelivery(
-  content: string,
-  mux: MuxType,
-  targetPane: string,
-  sendKey: string,
-): Promise<void> {
-  // Validation
-  if (!content || !targetPane) {
-    throw new Error("Content and target pane are required");
+  // Send to each target pane
+  const results: { pane: string; success: boolean }[] = [];
+  for (const targetPane of targetPanes) {
+    try {
+      await inputContentToPane(content, mux, targetPane);
+      results.push({ pane: targetPane, success: true });
+    } catch (error) {
+      console.log(
+        `Failed to send to pane ${targetPane}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      results.push({ pane: targetPane, success: false });
+    }
   }
 
-  try {
-    await sendContentToPaneWithAutoSend(content, mux, targetPane, sendKey);
-    console.log("Content sent and submitted successfully!");
-  } catch (error) {
-    console.error(
-      `Failed to send content: ${error instanceof Error ? error.message : "Unknown error"}`,
+  const successCount = results.filter((r) => r.success).length;
+  const failedPanes = results.filter((r) => !r.success).map((r) => r.pane);
+  const allSuccess = successCount === targetPanes.length;
+  const allFailed = successCount === 0;
+
+  // Display results
+  if (allSuccess) {
+    console.log("Content sent successfully to all panes!");
+  } else if (allFailed) {
+    console.error("Error: All target panes failed to receive content.");
+    console.log("Falling back to clipboard...");
+    await copyToClipboard(content);
+    console.log("Content copied to clipboard.");
+  } else {
+    console.warn(
+      `Warning: Content sent to ${successCount}/${targetPanes.length} panes. Failed panes: ${failedPanes.join(", ")}`,
     );
-    throw error;
   }
 
-  // Output content for reference
-  outputContent(content);
+  return {
+    successCount,
+    totalCount: targetPanes.length,
+    allSuccess,
+    allFailed,
+    failedPanes,
+  };
 }

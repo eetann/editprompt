@@ -90,30 +90,37 @@ export function getTargetPaneIdFromEnv(): string | undefined {
 
 export async function markAsEditorPane(
   editorPaneId: string,
-  targetPaneId: string,
+  targetPaneIds: string[],
 ): Promise<void> {
   try {
-    conf.set(`wezterm.targetPane.pane_${targetPaneId}`, {
-      editorPaneId: editorPaneId,
-    });
+    const uniqueTargetPaneIds = [...new Set(targetPaneIds)];
     conf.set(`wezterm.editorPane.pane_${editorPaneId}`, {
-      targetPaneId: targetPaneId,
+      targetPaneIds: uniqueTargetPaneIds,
     });
+    // Save editor pane ID to each target pane
+    for (const targetPaneId of uniqueTargetPaneIds) {
+      await saveEditorPaneId(targetPaneId, editorPaneId);
+    }
   } catch (error) {
     console.log(error);
   }
 }
 
-export async function getTargetPaneId(editorPaneId: string): Promise<string> {
+export async function getTargetPaneIds(
+  editorPaneId: string,
+): Promise<string[]> {
   try {
     const data = conf.get(`wezterm.editorPane.pane_${editorPaneId}`);
-    if (typeof data === "object" && data !== null && "targetPaneId" in data) {
-      return String(data.targetPaneId);
+    if (typeof data === "object" && data !== null && "targetPaneIds" in data) {
+      const targetPaneIds = data.targetPaneIds;
+      if (Array.isArray(targetPaneIds)) {
+        return targetPaneIds.map((id) => String(id));
+      }
     }
-    return "";
+    return [];
   } catch (error) {
     console.log(error);
-    return "";
+    return [];
   }
 }
 
@@ -192,7 +199,7 @@ export async function sendKeyToWeztermPane(
   );
 }
 
-export async function sendContentToWeztermPaneNoFocus(
+export async function inputToWeztermPane(
   paneId: string,
   content: string,
 ): Promise<void> {
