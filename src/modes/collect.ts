@@ -1,7 +1,15 @@
-import type { MuxType } from "../modules/process";
+import { define } from "gunshi";
 import { appendToQuoteVariable } from "../modules/tmux";
 import { appendToQuoteText } from "../modules/wezterm";
+import { extractRawContent } from "../utils/argumentParser";
 import { processQuoteText } from "../utils/quoteProcessor";
+import {
+  ARG_MUX,
+  ARG_TARGET_PANE_SINGLE,
+  validateMux,
+  validateTargetPane,
+} from "./args";
+import type { MuxType } from "./common";
 
 async function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -18,7 +26,7 @@ async function readStdin(): Promise<string> {
   });
 }
 
-export async function runQuoteMode(
+export async function runCollectMode(
   mux: MuxType,
   targetPaneId: string,
   rawContent?: string,
@@ -50,3 +58,31 @@ export async function runQuoteMode(
     process.exit(1);
   }
 }
+
+export const collectCommand = define({
+  name: "collect",
+  description: "Collect and accumulate quoted text to pane variable",
+  args: {
+    mux: ARG_MUX,
+    "target-pane": ARG_TARGET_PANE_SINGLE,
+  },
+  async run(ctx) {
+    const targetPane = validateTargetPane(ctx.values["target-pane"], "collect");
+    const mux = validateMux(ctx.values.mux);
+
+    // For wezterm, content must be provided as argument
+    // For tmux, content is read from stdin
+    let rawContent: string | undefined;
+    if (mux === "wezterm") {
+      rawContent = extractRawContent(ctx.rest, ctx.positionals);
+      if (rawContent === undefined) {
+        console.error(
+          'Error: Text content is required for collect mode with wezterm. Use: editprompt collect --mux wezterm --target-pane <id> -- "<text>"',
+        );
+        process.exit(1);
+      }
+    }
+
+    await runCollectMode(mux, targetPane, rawContent);
+  },
+});
