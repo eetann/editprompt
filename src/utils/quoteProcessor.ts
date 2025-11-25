@@ -105,7 +105,7 @@ function removeWhitespaceAndMergeLines(lines: string[]): string[] {
       index > 0 &&
       original.startsWith(" ") &&
       original.trimStart().length > 0 &&
-      (prevOriginal.trim().length > 0) &&
+      prevOriginal.trim().length > 0 &&
       !/^[-*+]\s/.test(original.trimStart());
 
     if (isContinuation) {

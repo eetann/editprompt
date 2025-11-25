@@ -4,9 +4,9 @@ import { appendToQuoteText } from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { processQuoteText } from "../utils/quoteProcessor";
 import {
+  ARG_MUX,
   ARG_NO_QUOTE,
   ARG_OUTPUT,
-  ARG_MUX,
   ARG_TARGET_PANE_SINGLE,
   validateMux,
   validateTargetPane,
