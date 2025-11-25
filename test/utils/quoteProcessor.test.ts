@@ -63,4 +63,31 @@ describe("processQuoteText", () => {
     const expected = "> foo bar\n\n";
     expect(processQuoteText(input)).toBe(expected);
   });
+
+  test("should trim leading spaces on wrapped continuation lines", () => {
+    const input = "Line one wraps\n  and continues\n  even more";
+    const expected = "> Line one wraps and continues even more\n\n";
+    expect(processQuoteText(input)).toBe(expected);
+  });
+
+  test("should drop trailing spaces before wrapping", () => {
+    const input = "- option --no-  \n  quote-behavior";
+    const expected = "> - option --no-quote-behavior\n\n";
+    expect(processQuoteText(input)).toBe(expected);
+  });
+
+  test("should merge indented continuation lines even when other lines are not indented", () => {
+    const input = `- src/modes/collect.ts: allows buffer/stdout outputs and --no-
+  quote to skip quoting while writing to stdout.
+- another bullet`;
+    const expected =
+      "> - src/modes/collect.ts: allows buffer/stdout outputs and --no-quote to skip quoting while writing to stdout.\n> - another bullet\n\n";
+    expect(processQuoteText(input)).toBe(expected);
+  });
+
+  test("should skip quote prefix and trailing newlines when withQuote is false", () => {
+    const input = "\n  foo\n  bar\n\n";
+    const expected = "foo bar";
+    expect(processQuoteText(input, { withQuote: false })).toBe(expected);
+  });
 });
