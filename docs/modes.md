@@ -210,6 +210,8 @@ This mode enables collecting multiple text selections while reading AI responses
 **tmux Implementation:**
 - Reads text from stdin using pipe in copy mode
 - Example: `bind-key -T copy-mode-vi C-e { send-keys -X pipe "editprompt collect --target-pane #{pane_id}" }`
+- Example (also send cleaned text to clipboard without quote prefix):  
+  `bind-key -T copy-mode-vi y { send-keys -X pipe "editprompt collect --target-pane #{pane_id} --output buffer --output stdout --no-quote | pbcopy" }`
 
 **WezTerm Implementation:**
 - Receives text as a positional argument
@@ -229,6 +231,13 @@ The `processQuoteText` function applies intelligent text formatting:
      - Adds space separator between lines only when both end/start with alphabetic characters
 3. **Add quote prefix**: Prepends `> ` to each line
 4. **Add trailing newlines**: Appends two newlines for separation between multiple quotes
+5. **Disable quote formatting when needed**: Use `--no-quote` to skip adding `> ` and the trailing blank lines (indent/newline cleanup still applies)
+
+#### Output Destinations
+
+- Default: `--output buffer` (store in tmux pane variable / WezTerm Conf)
+- Tee to stdout: `--output buffer --output stdout` to pipe the same processed text to another command (e.g., clipboard)
+- `--no-quote` applies to all outputs, producing cleaned text without Markdown quote prefix or trailing blank lines
 
 #### Storage Implementation
 

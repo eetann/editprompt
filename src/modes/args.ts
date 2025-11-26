@@ -31,6 +31,18 @@ export const ARG_ALWAYS_COPY: ArgSchema = {
   type: "boolean",
 };
 
+export const ARG_NO_QUOTE: ArgSchema = {
+  description: "Disable quote prefix and trailing blank lines",
+  type: "boolean",
+};
+
+export const ARG_OUTPUT: ArgSchema = {
+  description:
+    "Output destination (buffer, stdout). Can be specified multiple times",
+  type: "string",
+  multiple: true,
+};
+
 export function validateMux(value: unknown): MuxType {
   const muxValue = (value || "tmux") as string;
   if (!isMuxType(muxValue)) {

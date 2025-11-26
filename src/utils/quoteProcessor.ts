@@ -33,6 +33,39 @@ function needsSpaceSeparator(prevLine: string, currentLine: string): boolean {
 }
 
 /**
+ * Merge lines for Pattern A where indented lines likely indicate wrap
+ */
+function mergeIndentedContinuations(
+  originalLines: string[],
+  trimmedLines: string[],
+): string[] {
+  const result: string[] = [];
+
+  for (let i = 0; i < trimmedLines.length; i++) {
+    const line = trimmedLines[i] ?? "";
+    const original = originalLines[i] ?? "";
+    const prevOriginal = originalLines[i - 1] ?? "";
+
+    if (
+      i > 0 &&
+      original.startsWith(" ") &&
+      original.trimStart().length > 0 &&
+      !prevOriginal.startsWith(" ") &&
+      !/^[-*+]\s/.test(original.trimStart()) // don't merge nested lists
+    ) {
+      const prev = result.pop() ?? "";
+      const separator = needsSpaceSeparator(prev, line) ? " " : "";
+      result.push(prev + separator + line);
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  return result;
+}
+
+/**
  * Determine if two lines should be merged
  */
 function shouldMergeLines(prevLine: string, currentLine: string): boolean {
@@ -57,9 +90,29 @@ function shouldMergeLines(prevLine: string, currentLine: string): boolean {
 function removeWhitespaceAndMergeLines(lines: string[]): string[] {
   // Remove common leading whitespace
   const minWhitespace = getMinLeadingWhitespace(lines);
-  const trimmedLines = lines.map((line) => {
+  let trimmedLines = lines.map((line) => {
     if (line.length === 0) return line;
     return line.slice(minWhitespace);
+  });
+
+  // Handle wrapped continuation lines even when other lines are not indented.
+  // Condition: previous line is not indented, current line is indented, and
+  // current line is not a list item after trimming.
+  trimmedLines = trimmedLines.map((line, index) => {
+    const original = lines[index] ?? "";
+    const prevOriginal = lines[index - 1] ?? "";
+    const isContinuation =
+      index > 0 &&
+      original.startsWith(" ") &&
+      original.trimStart().length > 0 &&
+      prevOriginal.trim().length > 0 &&
+      !/^[-*+]\s/.test(original.trimStart());
+
+    if (isContinuation) {
+      return original.trimStart().trimEnd();
+    }
+
+    return line.trimEnd();
   });
 
   // Merge lines
@@ -115,7 +168,12 @@ function removeWhitespaceAndMergeLines(lines: string[]): string[] {
  * 4. Adding quote prefix ("> ") to each line
  * 5. Adding two newlines at the end
  */
-export function processQuoteText(text: string): string {
+export function processQuoteText(
+  text: string,
+  options?: { withQuote?: boolean },
+): string {
+  const withQuote = options?.withQuote ?? true;
+
   // Remove leading and trailing newlines
   const trimmedText = text.replace(/^\n+|\n+$/g, "");
   const lines = trimmedText.split("\n");
@@ -131,16 +189,20 @@ export function processQuoteText(text: string): string {
   let processedLines: string[];
 
   if (hasNoLeadingWhitespaceInLaterLines) {
-    // Pattern A: Preserve line breaks, only remove leading whitespace
-    processedLines = lines.map((line) => line.trimStart());
+    // Pattern A: Preserve line breaks, only remove leading whitespace,
+    // but attempt to merge obviously wrapped continuation lines
+    const trimmedLines = lines.map((line) => line.trimStart().trimEnd());
+    processedLines = mergeIndentedContinuations(lines, trimmedLines);
   } else {
     // Pattern B: Remove common leading whitespace and merge lines
     processedLines = removeWhitespaceAndMergeLines(lines);
   }
 
   // Add quote prefix to each line and join with newlines
-  const quoted = processedLines.map((line) => `> ${line}`).join("\n");
+  if (!withQuote) {
+    return processedLines.join("\n");
+  }
 
-  // Add two newlines at the end
+  const quoted = processedLines.map((line) => `> ${line}`).join("\n");
   return `${quoted}\n\n`;
 }
