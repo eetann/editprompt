@@ -81,6 +81,10 @@ export async function runInputMode(
         );
       }
     }
+    if (config.alwaysCopy) {
+      await copyToClipboard(content);
+      console.log("Also copied to clipboard.");
+    }
 
     if (successCount > 0) {
       console.log("Content sent and submitted successfully!");
