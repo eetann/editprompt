@@ -140,15 +140,8 @@ async function getTargetPaneForStash(): Promise<{
 }
 
 // Subcommand handlers
-async function runPush(args: string[]): Promise<void> {
-  // Content is everything after "push" or after "--"
-  const dashIndex = args.indexOf("--");
-  let rawContent: string | undefined;
-  if (dashIndex !== -1) {
-    rawContent = args.slice(dashIndex + 1).join(" ");
-  } else if (args.length > 0) {
-    rawContent = args.join(" ");
-  }
+async function runPush(rest: string[], positionals: string[]): Promise<void> {
+  const rawContent = extractRawContent(rest, positionals);
 
   if (rawContent === undefined || rawContent.trim() === "") {
     console.error("Error: Content is required for stash push");
@@ -265,7 +258,7 @@ export const stashCommand = define({
 
     switch (subcommand) {
       case "push":
-        await runPush(subArgs);
+        await runPush(ctx.rest, subArgs);
         break;
       case "list":
         await runList();
