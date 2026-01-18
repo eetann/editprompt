@@ -1,12 +1,8 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import Conf from "conf";
+import { conf } from "./conf";
 
 const execAsync = promisify(exec);
-
-const projectName =
-  process.env.NODE_ENV === "test" ? "editprompt-test" : "editprompt";
-export const conf = new Conf({ projectName });
 
 interface WeztermPane {
   pane_id: string;

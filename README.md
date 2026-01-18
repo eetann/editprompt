@@ -40,6 +40,10 @@ npm install -g editprompt
 npx editprompt
 ```
 
+### Neovim Plugin
+
+For Neovim users, [editprompt.nvim](https://github.com/eetann/editprompt.nvim) provides easy integration. For manual configuration, see [docs/neovim.md](docs/neovim.md).
+
 ## 🚀 Usage
 
 editprompt supports three main workflows to fit different use cases:
@@ -198,46 +202,9 @@ This sends the content to the target pane (or clipboard) while keeping your edit
   - tmux format: `Enter` (default), `C-a`, etc.
   - WezTerm format: `\r` (default), `\x01`, etc.
 
-#### Neovim Integration Example
+#### Neovim Integration
 
-You can set up a convenient keybinding to send your buffer content:
-
-```lua
--- Send buffer content while keeping the editor open
-if vim.env.EDITPROMPT then
-    vim.keymap.set("n", "<Space>x", function()
-        vim.cmd("update")
-        -- Get buffer content
-        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-        local content = table.concat(lines, "\n")
-
-        -- Execute editprompt command
-        vim.system(
-            { "editprompt", "input", "--", content },
-            { text = true },
-            function(obj)
-                vim.schedule(function()
-                    if obj.code == 0 then
-                        -- Clear buffer on success
-                        vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
-                        vim.cmd("silent write")
-                    else
-                        -- Show error notification
-                        vim.notify("editprompt failed: " .. (obj.stderr or "unknown error"), vim.log.levels.ERROR)
-                    end
-                end)
-            end
-        )
-    end, { silent = true, desc = "Send buffer content to editprompt" })
-end
-```
-
-**Usage:**
-1. Open editprompt using the tmux/wezterm keybinding
-2. Write your prompt in the editor
-3. Press `<Space>x` to send the content to the target pane
-4. The buffer is automatically cleared on success
-5. Continue editing to send more content
+For Neovim users, we recommend using [editprompt.nvim](https://github.com/eetann/editprompt.nvim) for easy setup. For manual configuration, see [docs/neovim.md](docs/neovim.md).
 
 ### Quote Workflow Setup
 
@@ -333,52 +300,31 @@ editprompt register --target-pane %1 --target-pane %2
 
 The content will be sent sequentially to all specified panes. This is useful when you want to send the same prompt to multiple CLI sessions.
 
-#### Neovim Integration Example
+### Prompt Stash
 
-You can set up a convenient keybinding to capture your quote content:
-```lua
-vim.keymap.set("n", "<Space>X", function()
-  vim.cmd("update")
+Store prompts temporarily for later use, similar to `git stash`. This is useful when you want to save a prompt idea and use it later.
 
-  vim.system({ "editprompt", "dump" }, { text = true }, function(obj)
-    vim.schedule(function()
-      if obj.code == 0 then
-        vim.cmd("silent write")
-        -- Split stdout by lines
-        local output_lines = vim.split(obj.stdout, "\n")
+```bash
+# Save a prompt to stash (must be run from editor pane)
+editprompt stash push -- "your prompt here"
 
-        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-        local is_empty = #lines == 1 and lines[1] == ""
+# List all stashed prompts (JSON output)
+editprompt stash list
 
-        if is_empty then
-          -- If empty, overwrite from the beginning
-          vim.api.nvim_buf_set_lines(0, 0, -1, false, output_lines)
-          vim.cmd("normal 2j")
-        else
-          -- If not empty, append to the end
-          table.insert(output_lines, 1, "")
-          local line_count = vim.api.nvim_buf_line_count(0)
-          vim.api.nvim_buf_set_lines(
-            0,
-            line_count,
-            line_count,
-            false,
-            output_lines
-          )
-          vim.cmd("normal 4j")
-        end
+# Get the latest stashed prompt (outputs to stdout)
+editprompt stash apply
 
-        vim.cmd("silent write")
-      else
-        vim.notify(
-          "editprompt failed: " .. (obj.stderr or "unknown error"),
-          vim.log.levels.ERROR
-        )
-      end
-    end)
-  end)
-end, { silent = true, desc = "Capture from editprompt quote mode" })
+# Get a specific stashed prompt by key
+editprompt stash apply --key "2025-01-07T12:34:56.789Z"
+
+# Remove the latest stashed prompt
+editprompt stash drop
+
+# Get and remove the latest stashed prompt (apply + drop)
+editprompt stash pop
 ```
+
+**Note:** The stash commands must be run from within an editprompt editor session (where `EDITPROMPT=1` is set). Stash data is associated with the target pane and persisted using the Conf library.
 
 ### Environment Variables
 
@@ -392,18 +338,7 @@ editprompt respects the following editor priority:
 
 #### EDITPROMPT Environment Variable
 
-editprompt automatically sets `EDITPROMPT=1` when launching your editor. This allows you to detect when your editor is launched by editprompt and enable specific configurations or plugins.
-
-**Example: Neovim Configuration**
-
-```lua
--- In your Neovim config (e.g., init.lua)
-if vim.env.EDITPROMPT then
-  vim.opt.wrap = true
-  -- Load a specific colorscheme
-  vim.cmd('colorscheme blue')
-end
-```
+editprompt automatically sets `EDITPROMPT=1` when launching your editor. This allows you to detect when your editor is launched by editprompt and enable specific configurations or plugins. For Neovim integration examples, see [docs/neovim.md](docs/neovim.md).
 
 #### Custom Environment Variables
 

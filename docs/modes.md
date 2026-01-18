@@ -10,6 +10,7 @@ This document provides technical details about how each subcommand works, includ
 - input
 - collect
 - dump
+- stash
 
 ---
 
@@ -336,3 +337,89 @@ conf.delete(`wezterm.targetPane.pane_${paneId}.quote_text`);
 - Automatically clears storage for next collection session
 - Works seamlessly from within editor via environment variable inheritance
 - No need to specify target pane or multiplexer type manually
+
+---
+
+## stash Subcommand
+
+### Purpose
+
+Temporarily stores prompts for later use, similar to `git stash`. Useful for saving prompt ideas while working on something else, then retrieving them later.
+
+### Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `push -- "<content>"` | Save content to stash |
+| `list` | List all stashed entries as JSON |
+| `apply [--key <key>]` | Output stashed content (latest by default) |
+| `drop [--key <key>]` | Remove stashed entry (latest by default) |
+| `pop [--key <key>]` | Apply and drop stashed entry |
+
+### Mechanism
+
+This command is designed to be executed from within an editor pane launched by editprompt.
+
+#### Storage
+
+All stash operations use the Conf library for persistent storage, regardless of multiplexer type (tmux or WezTerm).
+
+**Storage Key Structure:**
+```typescript
+`${mux}.targetPane.pane_${targetPaneId}.stash`
+```
+
+**Data Structure:**
+```typescript
+{
+  "2025-01-07T12:34:56.789Z": "content1",
+  "2025-01-07T12:35:00.123Z": "content2",
+  // ISO datetime string as key, content as value
+}
+```
+
+#### Workflow
+
+1. **Determine editor pane**: Reads `EDITPROMPT_MUX` environment variable to identify multiplexer type
+2. **Get current pane ID**: Identifies the current pane as the editor pane
+3. **Verify editor pane**: Checks that the current pane is registered as an editor pane
+4. **Get target pane ID**: Retrieves target pane ID from pane variables (tmux) or Conf (WezTerm)
+5. **Perform stash operation**: Execute the requested subcommand (push/list/apply/drop/pop)
+
+#### Subcommand Details
+
+**push:**
+- Takes content from positional arguments after `--`
+- Generates ISO datetime key for the entry
+- Appends to existing stash data
+- Outputs the generated key for reference
+
+**list:**
+- Returns all stash entries as JSON array
+- Sorted by key in descending order (newest first)
+- Format: `[{ "key": "...", "content": "..." }, ...]`
+
+**apply:**
+- Outputs stash content to stdout
+- If `--key` specified: retrieves that specific entry
+- If no key: retrieves the latest entry (max key)
+- Does not modify stash storage
+
+**drop:**
+- Removes entry from stash storage
+- If `--key` specified: removes that specific entry
+- If no key: removes the latest entry (max key)
+- Returns error if entry not found
+
+**pop:**
+- Combines apply and drop operations
+- Outputs content to stdout, then removes the entry
+- Useful for one-time retrieval
+
+### Benefits
+
+- Save prompt ideas without losing them when switching contexts
+- Multiple stash entries can be stored and managed independently
+- Git-like interface familiar to developers
+- Persistent storage survives editor restarts
+- Works seamlessly from within editor via environment variable inheritance

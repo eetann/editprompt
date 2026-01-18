@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
+import { conf } from "../../src/modules/conf";
 import {
   appendToQuoteText,
   clearQuoteText,
-  conf,
   getQuoteText,
 } from "../../src/modules/wezterm";
 
