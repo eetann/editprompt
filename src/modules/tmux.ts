@@ -128,9 +128,10 @@ export async function clearQuoteVariable(targetPaneId: string): Promise<void> {
 export async function sendKeyToTmuxPane(
   paneId: string,
   key: string,
+  delay = 1000,
 ): Promise<void> {
   // Sleep so as not to be treated as a newline (e.g., codex)
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, delay));
   await execAsync(`tmux send-keys -t '${paneId}' '${key}'`);
 }
 

@@ -20,6 +20,7 @@ export async function runInputMode(
   rawContent: string,
   autoSend?: boolean,
   sendKey?: string,
+  sendKeyDelay?: number,
 ): Promise<void> {
   const content = processContent(rawContent);
 
@@ -69,10 +70,10 @@ export async function runInputMode(
       try {
         if (config.mux === "wezterm") {
           await wezterm.inputToWeztermPane(targetPane, content);
-          await wezterm.sendKeyToWeztermPane(targetPane, key);
+          await wezterm.sendKeyToWeztermPane(targetPane, key, sendKeyDelay);
         } else {
           await inputToTmuxPane(targetPane, content);
-          await sendKeyToTmuxPane(targetPane, key);
+          await sendKeyToTmuxPane(targetPane, key, sendKeyDelay);
         }
         successCount++;
       } catch (error) {
@@ -156,10 +157,13 @@ export const inputCommand = define({
       process.exit(1);
     }
 
+    const config = readSendConfig();
+
     await runInputMode(
       rawContent,
       Boolean(ctx.values["auto-send"]),
       ctx.values["send-key"] as string | undefined,
+      config.sendKeyDelay,
     );
   },
 });

@@ -11,7 +11,14 @@ export function extractRawContent(
   positionals: string[],
 ): string | undefined {
   if (rest.length > 0) {
-    return rest.join(" ");
+    const joined = rest.join(" ");
+    if (joined.trim() !== "") {
+      return joined;
+    }
   }
-  return positionals[0];
+  const first = positionals[0];
+  if (first !== undefined && first.trim() !== "") {
+    return first;
+  }
+  return undefined;
 }

@@ -49,4 +49,28 @@ describe("extractRawContent (e2e with -- separator)", () => {
 
     expect(output).toBe("undefined");
   });
+
+  test('test-cli.ts -- "" (empty string) should return undefined', async () => {
+    const result =
+      await $`bun run test/fixtures/test-cli.ts -- -- ""`.nothrow();
+    const output = result.stdout.toString().trim();
+
+    expect(output).toBe("undefined");
+  });
+
+  test('test-cli.ts "" (empty string as positional) should return undefined', async () => {
+    const result =
+      await $`bun run test/fixtures/test-cli.ts -- ""`.nothrow();
+    const output = result.stdout.toString().trim();
+
+    expect(output).toBe("undefined");
+  });
+
+  test('test-cli.ts -- "   " (whitespace only) should return undefined', async () => {
+    const result =
+      await $`bun run test/fixtures/test-cli.ts -- -- "   "`.nothrow();
+    const output = result.stdout.toString().trim();
+
+    expect(output).toBe("undefined");
+  });
 });

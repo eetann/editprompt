@@ -55,4 +55,37 @@ describe("readSendConfig", () => {
     // Restore environment variables
     process.env = originalEnv;
   });
+
+  test("defaults sendKeyDelay to 1000 when EDITPROMPT_SEND_KEY_DELAY is not set", () => {
+    process.env.EDITPROMPT_MUX = "tmux";
+    process.env.EDITPROMPT_SEND_KEY_DELAY = undefined;
+
+    const config = readSendConfig();
+
+    expect(config.sendKeyDelay).toBe(1000);
+
+    process.env = originalEnv;
+  });
+
+  test("reads sendKeyDelay from EDITPROMPT_SEND_KEY_DELAY", () => {
+    process.env.EDITPROMPT_MUX = "tmux";
+    process.env.EDITPROMPT_SEND_KEY_DELAY = "2000";
+
+    const config = readSendConfig();
+
+    expect(config.sendKeyDelay).toBe(2000);
+
+    process.env = originalEnv;
+  });
+
+  test("defaults sendKeyDelay to 1000 when EDITPROMPT_SEND_KEY_DELAY is invalid", () => {
+    process.env.EDITPROMPT_MUX = "tmux";
+    process.env.EDITPROMPT_SEND_KEY_DELAY = "abc";
+
+    const config = readSendConfig();
+
+    expect(config.sendKeyDelay).toBe(1000);
+
+    process.env = originalEnv;
+  });
 });

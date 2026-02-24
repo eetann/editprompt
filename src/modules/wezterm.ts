@@ -188,7 +188,9 @@ export async function clearQuoteText(paneId: string): Promise<void> {
 export async function sendKeyToWeztermPane(
   paneId: string,
   key: string,
+  delay = 1000,
 ): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, delay));
   // Wrap user-provided key in $'...' for bash escape sequences
   await execAsync(
     `wezterm cli send-text --no-paste --pane-id '${paneId}' $'${key}'`,
