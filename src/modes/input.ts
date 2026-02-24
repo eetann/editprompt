@@ -65,15 +65,19 @@ export async function runInputMode(
   if (autoSend) {
     const key = sendKey || (config.mux === "wezterm" ? "\\r" : "C-m");
 
+    const IMAGE_EXTENSIONS = /\.(png|webp|avif|jpe?g|gif)\b/i;
+    const hasImagePath = IMAGE_EXTENSIONS.test(content);
+    const delay = hasImagePath ? (sendKeyDelay ?? 1000) : 200;
+
     let successCount = 0;
     for (const targetPane of targetPanes) {
       try {
         if (config.mux === "wezterm") {
           await wezterm.inputToWeztermPane(targetPane, content);
-          await wezterm.sendKeyToWeztermPane(targetPane, key, sendKeyDelay);
+          await wezterm.sendKeyToWeztermPane(targetPane, key, delay);
         } else {
           await inputToTmuxPane(targetPane, content);
-          await sendKeyToTmuxPane(targetPane, key, sendKeyDelay);
+          await sendKeyToTmuxPane(targetPane, key, delay);
         }
         successCount++;
       } catch (error) {
