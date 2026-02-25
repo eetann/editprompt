@@ -358,3 +358,42 @@ editprompt open --env NVIM_CONFIG=minimal
 #### Target Pane Environment Variable
 
 When using the send-without-closing feature or dump, editprompt sets `EDITPROMPT_TARGET_PANE` to the target pane ID. This is automatically used by `editprompt input` and `editprompt dump` commands.
+
+### Logging Options
+
+editprompt uses structured logging via [LogTape](https://logtape.org/). The following flags are available on all subcommands:
+
+| Flag | Description |
+|------|-------------|
+| `--quiet` / `-q` | Suppress all log output |
+| `--verbose` / `-v` | Enable debug-level log output |
+| `--log-file <path>` | Write logs to the specified file (appends) |
+
+You can also configure logging via environment variables:
+
+| Environment Variable | Description |
+|----------------------|-------------|
+| `EDITPROMPT_LOG_FILE` | Path to log file (same as `--log-file`) |
+| `EDITPROMPT_LOG_LEVEL` | Log level (e.g. `debug`, `info`, `warning`, `error`) |
+
+**Log level resolution priority:**
+
+1. `--quiet` → suppresses all logs
+2. `--verbose` → sets level to `debug`
+3. `EDITPROMPT_LOG_LEVEL` → uses the specified level
+4. Default: `info`
+
+### Send-Key Delay
+
+When using `--auto-send` with `editprompt input`, a delay is inserted before sending the key to allow the target process to finish processing the content.
+
+| Environment Variable | Description | Default |
+|----------------------|-------------|---------|
+| `EDITPROMPT_SEND_KEY_DELAY` | Delay in milliseconds before sending the key | `1000` |
+
+**Auto-detection:** editprompt automatically adjusts the delay based on content:
+
+- **Content with image paths** → uses `EDITPROMPT_SEND_KEY_DELAY` (default: `1000` ms)
+- **Content without image paths** → uses `200` ms
+
+Supported image extensions: `.png`, `.webp`, `.avif`, `.jpg`/`.jpeg`, `.gif` (case-insensitive)
