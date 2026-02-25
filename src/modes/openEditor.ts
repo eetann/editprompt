@@ -54,10 +54,7 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
     const sendConfig: SendConfig = {
       mux: options.mux,
       alwaysCopy: options.alwaysCopy,
-      sendKeyDelay: Number.parseInt(
-        process.env.EDITPROMPT_SEND_KEY_DELAY || "",
-        10,
-      ) || 1000,
+      sendKeyDelay: Number.parseInt(process.env.EDITPROMPT_SEND_KEY_DELAY || "", 10) || 1000,
     };
 
     logger.info("Opening editor...");
