@@ -10,10 +10,11 @@ This command creates git commits following the Conventional Commits specificatio
 ## Process
 
 1. Organize current changes
-2. Stage appropriate files  
+2. Stage appropriate files
 3. Create git commit in Conventional Commit format
 
 ### Commit Types:
+
 - **feat** - New feature addition
 - **fix** - Bug fix
 - **docs** - Documentation only changes
@@ -26,18 +27,20 @@ This command creates git commits following the Conventional Commits specificatio
 - **perf** - Performance improvements
 
 ### Format:
+
 ```
 <type>: <description>
 
 [Details of work actually performed]
 ```
+
 ※ Scope is not required for this project
 
 Please write the description **in English**.
 
 For breaking changes, add "!" after the type or include `BREAKING CHANGE:` in the footer.
 
- **Do not add Claude co-author footer to commits.** 
+**Do not add Claude co-author footer to commits.**
 
 ```commit
 feat: add phone call cancel button

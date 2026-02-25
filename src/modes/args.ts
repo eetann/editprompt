@@ -40,15 +40,14 @@ export const ARG_NO_QUOTE: ArgSchema = {
 };
 
 export const ARG_OUTPUT: ArgSchema = {
-  description:
-    "Output destination (buffer, stdout). Can be specified multiple times",
+  description: "Output destination (buffer, stdout). Can be specified multiple times",
   type: "string",
   multiple: true,
 };
 
 export const ARG_LOG_FILE: ArgSchema = {
-	description: "Write logs to the specified file (appends)",
-	type: "string",
+  description: "Write logs to the specified file (appends)",
+  type: "string",
 };
 
 export const ARG_QUIET: ArgSchema = {
@@ -74,14 +73,9 @@ export function validateMux(value: unknown): MuxType {
   return muxValue;
 }
 
-export function validateTargetPane(
-  value: unknown,
-  commandName: string,
-): string {
+export function validateTargetPane(value: unknown, commandName: string): string {
   if (!value || typeof value !== "string") {
-    logger.error(
-      `--target-pane is required for ${commandName} command`,
-    );
+    logger.error(`--target-pane is required for ${commandName} command`);
     process.exit(1);
   }
   return value;

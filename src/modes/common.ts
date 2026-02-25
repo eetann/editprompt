@@ -3,10 +3,7 @@ import clipboardy from "clipboardy";
 
 const logger = getLogger(["editprompt", "delivery"]);
 import { focusPane as focusTmuxPane, inputToTmuxPane } from "../modules/tmux";
-import {
-  focusPane as focusWeztermPane,
-  inputToWeztermPane,
-} from "../modules/wezterm";
+import { focusPane as focusWeztermPane, inputToWeztermPane } from "../modules/wezterm";
 
 export type MuxType = "tmux" | "wezterm";
 

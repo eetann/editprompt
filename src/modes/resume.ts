@@ -24,18 +24,14 @@ import type { MuxType } from "./common";
 
 const logger = getLogger(["editprompt", "resume"]);
 
-export async function runResumeMode(
-  targetPane: string,
-  mux: MuxType,
-): Promise<void> {
+export async function runResumeMode(targetPane: string, mux: MuxType): Promise<void> {
   if (mux === "wezterm") {
     const currentPaneId = await wezterm.getCurrentPaneId();
     const isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
 
     if (isEditor) {
       logger.debug("Current pane is an editor pane");
-      const originalTargetPaneIds =
-        await wezterm.getTargetPaneIds(currentPaneId);
+      const originalTargetPaneIds = await wezterm.getTargetPaneIds(currentPaneId);
       if (originalTargetPaneIds.length === 0) {
         logger.debug("No target pane IDs found for editor pane");
         process.exit(1);

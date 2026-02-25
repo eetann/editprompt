@@ -33,9 +33,7 @@ await cli(
       logger.error("  editprompt --quote   → editprompt collect");
       logger.error("  editprompt --capture → editprompt dump");
       logger.error("");
-      logger.error(
-        "For details: https://github.com/eetann/editprompt/?tab=readme-ov-file",
-      );
+      logger.error("For details: https://github.com/eetann/editprompt/?tab=readme-ov-file");
       process.exit(1);
     },
   },

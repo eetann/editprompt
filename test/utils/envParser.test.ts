@@ -32,14 +32,10 @@ describe("parseEnvVars", () => {
   });
 
   test("should throw error for invalid format without equals sign", () => {
-    expect(() => parseEnvVars(["INVALID"])).toThrow(
-      "Invalid environment variable format: INVALID",
-    );
+    expect(() => parseEnvVars(["INVALID"])).toThrow("Invalid environment variable format: INVALID");
   });
 
   test("should throw error for format with only equals sign", () => {
-    expect(() => parseEnvVars(["=value"])).toThrow(
-      "Invalid environment variable format: =value",
-    );
+    expect(() => parseEnvVars(["=value"])).toThrow("Invalid environment variable format: =value");
   });
 });

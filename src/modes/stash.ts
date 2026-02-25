@@ -2,11 +2,7 @@ import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import { conf } from "../modules/conf";
 import { setupLogger } from "../modules/logger";
-import {
-  getCurrentPaneId,
-  getTargetPaneIds,
-  isEditorPane,
-} from "../modules/tmux";
+import { getCurrentPaneId, getTargetPaneIds, isEditorPane } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { readSendConfig } from "../utils/sendConfig";
@@ -54,11 +50,7 @@ export function getStashList(mux: MuxType, targetPaneId: string): StashEntry[] {
 }
 
 // Get stash content by key (or latest if not specified)
-export function getStashContent(
-  mux: MuxType,
-  targetPaneId: string,
-  key?: string,
-): string {
+export function getStashContent(mux: MuxType, targetPaneId: string, key?: string): string {
   const stashKey = getStashKey(mux, targetPaneId);
   const data = (conf.get(stashKey) as StashData) || {};
 
@@ -76,11 +68,7 @@ export function getStashContent(
 }
 
 // Drop stash entry by key (or latest if not specified)
-export function dropStash(
-  mux: MuxType,
-  targetPaneId: string,
-  key?: string,
-): boolean {
+export function dropStash(mux: MuxType, targetPaneId: string, key?: string): boolean {
   const stashKey = getStashKey(mux, targetPaneId);
   const data = (conf.get(stashKey) as StashData) || {};
 
@@ -230,9 +218,7 @@ function showHelp(): void {
   console.log("  pop [--key <key>]     Apply and drop stashed entry");
   console.log("");
   console.log("Options:");
-  console.log(
-    "  -k, --key <key>       Stash key (ISO datetime). Default: latest",
-  );
+  console.log("  -k, --key <key>       Stash key (ISO datetime). Default: latest");
   console.log("  -h, --help            Show this help message");
 }
 

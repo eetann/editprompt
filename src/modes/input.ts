@@ -13,11 +13,7 @@ import { extractRawContent } from "../utils/argumentParser";
 import { processContent } from "../utils/contentProcessor";
 import { readSendConfig } from "../utils/sendConfig";
 import { ARG_LOG_FILE, ARG_QUIET, ARG_VERBOSE } from "./args";
-import {
-  copyToClipboard,
-  focusFirstSuccessPane,
-  handleContentDelivery,
-} from "./common";
+import { copyToClipboard, focusFirstSuccessPane, handleContentDelivery } from "./common";
 
 const logger = getLogger(["editprompt", "input"]);
 
@@ -107,11 +103,7 @@ export async function runInputMode(
 
   // Normal mode (focus on first successful pane)
   try {
-    const result = await handleContentDelivery(
-      content,
-      config.mux,
-      targetPanes,
-    );
+    const result = await handleContentDelivery(content, config.mux, targetPanes);
 
     // Copy to clipboard if alwaysCopy is enabled
     if (config.alwaysCopy && !result.allFailed) {
@@ -129,9 +121,7 @@ export async function runInputMode(
       process.exit(1);
     }
   } catch (error) {
-    logger.error(
-      `${error instanceof Error ? error.message : "Unknown error"}`,
-    );
+    logger.error(`${error instanceof Error ? error.message : "Unknown error"}`);
     process.exit(1);
   }
 }

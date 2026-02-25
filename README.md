@@ -19,7 +19,6 @@ A CLI tool that lets you write prompts for CLI tools using your favorite text ed
 - **💬 Quote and Reply**: Collect multiple text selections and reply to specific parts of AI responses
 - **📝 Multi-line Commands**: Complex SQL queries, JSON payloads, and structured prompts
 
-
 ## ✨ Features
 
 - 🖊️ **Editor Integration**: Use your preferred text editor to write prompts
@@ -28,7 +27,6 @@ A CLI tool that lets you write prompts for CLI tools using your favorite text ed
 - 📤 **Send Without Closing**: Iterate on prompts without closing your editor
 - 📋 **Quote Buffering**: Collect text selections and send them as quoted replies
 - 📋 **Clipboard Fallback**: Automatically copies to clipboard if sending fails
-
 
 ## 📦 Installation
 
@@ -97,7 +95,6 @@ For replying to specific parts of AI responses:
 
 Perfect for addressing multiple points in long AI responses.
 
-
 ## ⚙️ Setup & Configuration
 
 ### Basic Setup
@@ -126,7 +123,6 @@ bind -n M-q run-shell '\
   tmux split-window -v -l 10 -c "#{pane_current_path}" \
     "editprompt open --editor nvim --always-copy --target-pane #{pane_id}"'
 ```
-
 
 ### WezTerm Integration
 
@@ -173,7 +169,6 @@ bind -n M-q run-shell '\
 
 **Note:** The `-lc` flag ensures your shell loads the full login environment, making `editprompt` available in your PATH.
 
-
 ### Editor Integration (Send Without Closing)
 
 While editprompt is running, you can send content to the target pane or clipboard without closing the editor. This allows you to iterate quickly on your prompts.
@@ -197,6 +192,7 @@ editprompt input --auto-send --send-key "C-m" -- "your content here"
 This sends the content to the target pane (or clipboard) while keeping your editor open, so you can continue editing and send multiple times.
 
 **Options:**
+
 - `--auto-send`: Automatically sends the content and returns focus to your editor pane (requires multiplexer)
 - `--send-key <key>`: Customize the key to send after content (requires `--auto-send`)
   - tmux format: `Enter` (default), `C-a`, etc.
@@ -217,6 +213,7 @@ bind-key -T copy-mode-vi C-e { send-keys -X pipe "editprompt collect --target-pa
 ```
 
 **Usage:**
+
 1. Enter tmux copy mode (`prefix + [`)
 2. Select text using vi-mode keybindings
 3. Press `Ctrl-e` to add the selection as a quote
@@ -257,6 +254,7 @@ return {
 ```
 
 **Usage:**
+
 1. Select text in WezTerm (by dragging with mouse or using copy mode)
 2. Press `Ctrl-e` to add the selection as a quote
 3. Repeat to collect multiple quotes
@@ -273,6 +271,7 @@ editprompt dump
 This copies all collected quotes to the clipboard and clears the buffer, ready for your reply.
 
 **Complete workflow:**
+
 1. AI responds with multiple points
 2. Select each point in copy mode and press `Ctrl-e`
 3. Open your editor pane and run `editprompt dump`
@@ -280,6 +279,7 @@ This copies all collected quotes to the clipboard and clears the buffer, ready f
 5. Send to AI
 
 **How quote buffering works:**
+
 - **tmux**: Quotes are stored in pane variables, automatically cleaned up when the pane closes
 - **WezTerm**: Quotes are stored in a configuration file associated with the pane
 - Text is intelligently processed: removes common indentation, handles line breaks smartly
@@ -363,17 +363,17 @@ When using the send-without-closing feature or dump, editprompt sets `EDITPROMPT
 
 editprompt uses structured logging via [LogTape](https://logtape.org/). The following flags are available on all subcommands:
 
-| Flag | Description |
-|------|-------------|
-| `--quiet` / `-q` | Suppress all log output |
-| `--verbose` / `-v` | Enable debug-level log output |
+| Flag                | Description                                |
+| ------------------- | ------------------------------------------ |
+| `--quiet` / `-q`    | Suppress all log output                    |
+| `--verbose` / `-v`  | Enable debug-level log output              |
 | `--log-file <path>` | Write logs to the specified file (appends) |
 
 You can also configure logging via environment variables:
 
-| Environment Variable | Description |
-|----------------------|-------------|
-| `EDITPROMPT_LOG_FILE` | Path to log file (same as `--log-file`) |
+| Environment Variable   | Description                                          |
+| ---------------------- | ---------------------------------------------------- |
+| `EDITPROMPT_LOG_FILE`  | Path to log file (same as `--log-file`)              |
 | `EDITPROMPT_LOG_LEVEL` | Log level (e.g. `debug`, `info`, `warning`, `error`) |
 
 **Log level resolution priority:**
@@ -387,9 +387,9 @@ You can also configure logging via environment variables:
 
 When using `--auto-send` with `editprompt input`, a delay is inserted before sending the key to allow the target process to finish processing the content.
 
-| Environment Variable | Description | Default |
-|----------------------|-------------|---------|
-| `EDITPROMPT_SEND_KEY_DELAY` | Delay in milliseconds before sending the key | `1000` |
+| Environment Variable        | Description                                  | Default |
+| --------------------------- | -------------------------------------------- | ------- |
+| `EDITPROMPT_SEND_KEY_DELAY` | Delay in milliseconds before sending the key | `1000`  |
 
 **Auto-detection:** editprompt automatically adjusts the delay based on content:
 

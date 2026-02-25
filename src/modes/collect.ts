@@ -53,9 +53,7 @@ function normalizeCollectOutputs(value: unknown): CollectOutput[] {
   }
 
   const uniqueOutputs = [...new Set(outputs)];
-  const invalid = uniqueOutputs.filter(
-    (v) => !SUPPORTED_OUTPUTS.includes(v as CollectOutput),
-  );
+  const invalid = uniqueOutputs.filter((v) => !SUPPORTED_OUTPUTS.includes(v as CollectOutput));
 
   if (invalid.length > 0) {
     logger.error(
@@ -100,9 +98,7 @@ export async function runCollectMode(
       }
     }
   } catch (error) {
-    logger.error(
-      `${error instanceof Error ? error.message : "Unknown error"}`,
-    );
+    logger.error(`${error instanceof Error ? error.message : "Unknown error"}`);
     process.exit(1);
   }
 }

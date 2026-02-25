@@ -2,11 +2,7 @@ import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import { openEditorAndGetContent } from "../modules/editor";
 import { setupLogger } from "../modules/logger";
-import {
-  clearEditorPaneId,
-  getCurrentPaneId,
-  markAsEditorPane,
-} from "../modules/tmux";
+import { clearEditorPaneId, getCurrentPaneId, markAsEditorPane } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
 
@@ -37,9 +33,7 @@ interface OpenEditorModeOptions {
   env?: string[];
 }
 
-export async function runOpenEditorMode(
-  options: OpenEditorModeOptions,
-): Promise<void> {
+export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise<void> {
   if (options.targetPanes.length > 0 && options.mux === "tmux") {
     try {
       const currentPaneId = await getCurrentPaneId();
@@ -64,11 +58,7 @@ export async function runOpenEditorMode(
 
     logger.info("Opening editor...");
 
-    const content = await openEditorAndGetContent(
-      options.editor,
-      options.env,
-      sendConfig,
-    );
+    const content = await openEditorAndGetContent(options.editor, options.env, sendConfig);
 
     if (!content) {
       logger.info("No content entered. Exiting.");
@@ -76,11 +66,7 @@ export async function runOpenEditorMode(
     }
 
     try {
-      const result = await handleContentDelivery(
-        content,
-        options.mux,
-        options.targetPanes,
-      );
+      const result = await handleContentDelivery(content, options.mux, options.targetPanes);
 
       // Output content for reference
       console.log("---");
@@ -94,11 +80,7 @@ export async function runOpenEditorMode(
 
       // Focus on the first successful pane
       if (options.targetPanes.length > 0 && result.successCount > 0) {
-        await focusFirstSuccessPane(
-          options.mux,
-          options.targetPanes,
-          result.failedPanes,
-        );
+        await focusFirstSuccessPane(options.mux, options.targetPanes, result.failedPanes);
       }
 
       // Exit with code 1 if not all panes succeeded (requirement 6)
@@ -106,9 +88,7 @@ export async function runOpenEditorMode(
         process.exit(1);
       }
     } catch (error) {
-      logger.error(
-        `${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+      logger.error(`${error instanceof Error ? error.message : "Unknown error"}`);
       process.exit(1);
     }
   } finally {

@@ -70,17 +70,14 @@ export async function runDumpMode(): Promise<void> {
     process.stdout.write(combinedContent.replace(/\n{3,}$/, "\n\n"));
     process.exit(0);
   } catch (error) {
-    logger.error(
-      `${error instanceof Error ? error.message : "Unknown error"}`,
-    );
+    logger.error(`${error instanceof Error ? error.message : "Unknown error"}`);
     process.exit(1);
   }
 }
 
 export const dumpCommand = define({
   name: "dump",
-  description:
-    "Output and clear collected quoted text from environment variables",
+  description: "Output and clear collected quoted text from environment variables",
   args: {
     "log-file": ARG_LOG_FILE,
     quiet: ARG_QUIET,

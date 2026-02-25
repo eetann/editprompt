@@ -46,6 +46,7 @@ end, { silent = true, desc = "Send buffer content to editprompt" })
 ```
 
 **Usage:**
+
 1. Open editprompt using the tmux/wezterm keybinding
 2. Write your prompt in the editor
 3. Press `<Space>ei` to send the content to the target pane

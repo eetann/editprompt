@@ -6,10 +6,7 @@
  * @param positionals - Positional arguments
  * @returns Raw content string or undefined if no content provided
  */
-export function extractRawContent(
-  rest: string[],
-  positionals: string[],
-): string | undefined {
+export function extractRawContent(rest: string[], positionals: string[]): string | undefined {
   if (rest.length > 0) {
     const joined = rest.join(" ");
     if (joined.trim() !== "") {

@@ -90,9 +90,9 @@ describe("Editor Module", () => {
         spawn: spawnMock,
       }));
 
-      expect(
-        launchEditor("nonexistent-editor", "/tmp/test.md"),
-      ).rejects.toThrow("Failed to launch editor: Editor not found");
+      expect(launchEditor("nonexistent-editor", "/tmp/test.md")).rejects.toThrow(
+        "Failed to launch editor: Editor not found",
+      );
     });
 
     test("should reject when editor exits with non-zero code", async () => {
@@ -109,9 +109,7 @@ describe("Editor Module", () => {
         spawn: spawnMock,
       }));
 
-      expect(launchEditor("vim", "/tmp/test.md")).rejects.toThrow(
-        "Editor exited with code: 1",
-      );
+      expect(launchEditor("vim", "/tmp/test.md")).rejects.toThrow("Editor exited with code: 1");
     });
   });
 
@@ -128,9 +126,7 @@ describe("Editor Module", () => {
     });
 
     test("should throw error when file read fails", async () => {
-      const readFileMock = mock(() =>
-        Promise.reject(new Error("File not found")),
-      );
+      const readFileMock = mock(() => Promise.reject(new Error("File not found")));
       mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));
@@ -151,9 +147,7 @@ describe("Editor Module", () => {
     });
 
     test("should add space when line ends with @-prefixed string in middle", async () => {
-      const readFileMock = mock(() =>
-        Promise.resolve("foo\nbar @path/to/file\n"),
-      );
+      const readFileMock = mock(() => Promise.resolve("foo\nbar @path/to/file\n"));
       mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));
@@ -163,9 +157,7 @@ describe("Editor Module", () => {
     });
 
     test("should not add space when @ appears in middle lines but not at the end", async () => {
-      const readFileMock = mock(() =>
-        Promise.resolve("foo @path/to/file\nbar\n"),
-      );
+      const readFileMock = mock(() => Promise.resolve("foo @path/to/file\nbar\n"));
       mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));

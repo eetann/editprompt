@@ -27,9 +27,7 @@ interface RegisterModeOptions {
   editorPane?: string;
 }
 
-export async function runRegisterMode(
-  options: RegisterModeOptions,
-): Promise<void> {
+export async function runRegisterMode(options: RegisterModeOptions): Promise<void> {
   if (options.targetPanes.length === 0) {
     logger.error("--target-pane is required for register command");
     process.exit(1);
@@ -77,9 +75,7 @@ export async function runRegisterMode(
     }
 
     // Merge with new target panes and remove duplicates
-    const mergedTargetPanes = [
-      ...new Set([...existingPanes, ...options.targetPanes]),
-    ];
+    const mergedTargetPanes = [...new Set([...existingPanes, ...options.targetPanes])];
 
     // Save merged target panes
     if (options.mux === "tmux") {
@@ -92,17 +88,14 @@ export async function runRegisterMode(
       `Editor pane ${editorPaneId} registered with target panes: ${mergedTargetPanes.join(", ")}`,
     );
   } catch (error) {
-    logger.error(
-      `${error instanceof Error ? error.message : "Unknown error"}`,
-    );
+    logger.error(`${error instanceof Error ? error.message : "Unknown error"}`);
     process.exit(1);
   }
 }
 
 export const registerCommand = define({
   name: "register",
-  description:
-    "Register editor pane with target panes for resume mode and content delivery",
+  description: "Register editor pane with target panes for resume mode and content delivery",
   args: {
     mux: ARG_MUX,
     "target-pane": ARG_TARGET_PANE_MULTI,
