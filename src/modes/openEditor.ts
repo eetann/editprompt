@@ -15,6 +15,7 @@ import {
   ARG_ALWAYS_COPY,
   ARG_EDITOR,
   ARG_MUX,
+  ARG_LOG_FILE,
   ARG_QUIET,
   ARG_TARGET_PANE_MULTI,
   ARG_VERBOSE,
@@ -139,6 +140,7 @@ export const openCommand = define({
     "target-pane": ARG_TARGET_PANE_MULTI,
     editor: ARG_EDITOR,
     "always-copy": ARG_ALWAYS_COPY,
+    "log-file": ARG_LOG_FILE,
     quiet: ARG_QUIET,
     verbose: ARG_VERBOSE,
     env: {
@@ -152,6 +154,7 @@ export const openCommand = define({
     setupLogger({
       quiet: Boolean(ctx.values.quiet),
       verbose: Boolean(ctx.values.verbose),
+      logFile: ctx.values["log-file"] as string | undefined,
     });
     const mux = validateMux(ctx.values.mux);
     const targetPanes = normalizeTargetPanes(ctx.values["target-pane"]);

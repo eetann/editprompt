@@ -9,6 +9,7 @@ import {
 import * as wezterm from "../modules/wezterm";
 import { setupLogger } from "../modules/logger";
 import {
+  ARG_LOG_FILE,
   ARG_MUX,
   ARG_QUIET,
   ARG_TARGET_PANE_MULTI,
@@ -110,6 +111,7 @@ export const registerCommand = define({
       description: "Editor pane ID (defaults to current pane)",
       type: "string",
     },
+    "log-file": ARG_LOG_FILE,
     quiet: ARG_QUIET,
     verbose: ARG_VERBOSE,
   },
@@ -117,6 +119,7 @@ export const registerCommand = define({
     setupLogger({
       quiet: Boolean(ctx.values.quiet),
       verbose: Boolean(ctx.values.verbose),
+      logFile: ctx.values["log-file"] as string | undefined,
     });
     const mux = validateMux(ctx.values.mux);
     const targetPanes = normalizeTargetPanes(ctx.values["target-pane"]);

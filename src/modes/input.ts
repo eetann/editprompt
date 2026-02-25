@@ -12,7 +12,7 @@ import * as wezterm from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { processContent } from "../utils/contentProcessor";
 import { readSendConfig } from "../utils/sendConfig";
-import { ARG_QUIET, ARG_VERBOSE } from "./args";
+import { ARG_LOG_FILE, ARG_QUIET, ARG_VERBOSE } from "./args";
 import {
   copyToClipboard,
   focusFirstSuccessPane,
@@ -148,6 +148,7 @@ export const inputCommand = define({
       description: "Key to send after content (requires --auto-send)",
       type: "string",
     },
+    "log-file": ARG_LOG_FILE,
     quiet: ARG_QUIET,
     verbose: ARG_VERBOSE,
   },
@@ -155,6 +156,7 @@ export const inputCommand = define({
     setupLogger({
       quiet: Boolean(ctx.values.quiet),
       verbose: Boolean(ctx.values.verbose),
+      logFile: ctx.values["log-file"] as string | undefined,
     });
     // Get content from positional arguments or after --
     const rawContent = extractRawContent(ctx.rest, ctx.positionals);

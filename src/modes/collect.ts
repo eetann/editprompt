@@ -6,6 +6,7 @@ import { extractRawContent } from "../utils/argumentParser";
 import { processQuoteText } from "../utils/quoteProcessor";
 import { setupLogger } from "../modules/logger";
 import {
+  ARG_LOG_FILE,
   ARG_MUX,
   ARG_NO_QUOTE,
   ARG_OUTPUT,
@@ -114,6 +115,7 @@ export const collectCommand = define({
     "target-pane": ARG_TARGET_PANE_SINGLE,
     output: ARG_OUTPUT,
     "no-quote": ARG_NO_QUOTE,
+    "log-file": ARG_LOG_FILE,
     quiet: ARG_QUIET,
     verbose: ARG_VERBOSE,
   },
@@ -121,6 +123,7 @@ export const collectCommand = define({
     setupLogger({
       quiet: Boolean(ctx.values.quiet),
       verbose: Boolean(ctx.values.verbose),
+      logFile: ctx.values["log-file"] as string | undefined,
     });
     const targetPane = validateTargetPane(ctx.values["target-pane"], "collect");
     const mux = validateMux(ctx.values.mux);

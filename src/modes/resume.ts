@@ -12,6 +12,7 @@ import {
 import * as wezterm from "../modules/wezterm";
 import { setupLogger } from "../modules/logger";
 import {
+  ARG_LOG_FILE,
   ARG_MUX,
   ARG_QUIET,
   ARG_TARGET_PANE_SINGLE,
@@ -138,6 +139,7 @@ export const resumeCommand = define({
   args: {
     mux: ARG_MUX,
     "target-pane": ARG_TARGET_PANE_SINGLE,
+    "log-file": ARG_LOG_FILE,
     quiet: ARG_QUIET,
     verbose: ARG_VERBOSE,
   },
@@ -145,6 +147,7 @@ export const resumeCommand = define({
     setupLogger({
       quiet: Boolean(ctx.values.quiet),
       verbose: Boolean(ctx.values.verbose),
+      logFile: ctx.values["log-file"] as string | undefined,
     });
     const targetPane = validateTargetPane(ctx.values["target-pane"], "resume");
     const mux = validateMux(ctx.values.mux);

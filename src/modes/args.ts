@@ -46,6 +46,11 @@ export const ARG_OUTPUT: ArgSchema = {
   multiple: true,
 };
 
+export const ARG_LOG_FILE: ArgSchema = {
+	description: "Write logs to the specified file (appends)",
+	type: "string",
+};
+
 export const ARG_QUIET: ArgSchema = {
   short: "q",
   description: "Suppress all log output",
