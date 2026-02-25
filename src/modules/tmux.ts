@@ -6,6 +6,10 @@ const execAsync = promisify(exec);
 const logger = getLogger(["editprompt", "tmux"]);
 
 export async function getCurrentPaneId(): Promise<string> {
+  const envPaneId = process.env.TMUX_PANE?.trim();
+  if (envPaneId) {
+    return envPaneId;
+  }
   const { stdout } = await execAsync('tmux display-message -p "#{pane_id}"');
   return stdout.trim();
 }
