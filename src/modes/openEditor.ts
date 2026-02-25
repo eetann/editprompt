@@ -1,17 +1,20 @@
+import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import { openEditorAndGetContent } from "../modules/editor";
-import {
-  clearEditorPaneId,
-  getCurrentPaneId,
-  markAsEditorPane,
-} from "../modules/tmux";
+import { setupLogger } from "../modules/logger";
+import { clearEditorPaneId, getCurrentPaneId, markAsEditorPane } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
+
+const logger = getLogger(["editprompt", "open"]);
 import {
   ARG_ALWAYS_COPY,
   ARG_EDITOR,
   ARG_MUX,
+  ARG_LOG_FILE,
+  ARG_QUIET,
   ARG_TARGET_PANE_MULTI,
+  ARG_VERBOSE,
   normalizeTargetPanes,
   validateMux,
 } from "./args";
@@ -30,9 +33,7 @@ interface OpenEditorModeOptions {
   env?: string[];
 }
 
-export async function runOpenEditorMode(
-  options: OpenEditorModeOptions,
-): Promise<void> {
+export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise<void> {
   if (options.targetPanes.length > 0 && options.mux === "tmux") {
     try {
       const currentPaneId = await getCurrentPaneId();
@@ -53,27 +54,20 @@ export async function runOpenEditorMode(
     const sendConfig: SendConfig = {
       mux: options.mux,
       alwaysCopy: options.alwaysCopy,
+      sendKeyDelay: Number.parseInt(process.env.EDITPROMPT_SEND_KEY_DELAY || "", 10) || 1000,
     };
 
-    console.log("Opening editor...");
+    logger.info("Opening editor...");
 
-    const content = await openEditorAndGetContent(
-      options.editor,
-      options.env,
-      sendConfig,
-    );
+    const content = await openEditorAndGetContent(options.editor, options.env, sendConfig);
 
     if (!content) {
-      console.log("No content entered. Exiting.");
+      logger.info("No content entered. Exiting.");
       return;
     }
 
     try {
-      const result = await handleContentDelivery(
-        content,
-        options.mux,
-        options.targetPanes,
-      );
+      const result = await handleContentDelivery(content, options.mux, options.targetPanes);
 
       // Output content for reference
       console.log("---");
@@ -82,16 +76,12 @@ export async function runOpenEditorMode(
       // Copy to clipboard if alwaysCopy is enabled
       if (options.alwaysCopy && !result.allFailed) {
         await copyToClipboard(content);
-        console.log("Also copied to clipboard.");
+        logger.info("Also copied to clipboard.");
       }
 
       // Focus on the first successful pane
       if (options.targetPanes.length > 0 && result.successCount > 0) {
-        await focusFirstSuccessPane(
-          options.mux,
-          options.targetPanes,
-          result.failedPanes,
-        );
+        await focusFirstSuccessPane(options.mux, options.targetPanes, result.failedPanes);
       }
 
       // Exit with code 1 if not all panes succeeded (requirement 6)
@@ -99,9 +89,7 @@ export async function runOpenEditorMode(
         process.exit(1);
       }
     } catch (error) {
-      console.error(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+      logger.error(`${error instanceof Error ? error.message : "Unknown error"}`);
       process.exit(1);
     }
   } finally {
@@ -133,6 +121,9 @@ export const openCommand = define({
     "target-pane": ARG_TARGET_PANE_MULTI,
     editor: ARG_EDITOR,
     "always-copy": ARG_ALWAYS_COPY,
+    "log-file": ARG_LOG_FILE,
+    quiet: ARG_QUIET,
+    verbose: ARG_VERBOSE,
     env: {
       short: "E",
       description: "Environment variables to set (e.g., KEY=VALUE)",
@@ -141,6 +132,11 @@ export const openCommand = define({
     },
   },
   async run(ctx) {
+    setupLogger({
+      quiet: Boolean(ctx.values.quiet),
+      verbose: Boolean(ctx.values.verbose),
+      logFile: ctx.values["log-file"] as string | undefined,
+    });
     const mux = validateMux(ctx.values.mux);
     const targetPanes = normalizeTargetPanes(ctx.values["target-pane"]);
 

@@ -1,6 +1,9 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { getLogger } from "@logtape/logtape";
 import { conf } from "./conf";
+
+const logger = getLogger(["editprompt", "wezterm"]);
 
 const execAsync = promisify(exec);
 
@@ -16,7 +19,7 @@ export async function getCurrentPaneId(): Promise<string> {
     const activePane = panes.find((pane) => pane.is_active === true);
     return String(activePane?.pane_id);
   } catch (error) {
-    console.log(error);
+    logger.debug("getCurrentPaneId failed: {error}", { error });
     return "";
   }
 }
@@ -24,26 +27,25 @@ export async function getCurrentPaneId(): Promise<string> {
 export async function checkPaneExists(paneId: string): Promise<boolean> {
   try {
     const { stdout } = await execAsync("wezterm cli list --format json");
-    console.log(stdout);
+    logger.debug("wezterm cli list output: {stdout}", { stdout });
     const panes = JSON.parse(stdout) as WeztermPane[];
     return panes.some((pane) => String(pane.pane_id) === paneId);
   } catch (error) {
-    console.log(error);
+    logger.debug("checkPaneExists failed: {error}", { error });
     return false;
   }
 }
 
-export async function saveEditorPaneId(
-  targetPaneId: string,
-  editorPaneId: string,
-): Promise<void> {
-  console.log(`wezterm.targetPane.pane_${targetPaneId}`);
+export async function saveEditorPaneId(targetPaneId: string, editorPaneId: string): Promise<void> {
+  logger.debug("Saving editor pane ID to conf key: wezterm.targetPane.pane_{targetPaneId}", {
+    targetPaneId,
+  });
   try {
     conf.set(`wezterm.targetPane.pane_${targetPaneId}`, {
       editorPaneId: editorPaneId,
     });
   } catch (error) {
-    console.log(error);
+    logger.debug("saveEditorPaneId failed: {error}", { error });
   }
 }
 
@@ -55,7 +57,7 @@ export async function getEditorPaneId(targetPaneId: string): Promise<string> {
     }
     return "";
   } catch (error) {
-    console.log(error);
+    logger.debug("getEditorPaneId failed: {error}", { error });
     return "";
   }
 }
@@ -68,7 +70,7 @@ export async function clearEditorPaneId(targetPaneId: string): Promise<void> {
       conf.delete(`wezterm.editorPane.pane_${editorPaneId}`);
     }
   } catch (error) {
-    console.log(error);
+    logger.debug("clearEditorPaneId failed: {error}", { error });
   }
 }
 
@@ -98,13 +100,11 @@ export async function markAsEditorPane(
       await saveEditorPaneId(targetPaneId, editorPaneId);
     }
   } catch (error) {
-    console.log(error);
+    logger.debug("markAsEditorPane failed: {error}", { error });
   }
 }
 
-export async function getTargetPaneIds(
-  editorPaneId: string,
-): Promise<string[]> {
+export async function getTargetPaneIds(editorPaneId: string): Promise<string[]> {
   try {
     const data = conf.get(`wezterm.editorPane.pane_${editorPaneId}`);
     if (typeof data === "object" && data !== null && "targetPaneIds" in data) {
@@ -115,7 +115,7 @@ export async function getTargetPaneIds(
     }
     return [];
   } catch (error) {
-    console.log(error);
+    logger.debug("getTargetPaneIds failed: {error}", { error });
     return [];
   }
 }
@@ -124,27 +124,21 @@ export function isEditorPaneFromConf(paneId: string): boolean {
   try {
     return conf.has(`wezterm.editorPane.pane_${paneId}`);
   } catch (error) {
-    console.log(error);
+    logger.debug("isEditorPaneFromConf failed: {error}", { error });
     return false;
   }
 }
 
-export async function appendToQuoteText(
-  paneId: string,
-  content: string,
-): Promise<void> {
+export async function appendToQuoteText(paneId: string, content: string): Promise<void> {
   try {
     const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
     let newData: Record<string, unknown>;
 
     if (typeof data === "object" && data !== null) {
       // Existing data exists, preserve it and add/update quote_text
-      const existingQuoteText =
-        "quote_text" in data ? String(data.quote_text) : "";
+      const existingQuoteText = "quote_text" in data ? String(data.quote_text) : "";
       const newQuoteText =
-        existingQuoteText.trim() !== ""
-          ? `${existingQuoteText}\n\n${content}`
-          : content;
+        existingQuoteText.trim() !== "" ? `${existingQuoteText}\n\n${content}` : content;
 
       newData = {
         ...data,
@@ -157,7 +151,7 @@ export async function appendToQuoteText(
 
     conf.set(`wezterm.targetPane.pane_${paneId}`, newData);
   } catch (error) {
-    console.log(error);
+    logger.debug("appendToQuoteText failed: {error}", { error });
   }
 }
 
@@ -169,7 +163,7 @@ export async function getQuoteText(paneId: string): Promise<string> {
     }
     return "";
   } catch (error) {
-    console.log(error);
+    logger.debug("getQuoteText failed: {error}", { error });
     return "";
   }
 }
@@ -181,27 +175,24 @@ export async function clearQuoteText(paneId: string): Promise<void> {
       conf.delete(key);
     }
   } catch (error) {
-    console.log(error);
+    logger.debug("clearQuoteText failed: {error}", { error });
   }
 }
 
 export async function sendKeyToWeztermPane(
   paneId: string,
   key: string,
+  delay = 1000,
 ): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, delay));
   // Wrap user-provided key in $'...' for bash escape sequences
-  await execAsync(
-    `wezterm cli send-text --no-paste --pane-id '${paneId}' $'${key}'`,
-  );
+  await execAsync(`wezterm cli send-text --no-paste --pane-id '${paneId}' $'${key}'`);
 }
 
-export async function inputToWeztermPane(
-  paneId: string,
-  content: string,
-): Promise<void> {
+export async function inputToWeztermPane(paneId: string, content: string): Promise<void> {
   // Send content using wezterm cli send-text command (no focus change)
   await execAsync(
     `wezterm cli send-text --no-paste --pane-id '${paneId}' -- '${content.replace(/'/g, "'\\''")}'`,
   );
-  console.log(`Content sent to wezterm pane: ${paneId}`);
+  logger.debug("Content sent to wezterm pane: {paneId}", { paneId });
 }

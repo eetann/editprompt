@@ -1,3 +1,4 @@
+import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import {
   getCurrentPaneId,
@@ -6,13 +7,19 @@ import {
   markAsEditorPane,
 } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
+import { setupLogger } from "../modules/logger";
 import {
+  ARG_LOG_FILE,
   ARG_MUX,
+  ARG_QUIET,
   ARG_TARGET_PANE_MULTI,
+  ARG_VERBOSE,
   normalizeTargetPanes,
   validateMux,
 } from "./args";
 import type { MuxType } from "./common";
+
+const logger = getLogger(["editprompt", "register"]);
 
 interface RegisterModeOptions {
   mux: MuxType;
@@ -20,11 +27,9 @@ interface RegisterModeOptions {
   editorPane?: string;
 }
 
-export async function runRegisterMode(
-  options: RegisterModeOptions,
-): Promise<void> {
+export async function runRegisterMode(options: RegisterModeOptions): Promise<void> {
   if (options.targetPanes.length === 0) {
-    console.error("Error: --target-pane is required for register command");
+    logger.error("--target-pane is required for register command");
     process.exit(1);
   }
 
@@ -39,8 +44,8 @@ export async function runRegisterMode(
       editorPaneId = await getCurrentPaneId();
       const isEditor = await isEditorPane(editorPaneId);
       if (!isEditor) {
-        console.error(
-          "Error: Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
+        logger.error(
+          "Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
         );
         process.exit(1);
       }
@@ -48,13 +53,13 @@ export async function runRegisterMode(
       editorPaneId = await wezterm.getCurrentPaneId();
       const isEditor = wezterm.isEditorPaneFromConf(editorPaneId);
       if (!isEditor) {
-        console.error(
-          "Error: Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
+        logger.error(
+          "Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
         );
         process.exit(1);
       }
     } else {
-      console.error("Error: Unsupported multiplexer");
+      logger.error("Unsupported multiplexer");
       process.exit(1);
     }
   }
@@ -70,9 +75,7 @@ export async function runRegisterMode(
     }
 
     // Merge with new target panes and remove duplicates
-    const mergedTargetPanes = [
-      ...new Set([...existingPanes, ...options.targetPanes]),
-    ];
+    const mergedTargetPanes = [...new Set([...existingPanes, ...options.targetPanes])];
 
     // Save merged target panes
     if (options.mux === "tmux") {
@@ -81,21 +84,18 @@ export async function runRegisterMode(
       await wezterm.markAsEditorPane(editorPaneId, mergedTargetPanes);
     }
 
-    console.log(
+    logger.info(
       `Editor pane ${editorPaneId} registered with target panes: ${mergedTargetPanes.join(", ")}`,
     );
   } catch (error) {
-    console.error(
-      `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
+    logger.error(`${error instanceof Error ? error.message : "Unknown error"}`);
     process.exit(1);
   }
 }
 
 export const registerCommand = define({
   name: "register",
-  description:
-    "Register editor pane with target panes for resume mode and content delivery",
+  description: "Register editor pane with target panes for resume mode and content delivery",
   args: {
     mux: ARG_MUX,
     "target-pane": ARG_TARGET_PANE_MULTI,
@@ -104,8 +104,16 @@ export const registerCommand = define({
       description: "Editor pane ID (defaults to current pane)",
       type: "string",
     },
+    "log-file": ARG_LOG_FILE,
+    quiet: ARG_QUIET,
+    verbose: ARG_VERBOSE,
   },
   async run(ctx) {
+    setupLogger({
+      quiet: Boolean(ctx.values.quiet),
+      verbose: Boolean(ctx.values.verbose),
+      logFile: ctx.values["log-file"] as string | undefined,
+    });
     const mux = validateMux(ctx.values.mux);
     const targetPanes = normalizeTargetPanes(ctx.values["target-pane"]);
 

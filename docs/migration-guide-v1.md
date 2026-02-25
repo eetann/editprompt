@@ -17,20 +17,21 @@ The old syntax mixed different patterns (no options, `--resume`, `-- "content"`)
 
 ## Command Migration Table
 
-| Old Command (v0.8.1) | New Command (v1.0.0) | Description |
-|----------------------|----------------------|-------------|
-| `editprompt` | `editprompt open` | Open editor and send content |
-| `editprompt --resume` | `editprompt resume` | Resume existing editor pane |
-| `editprompt -- "text"` | `editprompt input -- "text"` | Send content directly |
-| `editprompt --auto-send -- "text"` | `editprompt input --auto-send -- "text"` | Send content with auto-submit |
-| `editprompt --quote` | `editprompt collect` | Collect quoted text |
-| `editprompt --capture` | `editprompt dump` | Output and clear collected quotes |
+| Old Command (v0.8.1)               | New Command (v1.0.0)                     | Description                       |
+| ---------------------------------- | ---------------------------------------- | --------------------------------- |
+| `editprompt`                       | `editprompt open`                        | Open editor and send content      |
+| `editprompt --resume`              | `editprompt resume`                      | Resume existing editor pane       |
+| `editprompt -- "text"`             | `editprompt input -- "text"`             | Send content directly             |
+| `editprompt --auto-send -- "text"` | `editprompt input --auto-send -- "text"` | Send content with auto-submit     |
+| `editprompt --quote`               | `editprompt collect`                     | Collect quoted text               |
+| `editprompt --capture`             | `editprompt dump`                        | Output and clear collected quotes |
 
 ## Detailed Migration Examples
 
 ### Basic Editor Launch
 
 **Old:**
+
 ```bash
 editprompt
 editprompt --editor nvim
@@ -38,6 +39,7 @@ editprompt --always-copy
 ```
 
 **New:**
+
 ```bash
 editprompt open
 editprompt open --editor nvim
@@ -47,11 +49,13 @@ editprompt open --always-copy
 ### Resume Mode
 
 **Old:**
+
 ```bash
 editprompt --resume --target-pane %123
 ```
 
 **New:**
+
 ```bash
 editprompt resume --target-pane %123
 ```
@@ -59,6 +63,7 @@ editprompt resume --target-pane %123
 ### Send Without Closing Editor
 
 **Old:**
+
 ```bash
 editprompt -- "your content"
 editprompt --auto-send -- "your content"
@@ -66,21 +71,23 @@ editprompt --auto-send --send-key "C-m" -- "your content"
 ```
 
 **New:**
+
 ```bash
 editprompt input -- "your content"
 editprompt input --auto-send -- "your content"
 editprompt input --auto-send --send-key "C-m" -- "your content"
 ```
 
-
 ### Quote Collection
 
 **Old:**
+
 ```bash
 editprompt --quote --target-pane %123
 ```
 
 **New:**
+
 ```bash
 editprompt collect --target-pane %123
 ```
@@ -88,11 +95,13 @@ editprompt collect --target-pane %123
 ### Quote Capture
 
 **Old:**
+
 ```bash
 editprompt --capture
 ```
 
 **New:**
+
 ```bash
 editprompt dump
 ```

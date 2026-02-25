@@ -35,6 +35,7 @@ editprompt open --target-pane %1 --target-pane %2 --target-pane %3
 ### Constraints and Solutions
 
 #### tmux with `run-shell`
+
 - **Constraint**: `run-shell` creates a new shell process that does not inherit environment variables like `$EDITOR` from the parent shell
 - **Solution**: Explicitly specify the editor using `--editor nvim`
 
@@ -44,6 +45,7 @@ bind -n M-q run-shell 'editprompt open --editor nvim --target-pane #{pane_id}'
 ```
 
 #### WezTerm with `SplitPane`
+
 - **Constraint**: `SplitPane` performs simple command execution without loading login shell configuration (PATH, etc.)
 - **Solution**: Explicitly launch a login shell with `/bin/zsh -lc "editprompt ..."` to load environment variables and PATH
 
@@ -107,6 +109,7 @@ Reuses existing editor panes and enables bidirectional focus switching between t
 This mode needs to maintain the relationship between editor panes and target panes, enabling bidirectional focus switching.
 
 #### tmux Implementation
+
 - **Solution**: Use tmux pane variables (`@variable`) to persist data
 - **Variables used**:
   - `@editprompt_editor_pane`: Set on target pane, stores editor pane ID
@@ -127,6 +130,7 @@ When switching back from the editor pane, it focuses on the first existing pane 
 While tmux's `run-shell` does not inherit environment variables, it can access pane variables like `#{pane_id}`, making this approach work seamlessly.
 
 #### WezTerm Implementation
+
 - **Constraint**: WezTerm's `run_child_process` does not inherit environment variables or PATH, requiring execution via `/bin/zsh -lc`
 - **Constraint**: WezTerm does not have a pane variable mechanism like tmux
 - **About OSC User Variables**: WezTerm supports [user variable definition via OSC 1337](https://wezfurlong.org/wezterm/shell-integration.html#user-vars), but this method **cannot be used for panes running active processes**
@@ -163,6 +167,7 @@ Sends content to the target pane without opening an editor, designed to be execu
 This mode is designed to be executed from within the editor, reading configuration from both environment variables and pane variables/Conf.
 
 #### Workflow
+
 1. **When launching the editor in open subcommand**:
    - The following environment variables are set when launching the editor:
      - `EDITPROMPT_MUX`: Multiplexer to use (`tmux` or `wezterm`)
@@ -190,6 +195,7 @@ vim.system(
 ```
 
 ### Benefits
+
 - Send content multiple times without closing the editor
 - Environment variable inheritance happens naturally, requiring no additional configuration or arguments
 - Supports sending to multiple target panes
@@ -209,12 +215,14 @@ This mode enables collecting multiple text selections while reading AI responses
 #### Text Input Methods
 
 **tmux Implementation:**
+
 - Reads text from stdin using pipe in copy mode
 - Example: `bind-key -T copy-mode-vi C-e { send-keys -X pipe "editprompt collect --target-pane #{pane_id}" }`
 - Example (also send cleaned text to clipboard without quote prefix):  
   `bind-key -T copy-mode-vi y { send-keys -X pipe "editprompt collect --target-pane #{pane_id} --output buffer --output stdout --no-quote | pbcopy" }`
 
 **WezTerm Implementation:**
+
 - Receives text as a positional argument
 - Example: `editprompt collect --mux wezterm --target-pane <id> -- "<text>"`
 - Uses `wezterm.shell_quote_arg()` for proper escaping
@@ -243,6 +251,7 @@ The `processQuoteText` function applies intelligent text formatting:
 #### Storage Implementation
 
 **tmux Implementation:**
+
 - Stores accumulated quotes in `@editprompt_quote` pane variable
 - Appends new quotes to existing content with newline separator
 - Single quote escaping: Uses `'\''` pattern for shell safety
@@ -253,17 +262,19 @@ tmux set-option -pt '${paneId}' @editprompt_quote '${newContent}'
 ```
 
 **WezTerm Implementation:**
+
 - Stores quotes in Conf library under `wezterm.targetPane.pane_${paneId}.quote_text`
 - Appends new quotes to existing content with newline separator
 
 ```typescript
 // Append to existing quote content
-const existingQuotes = conf.get(`wezterm.targetPane.pane_${paneId}.quote_text`) || '';
-const newQuotes = existingQuotes + '\n' + content;
+const existingQuotes = conf.get(`wezterm.targetPane.pane_${paneId}.quote_text`) || "";
+const newQuotes = existingQuotes + "\n" + content;
 conf.set(`wezterm.targetPane.pane_${paneId}.quote_text`, newQuotes);
 ```
 
 ### Benefits
+
 - Collect multiple selections from long AI responses or terminal output
 - Intelligent text processing removes formatting artifacts
 - Quotes are automatically formatted in Markdown quote style
@@ -284,6 +295,7 @@ This mode is designed to work with the collect subcommand workflow, retrieving a
 #### Configuration Source
 
 Unlike collect subcommand which requires `--target-pane` argument, dump subcommand reads configuration from environment variables and pane variables/Conf:
+
 - `EDITPROMPT_MUX`: Multiplexer type (`tmux` or `wezterm`)
 - Multiple target pane IDs retrieved from current pane ID:
   - tmux: `@editprompt_target_panes` (comma-separated)
@@ -313,6 +325,7 @@ process.stdout.write(combinedContent.replace(/\n{3,}$/, "\n\n"));
 #### Storage Retrieval
 
 **tmux Implementation:**
+
 ```bash
 # Get quote content
 tmux show -pt '${paneId}' -v @editprompt_quote
@@ -322,16 +335,18 @@ tmux set-option -pt '${paneId}' @editprompt_quote ""
 ```
 
 **WezTerm Implementation:**
+
 ```typescript
 // Get quote content
 const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
-const quoteContent = data?.quote_text || '';
+const quoteContent = data?.quote_text || "";
 
 // Clear quote content
 conf.delete(`wezterm.targetPane.pane_${paneId}.quote_text`);
 ```
 
 ### Benefits
+
 - Retrieves all accumulated quotes in a single command
 - Automatically combines quotes from multiple target panes
 - Automatically clears storage for next collection session
@@ -348,13 +363,13 @@ Temporarily stores prompts for later use, similar to `git stash`. Useful for sav
 
 ### Subcommands
 
-| Subcommand | Description |
-|------------|-------------|
-| `push -- "<content>"` | Save content to stash |
-| `list` | List all stashed entries as JSON |
+| Subcommand            | Description                                |
+| --------------------- | ------------------------------------------ |
+| `push -- "<content>"` | Save content to stash                      |
+| `list`                | List all stashed entries as JSON           |
 | `apply [--key <key>]` | Output stashed content (latest by default) |
-| `drop [--key <key>]` | Remove stashed entry (latest by default) |
-| `pop [--key <key>]` | Apply and drop stashed entry |
+| `drop [--key <key>]`  | Remove stashed entry (latest by default)   |
+| `pop [--key <key>]`   | Apply and drop stashed entry               |
 
 ### Mechanism
 
@@ -365,11 +380,13 @@ This command is designed to be executed from within an editor pane launched by e
 All stash operations use the Conf library for persistent storage, regardless of multiplexer type (tmux or WezTerm).
 
 **Storage Key Structure:**
+
 ```typescript
-`${mux}.targetPane.pane_${targetPaneId}.stash`
+`${mux}.targetPane.pane_${targetPaneId}.stash`;
 ```
 
 **Data Structure:**
+
 ```typescript
 {
   "2025-01-07T12:34:56.789Z": "content1",
@@ -389,29 +406,34 @@ All stash operations use the Conf library for persistent storage, regardless of 
 #### Subcommand Details
 
 **push:**
+
 - Takes content from positional arguments after `--`
 - Generates ISO datetime key for the entry
 - Appends to existing stash data
 - Outputs the generated key for reference
 
 **list:**
+
 - Returns all stash entries as JSON array
 - Sorted by key in descending order (newest first)
 - Format: `[{ "key": "...", "content": "..." }, ...]`
 
 **apply:**
+
 - Outputs stash content to stdout
 - If `--key` specified: retrieves that specific entry
 - If no key: retrieves the latest entry (max key)
 - Does not modify stash storage
 
 **drop:**
+
 - Removes entry from stash storage
 - If `--key` specified: removes that specific entry
 - If no key: removes the latest entry (max key)
 - Returns error if entry not found
 
 **pop:**
+
 - Combines apply and drop operations
 - Outputs content to stdout, then removes the entry
 - Useful for one-time retrieval

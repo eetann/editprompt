@@ -1,5 +1,8 @@
+import { getLogger } from "@logtape/logtape";
 import type { ArgSchema } from "gunshi";
 import { type MuxType, SUPPORTED_MUXES, isMuxType } from "./common";
+
+const logger = getLogger(["editprompt"]);
 
 export const ARG_MUX: ArgSchema = {
   short: "m",
@@ -37,31 +40,42 @@ export const ARG_NO_QUOTE: ArgSchema = {
 };
 
 export const ARG_OUTPUT: ArgSchema = {
-  description:
-    "Output destination (buffer, stdout). Can be specified multiple times",
+  description: "Output destination (buffer, stdout). Can be specified multiple times",
   type: "string",
   multiple: true,
+};
+
+export const ARG_LOG_FILE: ArgSchema = {
+  description: "Write logs to the specified file (appends)",
+  type: "string",
+};
+
+export const ARG_QUIET: ArgSchema = {
+  short: "q",
+  description: "Suppress all log output",
+  type: "boolean",
+};
+
+export const ARG_VERBOSE: ArgSchema = {
+  short: "v",
+  description: "Enable debug-level log output",
+  type: "boolean",
 };
 
 export function validateMux(value: unknown): MuxType {
   const muxValue = (value || "tmux") as string;
   if (!isMuxType(muxValue)) {
-    console.error(
-      `Error: Invalid multiplexer type '${muxValue}'. Supported values: ${SUPPORTED_MUXES.join(", ")}`,
+    logger.error(
+      `Invalid multiplexer type '${muxValue}'. Supported values: ${SUPPORTED_MUXES.join(", ")}`,
     );
     process.exit(1);
   }
   return muxValue;
 }
 
-export function validateTargetPane(
-  value: unknown,
-  commandName: string,
-): string {
+export function validateTargetPane(value: unknown, commandName: string): string {
   if (!value || typeof value !== "string") {
-    console.error(
-      `Error: --target-pane is required for ${commandName} command`,
-    );
+    logger.error(`--target-pane is required for ${commandName} command`);
     process.exit(1);
   }
   return value;

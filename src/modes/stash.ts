@@ -1,14 +1,15 @@
+import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import { conf } from "../modules/conf";
-import {
-  getCurrentPaneId,
-  getTargetPaneIds,
-  isEditorPane,
-} from "../modules/tmux";
+import { setupLogger } from "../modules/logger";
+import { getCurrentPaneId, getTargetPaneIds, isEditorPane } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { readSendConfig } from "../utils/sendConfig";
+import { ARG_LOG_FILE, ARG_QUIET, ARG_VERBOSE } from "./args";
 import type { MuxType } from "./common";
+
+const logger = getLogger(["editprompt", "stash"]);
 
 // Stash storage key helper
 function getStashKey(mux: MuxType, targetPaneId: string): string {
@@ -49,11 +50,7 @@ export function getStashList(mux: MuxType, targetPaneId: string): StashEntry[] {
 }
 
 // Get stash content by key (or latest if not specified)
-export function getStashContent(
-  mux: MuxType,
-  targetPaneId: string,
-  key?: string,
-): string {
+export function getStashContent(mux: MuxType, targetPaneId: string, key?: string): string {
   const stashKey = getStashKey(mux, targetPaneId);
   const data = (conf.get(stashKey) as StashData) || {};
 
@@ -71,11 +68,7 @@ export function getStashContent(
 }
 
 // Drop stash entry by key (or latest if not specified)
-export function dropStash(
-  mux: MuxType,
-  targetPaneId: string,
-  key?: string,
-): boolean {
+export function dropStash(mux: MuxType, targetPaneId: string, key?: string): boolean {
   const stashKey = getStashKey(mux, targetPaneId);
   const data = (conf.get(stashKey) as StashData) || {};
 
@@ -118,7 +111,7 @@ async function getTargetPaneForStash(): Promise<{
   }
 
   if (!isEditor) {
-    console.error("Error: Current pane is not an editor pane");
+    logger.error("Current pane is not an editor pane");
     process.exit(1);
   }
 
@@ -131,7 +124,7 @@ async function getTargetPaneForStash(): Promise<{
   }
 
   if (targetPanes.length === 0) {
-    console.error("Error: No target panes registered for this editor pane");
+    logger.error("No target panes registered for this editor pane");
     process.exit(1);
   }
 
@@ -144,14 +137,14 @@ async function runPush(rest: string[], positionals: string[]): Promise<void> {
   const rawContent = extractRawContent(rest, positionals);
 
   if (rawContent === undefined || rawContent.trim() === "") {
-    console.error("Error: Content is required for stash push");
-    console.error('Usage: editprompt stash push -- "your content"');
+    logger.error("Content is required for stash push");
+    logger.error('Usage: editprompt stash push -- "your content"');
     process.exit(1);
   }
 
   const { mux, targetPaneId } = await getTargetPaneForStash();
   const key = await pushStash(mux, targetPaneId, rawContent);
-  console.log(`Stashed with key: ${key}`);
+  logger.info("Stashed with key: {key}", { key });
 }
 
 async function runList(): Promise<void> {
@@ -166,9 +159,9 @@ async function runApply(key?: string): Promise<void> {
 
   if (content === "") {
     if (key) {
-      console.error(`Error: No stash entry found with key: ${key}`);
+      logger.error("No stash entry found with key: {key}", { key });
     } else {
-      console.error("Error: No stash entries found");
+      logger.error("No stash entries found");
     }
     process.exit(1);
   }
@@ -182,14 +175,14 @@ async function runDrop(key?: string): Promise<void> {
 
   if (!success) {
     if (key) {
-      console.error(`Error: No stash entry found with key: ${key}`);
+      logger.error("No stash entry found with key: {key}", { key });
     } else {
-      console.error("Error: No stash entries found");
+      logger.error("No stash entries found");
     }
     process.exit(1);
   }
 
-  console.log("Stash entry dropped");
+  logger.info("Stash entry dropped");
 }
 
 async function runPop(key?: string): Promise<void> {
@@ -198,9 +191,9 @@ async function runPop(key?: string): Promise<void> {
 
   if (content === "") {
     if (key) {
-      console.error(`Error: No stash entry found with key: ${key}`);
+      logger.error("No stash entry found with key: {key}", { key });
     } else {
-      console.error("Error: No stash entries found");
+      logger.error("No stash entries found");
     }
     process.exit(1);
   }
@@ -225,9 +218,7 @@ function showHelp(): void {
   console.log("  pop [--key <key>]     Apply and drop stashed entry");
   console.log("");
   console.log("Options:");
-  console.log(
-    "  -k, --key <key>       Stash key (ISO datetime). Default: latest",
-  );
+  console.log("  -k, --key <key>       Stash key (ISO datetime). Default: latest");
   console.log("  -h, --help            Show this help message");
 }
 
@@ -243,8 +234,17 @@ function parseKeyOption(args: string[]): string | undefined {
 export const stashCommand = define({
   name: "stash",
   description: "Stash prompts for later use",
-  args: {},
+  args: {
+    "log-file": ARG_LOG_FILE,
+    quiet: ARG_QUIET,
+    verbose: ARG_VERBOSE,
+  },
   async run(ctx) {
+    setupLogger({
+      quiet: Boolean(ctx.values.quiet),
+      verbose: Boolean(ctx.values.verbose),
+      logFile: ctx.values["log-file"] as string | undefined,
+    });
     // Skip "stash" itself in positionals (gunshi includes subcommand name)
     const args = ctx.positionals.slice(1);
 
@@ -273,8 +273,8 @@ export const stashCommand = define({
         await runPop(parseKeyOption(subArgs));
         break;
       default:
-        console.error(`Error: Unknown subcommand '${subcommand}'`);
-        console.error("");
+        logger.error("Unknown subcommand '{subcommand}'", { subcommand });
+        logger.error("");
         showHelp();
         process.exit(1);
     }

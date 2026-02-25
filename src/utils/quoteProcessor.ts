@@ -35,10 +35,7 @@ function needsSpaceSeparator(prevLine: string, currentLine: string): boolean {
 /**
  * Merge lines for Pattern A where indented lines likely indicate wrap
  */
-function mergeIndentedContinuations(
-  originalLines: string[],
-  trimmedLines: string[],
-): string[] {
+function mergeIndentedContinuations(originalLines: string[], trimmedLines: string[]): string[] {
   const result: string[] = [];
 
   for (let i = 0; i < trimmedLines.length; i++) {
@@ -168,10 +165,7 @@ function removeWhitespaceAndMergeLines(lines: string[]): string[] {
  * 4. Adding quote prefix ("> ") to each line
  * 5. Adding two newlines at the end
  */
-export function processQuoteText(
-  text: string,
-  options?: { withQuote?: boolean },
-): string {
+export function processQuoteText(text: string, options?: { withQuote?: boolean }): string {
   const withQuote = options?.withQuote ?? true;
 
   // Remove leading and trailing newlines
@@ -181,10 +175,7 @@ export function processQuoteText(
   // Pattern detection: Check if any 2nd+ line has no leading whitespace
   const hasNoLeadingWhitespaceInLaterLines = lines
     .slice(1)
-    .some(
-      (line) =>
-        line.length > 0 && !line.startsWith(" ") && !line.startsWith("\t"),
-    );
+    .some((line) => line.length > 0 && !line.startsWith(" ") && !line.startsWith("\t"));
 
   let processedLines: string[];
 

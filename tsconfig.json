@@ -23,5 +23,6 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
     "resolveJsonModule": true
-  }
+  },
+  "exclude": ["opensrc"]
 }

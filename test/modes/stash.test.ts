@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import {
-  dropStash,
-  getStashContent,
-  getStashList,
-  pushStash,
-} from "../../src/modes/stash";
+import { dropStash, getStashContent, getStashList, pushStash } from "../../src/modes/stash";
 import { conf } from "../../src/modules/conf";
 
 beforeEach(() => {

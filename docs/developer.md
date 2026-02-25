@@ -90,6 +90,22 @@ This allows you to make changes, run `bun run build`, and test immediately witho
 
 ## 🔍 Technical Details
 
+### 📋 Logging
+
+editprompt uses [LogTape](https://logtape.org/) for structured logging.
+
+- **stderr output**: ANSI-colored format with timestamp (`getAnsiColorFormatter()`)
+- **File output**: Plain text format with timestamp (`getTextFormatter()`)
+
+Log level resolution for stderr:
+
+1. `--quiet` → `null` (all logs dropped)
+2. `--verbose` → `"debug"`
+3. `EDITPROMPT_LOG_LEVEL` env var → parsed level
+4. Default → `"info"`
+
+File log level follows the same logic but ignores `--quiet` (file logging is always active if a path is configured).
+
 ### 🔄 Fallback Strategy
 
 editprompt implements a robust fallback strategy:

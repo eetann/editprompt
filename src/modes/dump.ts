@@ -1,4 +1,6 @@
+import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
+import { setupLogger } from "../modules/logger";
 import {
   clearQuoteVariable,
   getCurrentPaneId,
@@ -8,6 +10,9 @@ import {
 } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import { readSendConfig } from "../utils/sendConfig";
+import { ARG_LOG_FILE, ARG_QUIET, ARG_VERBOSE } from "./args";
+
+const logger = getLogger(["editprompt", "dump"]);
 
 export async function runDumpMode(): Promise<void> {
   try {
@@ -27,7 +32,7 @@ export async function runDumpMode(): Promise<void> {
     }
 
     if (!isEditor) {
-      console.error("Error: Current pane is not an editor pane");
+      logger.error("Current pane is not an editor pane");
       process.exit(1);
     }
 
@@ -40,7 +45,7 @@ export async function runDumpMode(): Promise<void> {
     }
 
     if (targetPanes.length === 0) {
-      console.error("Error: No target panes registered for this editor pane");
+      logger.error("No target panes registered for this editor pane");
       process.exit(1);
     }
 
@@ -65,19 +70,25 @@ export async function runDumpMode(): Promise<void> {
     process.stdout.write(combinedContent.replace(/\n{3,}$/, "\n\n"));
     process.exit(0);
   } catch (error) {
-    console.error(
-      `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
+    logger.error(`${error instanceof Error ? error.message : "Unknown error"}`);
     process.exit(1);
   }
 }
 
 export const dumpCommand = define({
   name: "dump",
-  description:
-    "Output and clear collected quoted text from environment variables",
-  args: {},
-  async run() {
+  description: "Output and clear collected quoted text from environment variables",
+  args: {
+    "log-file": ARG_LOG_FILE,
+    quiet: ARG_QUIET,
+    verbose: ARG_VERBOSE,
+  },
+  async run(ctx) {
+    setupLogger({
+      quiet: Boolean(ctx.values.quiet),
+      verbose: Boolean(ctx.values.verbose),
+      logFile: ctx.values["log-file"] as string | undefined,
+    });
     await runDumpMode();
   },
 });
