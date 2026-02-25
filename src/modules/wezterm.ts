@@ -19,7 +19,7 @@ export async function getCurrentPaneId(): Promise<string> {
     const activePane = panes.find((pane) => pane.is_active === true);
     return String(activePane?.pane_id);
   } catch (error) {
-    logger.debug`getCurrentPaneId failed: ${error}`;
+    logger.debug("getCurrentPaneId failed: {error}", { error });
     return "";
   }
 }
@@ -27,23 +27,25 @@ export async function getCurrentPaneId(): Promise<string> {
 export async function checkPaneExists(paneId: string): Promise<boolean> {
   try {
     const { stdout } = await execAsync("wezterm cli list --format json");
-    logger.debug`wezterm cli list output: ${stdout}`;
+    logger.debug("wezterm cli list output: {stdout}", { stdout });
     const panes = JSON.parse(stdout) as WeztermPane[];
     return panes.some((pane) => String(pane.pane_id) === paneId);
   } catch (error) {
-    logger.debug`checkPaneExists failed: ${error}`;
+    logger.debug("checkPaneExists failed: {error}", { error });
     return false;
   }
 }
 
 export async function saveEditorPaneId(targetPaneId: string, editorPaneId: string): Promise<void> {
-  logger.debug`Saving editor pane ID to conf key: wezterm.targetPane.pane_${targetPaneId}`;
+  logger.debug("Saving editor pane ID to conf key: wezterm.targetPane.pane_{targetPaneId}", {
+    targetPaneId,
+  });
   try {
     conf.set(`wezterm.targetPane.pane_${targetPaneId}`, {
       editorPaneId: editorPaneId,
     });
   } catch (error) {
-    logger.debug`saveEditorPaneId failed: ${error}`;
+    logger.debug("saveEditorPaneId failed: {error}", { error });
   }
 }
 
@@ -55,7 +57,7 @@ export async function getEditorPaneId(targetPaneId: string): Promise<string> {
     }
     return "";
   } catch (error) {
-    logger.debug`getEditorPaneId failed: ${error}`;
+    logger.debug("getEditorPaneId failed: {error}", { error });
     return "";
   }
 }
@@ -68,7 +70,7 @@ export async function clearEditorPaneId(targetPaneId: string): Promise<void> {
       conf.delete(`wezterm.editorPane.pane_${editorPaneId}`);
     }
   } catch (error) {
-    logger.debug`clearEditorPaneId failed: ${error}`;
+    logger.debug("clearEditorPaneId failed: {error}", { error });
   }
 }
 
@@ -98,7 +100,7 @@ export async function markAsEditorPane(
       await saveEditorPaneId(targetPaneId, editorPaneId);
     }
   } catch (error) {
-    logger.debug`markAsEditorPane failed: ${error}`;
+    logger.debug("markAsEditorPane failed: {error}", { error });
   }
 }
 
@@ -113,7 +115,7 @@ export async function getTargetPaneIds(editorPaneId: string): Promise<string[]> 
     }
     return [];
   } catch (error) {
-    logger.debug`getTargetPaneIds failed: ${error}`;
+    logger.debug("getTargetPaneIds failed: {error}", { error });
     return [];
   }
 }
@@ -122,7 +124,7 @@ export function isEditorPaneFromConf(paneId: string): boolean {
   try {
     return conf.has(`wezterm.editorPane.pane_${paneId}`);
   } catch (error) {
-    logger.debug`isEditorPaneFromConf failed: ${error}`;
+    logger.debug("isEditorPaneFromConf failed: {error}", { error });
     return false;
   }
 }
@@ -149,7 +151,7 @@ export async function appendToQuoteText(paneId: string, content: string): Promis
 
     conf.set(`wezterm.targetPane.pane_${paneId}`, newData);
   } catch (error) {
-    logger.debug`appendToQuoteText failed: ${error}`;
+    logger.debug("appendToQuoteText failed: {error}", { error });
   }
 }
 
@@ -161,7 +163,7 @@ export async function getQuoteText(paneId: string): Promise<string> {
     }
     return "";
   } catch (error) {
-    logger.debug`getQuoteText failed: ${error}`;
+    logger.debug("getQuoteText failed: {error}", { error });
     return "";
   }
 }
@@ -173,7 +175,7 @@ export async function clearQuoteText(paneId: string): Promise<void> {
       conf.delete(key);
     }
   } catch (error) {
-    logger.debug`clearQuoteText failed: ${error}`;
+    logger.debug("clearQuoteText failed: {error}", { error });
   }
 }
 
@@ -192,5 +194,5 @@ export async function inputToWeztermPane(paneId: string, content: string): Promi
   await execAsync(
     `wezterm cli send-text --no-paste --pane-id '${paneId}' -- '${content.replace(/'/g, "'\\''")}'`,
   );
-  logger.debug`Content sent to wezterm pane: ${paneId}`;
+  logger.debug("Content sent to wezterm pane: {paneId}", { paneId });
 }

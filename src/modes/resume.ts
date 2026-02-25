@@ -59,7 +59,7 @@ export async function runResumeMode(targetPane: string, mux: MuxType): Promise<v
 
     // Focus from target pane to editor pane
     const editorPaneId = await wezterm.getEditorPaneId(targetPane);
-    logger.debug`wezterm editorPaneId: ${editorPaneId}`;
+    logger.debug("wezterm editorPaneId: {editorPaneId}", { editorPaneId });
 
     if (editorPaneId === "") {
       logger.debug("Editor pane ID not found");
@@ -77,7 +77,10 @@ export async function runResumeMode(targetPane: string, mux: MuxType): Promise<v
       await wezterm.focusPane(editorPaneId);
       process.exit(0);
     } catch (error) {
-      logger.debug`Can't focus editorPaneId: ${editorPaneId}, error: ${error}`;
+      logger.debug("Can't focus editorPaneId: {editorPaneId}, error: {error}", {
+        editorPaneId,
+        error,
+      });
       process.exit(1);
     }
   }

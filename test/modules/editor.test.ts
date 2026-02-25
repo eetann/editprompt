@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import {
   getEditor,
   launchEditor,
@@ -7,15 +7,15 @@ import {
 } from "../../src/modules/editor";
 
 // Mock external dependencies
-mock.module("node:child_process", () => ({
+void mock.module("node:child_process", () => ({
   spawn: mock(),
 }));
 
-mock.module("node:fs/promises", () => ({
+void mock.module("node:fs/promises", () => ({
   readFile: mock(),
 }));
 
-mock.module("../../src/utils/tempFile", () => ({
+void mock.module("../../src/utils/tempFile", () => ({
   createTempFile: mock(),
 }));
 
@@ -62,7 +62,7 @@ describe("Editor Module", () => {
       };
 
       const spawnMock = mock(() => mockProcess);
-      mock.module("node:child_process", () => ({
+      void mock.module("node:child_process", () => ({
         spawn: spawnMock,
       }));
 
@@ -86,7 +86,7 @@ describe("Editor Module", () => {
       };
 
       const spawnMock = mock(() => mockProcess);
-      mock.module("node:child_process", () => ({
+      void mock.module("node:child_process", () => ({
         spawn: spawnMock,
       }));
 
@@ -105,7 +105,7 @@ describe("Editor Module", () => {
       };
 
       const spawnMock = mock(() => mockProcess);
-      mock.module("node:child_process", () => ({
+      void mock.module("node:child_process", () => ({
         spawn: spawnMock,
       }));
 
@@ -116,7 +116,7 @@ describe("Editor Module", () => {
   describe("readFileContent", () => {
     test("should read and trim file content", async () => {
       const readFileMock = mock(() => Promise.resolve("Hello World\n"));
-      mock.module("node:fs/promises", () => ({
+      void mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));
 
@@ -127,7 +127,7 @@ describe("Editor Module", () => {
 
     test("should throw error when file read fails", async () => {
       const readFileMock = mock(() => Promise.reject(new Error("File not found")));
-      mock.module("node:fs/promises", () => ({
+      void mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));
 
@@ -138,7 +138,7 @@ describe("Editor Module", () => {
 
     test("should add space when content ends with @-prefixed string", async () => {
       const readFileMock = mock(() => Promise.resolve("foo\n@path/to/file\n"));
-      mock.module("node:fs/promises", () => ({
+      void mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));
 
@@ -148,7 +148,7 @@ describe("Editor Module", () => {
 
     test("should add space when line ends with @-prefixed string in middle", async () => {
       const readFileMock = mock(() => Promise.resolve("foo\nbar @path/to/file\n"));
-      mock.module("node:fs/promises", () => ({
+      void mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));
 
@@ -158,7 +158,7 @@ describe("Editor Module", () => {
 
     test("should not add space when @ appears in middle lines but not at the end", async () => {
       const readFileMock = mock(() => Promise.resolve("foo @path/to/file\nbar\n"));
-      mock.module("node:fs/promises", () => ({
+      void mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));
 
@@ -170,7 +170,7 @@ describe("Editor Module", () => {
   describe("openEditorAndGetContent", () => {
     test("should complete full editor workflow successfully", async () => {
       const createTempFileMock = mock(() => Promise.resolve("/tmp/test.md"));
-      mock.module("../../src/utils/tempFile", () => ({
+      void mock.module("../../src/utils/tempFile", () => ({
         createTempFile: createTempFileMock,
       }));
 
@@ -183,12 +183,12 @@ describe("Editor Module", () => {
       };
 
       const spawnMock = mock(() => mockProcess);
-      mock.module("node:child_process", () => ({
+      void mock.module("node:child_process", () => ({
         spawn: spawnMock,
       }));
 
       const readFileMock = mock(() => Promise.resolve("Test content"));
-      mock.module("node:fs/promises", () => ({
+      void mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));
 
@@ -207,7 +207,7 @@ describe("Editor Module", () => {
 
     test("should throw error when no content is entered", async () => {
       const createTempFileMock = mock(() => Promise.resolve("/tmp/test.md"));
-      mock.module("../../src/utils/tempFile", () => ({
+      void mock.module("../../src/utils/tempFile", () => ({
         createTempFile: createTempFileMock,
       }));
 
@@ -220,12 +220,12 @@ describe("Editor Module", () => {
       };
 
       const spawnMock = mock(() => mockProcess);
-      mock.module("node:child_process", () => ({
+      void mock.module("node:child_process", () => ({
         spawn: spawnMock,
       }));
 
       const readFileMock = mock(() => Promise.resolve(""));
-      mock.module("node:fs/promises", () => ({
+      void mock.module("node:fs/promises", () => ({
         readFile: readFileMock,
       }));
 

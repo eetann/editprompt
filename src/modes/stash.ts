@@ -144,7 +144,7 @@ async function runPush(rest: string[], positionals: string[]): Promise<void> {
 
   const { mux, targetPaneId } = await getTargetPaneForStash();
   const key = await pushStash(mux, targetPaneId, rawContent);
-  logger.info`Stashed with key: ${key}`;
+  logger.info("Stashed with key: {key}", { key });
 }
 
 async function runList(): Promise<void> {
@@ -159,7 +159,7 @@ async function runApply(key?: string): Promise<void> {
 
   if (content === "") {
     if (key) {
-      logger.error`No stash entry found with key: ${key}`;
+      logger.error("No stash entry found with key: {key}", { key });
     } else {
       logger.error("No stash entries found");
     }
@@ -175,7 +175,7 @@ async function runDrop(key?: string): Promise<void> {
 
   if (!success) {
     if (key) {
-      logger.error`No stash entry found with key: ${key}`;
+      logger.error("No stash entry found with key: {key}", { key });
     } else {
       logger.error("No stash entries found");
     }
@@ -191,7 +191,7 @@ async function runPop(key?: string): Promise<void> {
 
   if (content === "") {
     if (key) {
-      logger.error`No stash entry found with key: ${key}`;
+      logger.error("No stash entry found with key: {key}", { key });
     } else {
       logger.error("No stash entries found");
     }
@@ -273,7 +273,7 @@ export const stashCommand = define({
         await runPop(parseKeyOption(subArgs));
         break;
       default:
-        logger.error`Unknown subcommand '${subcommand}'`;
+        logger.error("Unknown subcommand '{subcommand}'", { subcommand });
         logger.error("");
         showHelp();
         process.exit(1);

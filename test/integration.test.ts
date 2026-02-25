@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
-mock.module("clipboardy", () => ({
+void mock.module("clipboardy", () => ({
   default: {
     write: mock(),
   },

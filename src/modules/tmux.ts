@@ -129,5 +129,5 @@ export async function inputToTmuxPane(paneId: string, content: string): Promise<
 
   // Send content using send-keys command (no focus change)
   await execAsync(`tmux send-keys -t '${paneId}' -- '${content.replace(/'/g, "'\\''")}'`);
-  logger.debug`Content sent to tmux pane: ${paneId}`;
+  logger.debug("Content sent to tmux pane: {paneId}", { paneId });
 }
