@@ -1,4 +1,7 @@
+import { getLogger } from "@logtape/logtape";
 import clipboardy from "clipboardy";
+
+const logger = getLogger(["editprompt", "delivery"]);
 import { focusPane as focusTmuxPane, inputToTmuxPane } from "../modules/tmux";
 import {
   focusPane as focusWeztermPane,
@@ -71,9 +74,9 @@ export async function handleContentDelivery(
   if (targetPanes.length === 0) {
     try {
       await copyToClipboard(content);
-      console.log("Content copied to clipboard.");
+      logger.info("Content copied to clipboard.");
     } catch (error) {
-      console.log(
+      logger.warn(
         `Failed to copy to clipboard: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
@@ -93,7 +96,7 @@ export async function handleContentDelivery(
       await inputContentToPane(content, mux, targetPane);
       results.push({ pane: targetPane, success: true });
     } catch (error) {
-      console.log(
+      logger.warn(
         `Failed to send to pane ${targetPane}: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
       results.push({ pane: targetPane, success: false });
@@ -107,15 +110,15 @@ export async function handleContentDelivery(
 
   // Display results
   if (allSuccess) {
-    console.log("Content sent successfully to all panes!");
+    logger.info("Content sent successfully to all panes!");
   } else if (allFailed) {
-    console.error("Error: All target panes failed to receive content.");
-    console.log("Falling back to clipboard...");
+    logger.error("All target panes failed to receive content.");
+    logger.info("Falling back to clipboard...");
     await copyToClipboard(content);
-    console.log("Content copied to clipboard.");
+    logger.info("Content copied to clipboard.");
   } else {
-    console.warn(
-      `Warning: Content sent to ${successCount}/${targetPanes.length} panes. Failed panes: ${failedPanes.join(", ")}`,
+    logger.warn(
+      `Content sent to ${successCount}/${targetPanes.length} panes. Failed panes: ${failedPanes.join(", ")}`,
     );
   }
 

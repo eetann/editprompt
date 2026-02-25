@@ -55,6 +55,7 @@
     "tsdown": "latest"
   },
   "dependencies": {
+    "@logtape/logtape": "^2.0.2",
     "clipboardy": "^4.0.0",
     "conf": "^15.0.2",
     "gunshi": "^0.29.2"

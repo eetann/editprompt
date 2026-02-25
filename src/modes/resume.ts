@@ -1,3 +1,4 @@
+import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import {
   checkPaneExists,
@@ -9,13 +10,18 @@ import {
   isEditorPane,
 } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
+import { setupLogger } from "../modules/logger";
 import {
   ARG_MUX,
+  ARG_QUIET,
   ARG_TARGET_PANE_SINGLE,
+  ARG_VERBOSE,
   validateMux,
   validateTargetPane,
 } from "./args";
 import type { MuxType } from "./common";
+
+const logger = getLogger(["editprompt", "resume"]);
 
 export async function runResumeMode(
   targetPane: string,
@@ -26,11 +32,11 @@ export async function runResumeMode(
     const isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
 
     if (isEditor) {
-      console.log("isEditor");
+      logger.debug("Current pane is an editor pane");
       const originalTargetPaneIds =
         await wezterm.getTargetPaneIds(currentPaneId);
       if (originalTargetPaneIds.length === 0) {
-        console.log("Not found originalTargetPaneIds");
+        logger.debug("No target pane IDs found for editor pane");
         process.exit(1);
       }
 
@@ -46,26 +52,26 @@ export async function runResumeMode(
       }
 
       if (!focused) {
-        console.log("All target panes do not exist");
+        logger.debug("All target panes do not exist");
         process.exit(1);
       }
 
       process.exit(0);
     }
-    console.log("not isEditor");
+    logger.debug("Current pane is not an editor pane");
 
     // Focus from target pane to editor pane
     const editorPaneId = await wezterm.getEditorPaneId(targetPane);
-    console.log(`wezterm editorPaneId: ${editorPaneId}`);
+    logger.debug`wezterm editorPaneId: ${editorPaneId}`;
 
     if (editorPaneId === "") {
-      console.log("Not found editorPaneId");
+      logger.debug("Editor pane ID not found");
       process.exit(1);
     }
 
     const exists = await wezterm.checkPaneExists(editorPaneId);
     if (!exists) {
-      console.log("Not exist editorPaneId");
+      logger.debug("Editor pane does not exist");
       await wezterm.clearEditorPaneId(targetPane);
       process.exit(1);
     }
@@ -74,7 +80,7 @@ export async function runResumeMode(
       await wezterm.focusPane(editorPaneId);
       process.exit(0);
     } catch (error) {
-      console.log(`Can't focus editorPaneId: ${editorPaneId}\nerror: ${error}`);
+      logger.debug`Can't focus editorPaneId: ${editorPaneId}, error: ${error}`;
       process.exit(1);
     }
   }
@@ -132,8 +138,14 @@ export const resumeCommand = define({
   args: {
     mux: ARG_MUX,
     "target-pane": ARG_TARGET_PANE_SINGLE,
+    quiet: ARG_QUIET,
+    verbose: ARG_VERBOSE,
   },
   async run(ctx) {
+    setupLogger({
+      quiet: Boolean(ctx.values.quiet),
+      verbose: Boolean(ctx.values.verbose),
+    });
     const targetPane = validateTargetPane(ctx.values["target-pane"], "resume");
     const mux = validateMux(ctx.values.mux);
 

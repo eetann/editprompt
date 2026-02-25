@@ -1,7 +1,9 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { getLogger } from "@logtape/logtape";
 
 const execAsync = promisify(exec);
+const logger = getLogger(["editprompt", "tmux"]);
 
 export async function getCurrentPaneId(): Promise<string> {
   const { stdout } = await execAsync('tmux display-message -p "#{pane_id}"');
@@ -148,5 +150,5 @@ export async function inputToTmuxPane(
   await execAsync(
     `tmux send-keys -t '${paneId}' -- '${content.replace(/'/g, "'\\''")}'`,
   );
-  console.log(`Content sent to tmux pane: ${paneId}`);
+  logger.debug`Content sent to tmux pane: ${paneId}`;
 }

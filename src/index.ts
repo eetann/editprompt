@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+import { getLogger } from "@logtape/logtape";
 import { cli } from "gunshi";
+import { setupLogger } from "./modules/logger";
 import * as pkg from "../package.json";
 import { collectCommand } from "./modes/collect";
 import { dumpCommand } from "./modes/dump";
@@ -19,17 +21,19 @@ await cli(
       "A CLI tool that lets you write prompts for CLI tools using your favorite text editor",
     args: {},
     async run() {
+      setupLogger();
+      const logger = getLogger(["editprompt"]);
       // Subcommand is required - show migration guide
-      console.error("Error: Subcommand is required");
-      console.error("");
-      console.error("Migration guide from old to new syntax:");
-      console.error("  editprompt           → editprompt open");
-      console.error("  editprompt --resume  → editprompt resume");
-      console.error('  editprompt -- "text" → editprompt input "text"');
-      console.error("  editprompt --quote   → editprompt collect");
-      console.error("  editprompt --capture → editprompt dump");
-      console.error("");
-      console.error(
+      logger.error("Subcommand is required");
+      logger.error("");
+      logger.error("Migration guide from old to new syntax:");
+      logger.error("  editprompt           → editprompt open");
+      logger.error("  editprompt --resume  → editprompt resume");
+      logger.error('  editprompt -- "text" → editprompt input "text"');
+      logger.error("  editprompt --quote   → editprompt collect");
+      logger.error("  editprompt --capture → editprompt dump");
+      logger.error("");
+      logger.error(
         "For details: https://github.com/eetann/editprompt/?tab=readme-ov-file",
       );
       process.exit(1);

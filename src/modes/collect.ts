@@ -1,17 +1,23 @@
+import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import { appendToQuoteVariable } from "../modules/tmux";
 import { appendToQuoteText } from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { processQuoteText } from "../utils/quoteProcessor";
+import { setupLogger } from "../modules/logger";
 import {
   ARG_MUX,
   ARG_NO_QUOTE,
   ARG_OUTPUT,
+  ARG_QUIET,
   ARG_TARGET_PANE_SINGLE,
+  ARG_VERBOSE,
   validateMux,
   validateTargetPane,
 } from "./args";
 import type { MuxType } from "./common";
+
+const logger = getLogger(["editprompt", "collect"]);
 
 type CollectOutput = "buffer" | "stdout";
 
@@ -51,8 +57,8 @@ function normalizeCollectOutputs(value: unknown): CollectOutput[] {
   );
 
   if (invalid.length > 0) {
-    console.error(
-      `Error: Invalid output(s) '${invalid.join(", ")}'. Supported values: ${SUPPORTED_OUTPUTS.join(", ")}`,
+    logger.error(
+      `Invalid output(s) '${invalid.join(", ")}'. Supported values: ${SUPPORTED_OUTPUTS.join(", ")}`,
     );
     process.exit(1);
   }
@@ -93,8 +99,8 @@ export async function runCollectMode(
       }
     }
   } catch (error) {
-    console.error(
-      `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+    logger.error(
+      `${error instanceof Error ? error.message : "Unknown error"}`,
     );
     process.exit(1);
   }
@@ -108,8 +114,14 @@ export const collectCommand = define({
     "target-pane": ARG_TARGET_PANE_SINGLE,
     output: ARG_OUTPUT,
     "no-quote": ARG_NO_QUOTE,
+    quiet: ARG_QUIET,
+    verbose: ARG_VERBOSE,
   },
   async run(ctx) {
+    setupLogger({
+      quiet: Boolean(ctx.values.quiet),
+      verbose: Boolean(ctx.values.verbose),
+    });
     const targetPane = validateTargetPane(ctx.values["target-pane"], "collect");
     const mux = validateMux(ctx.values.mux);
     const outputs = normalizeCollectOutputs(ctx.values.output);
@@ -121,8 +133,8 @@ export const collectCommand = define({
     if (mux === "wezterm") {
       rawContent = extractRawContent(ctx.rest, ctx.positionals);
       if (rawContent === undefined) {
-        console.error(
-          'Error: Text content is required for collect mode with wezterm. Use: editprompt collect --mux wezterm --target-pane <id> -- "<text>"',
+        logger.error(
+          'Text content is required for collect mode with wezterm. Use: editprompt collect --mux wezterm --target-pane <id> -- "<text>"',
         );
         process.exit(1);
       }

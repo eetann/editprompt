@@ -1,4 +1,6 @@
+import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
+import { setupLogger } from "../modules/logger";
 import {
   getCurrentPaneId,
   getTargetPaneIds,
@@ -10,11 +12,14 @@ import * as wezterm from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { processContent } from "../utils/contentProcessor";
 import { readSendConfig } from "../utils/sendConfig";
+import { ARG_QUIET, ARG_VERBOSE } from "./args";
 import {
   copyToClipboard,
   focusFirstSuccessPane,
   handleContentDelivery,
 } from "./common";
+
+const logger = getLogger(["editprompt", "input"]);
 
 export async function runInputMode(
   rawContent: string,
@@ -25,7 +30,7 @@ export async function runInputMode(
   const content = processContent(rawContent);
 
   if (!content) {
-    console.log("No content to send. Exiting.");
+    logger.info("No content to send. Exiting.");
     return;
   }
 
@@ -44,7 +49,7 @@ export async function runInputMode(
   }
 
   if (!isEditor) {
-    console.error("Error: Current pane is not an editor pane");
+    logger.error("Current pane is not an editor pane");
     process.exit(1);
   }
 
@@ -57,7 +62,7 @@ export async function runInputMode(
   }
 
   if (targetPanes.length === 0) {
-    console.error("Error: No target panes registered for this editor pane");
+    logger.error("No target panes registered for this editor pane");
     process.exit(1);
   }
 
@@ -81,20 +86,20 @@ export async function runInputMode(
         }
         successCount++;
       } catch (error) {
-        console.error(
+        logger.error(
           `Failed to send to pane ${targetPane}: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
       }
     }
     if (config.alwaysCopy) {
       await copyToClipboard(content);
-      console.log("Also copied to clipboard.");
+      logger.info("Also copied to clipboard.");
     }
 
     if (successCount > 0) {
-      console.log("Content sent and submitted successfully!");
+      logger.info("Content sent and submitted successfully!");
     } else {
-      console.error("Error: All target panes failed to receive content");
+      logger.error("All target panes failed to receive content");
       process.exit(1);
     }
     return;
@@ -111,7 +116,7 @@ export async function runInputMode(
     // Copy to clipboard if alwaysCopy is enabled
     if (config.alwaysCopy && !result.allFailed) {
       await copyToClipboard(content);
-      console.log("Also copied to clipboard.");
+      logger.info("Also copied to clipboard.");
     }
 
     // Focus on the first successful pane
@@ -124,8 +129,8 @@ export async function runInputMode(
       process.exit(1);
     }
   } catch (error) {
-    console.error(
-      `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+    logger.error(
+      `${error instanceof Error ? error.message : "Unknown error"}`,
     );
     process.exit(1);
   }
@@ -143,21 +148,27 @@ export const inputCommand = define({
       description: "Key to send after content (requires --auto-send)",
       type: "string",
     },
+    quiet: ARG_QUIET,
+    verbose: ARG_VERBOSE,
   },
   async run(ctx) {
+    setupLogger({
+      quiet: Boolean(ctx.values.quiet),
+      verbose: Boolean(ctx.values.verbose),
+    });
     // Get content from positional arguments or after --
     const rawContent = extractRawContent(ctx.rest, ctx.positionals);
 
     if (rawContent === undefined) {
-      console.error("Error: Content is required for input command");
-      console.error('Usage: editprompt input "your content"');
-      console.error('   or: editprompt input -- "your content"');
+      logger.error("Content is required for input command");
+      logger.error('Usage: editprompt input "your content"');
+      logger.error('   or: editprompt input -- "your content"');
       process.exit(1);
     }
 
     // Validate --send-key requires --auto-send
     if (ctx.values["send-key"] && !ctx.values["auto-send"]) {
-      console.error("Error: --send-key requires --auto-send to be enabled");
+      logger.error("--send-key requires --auto-send to be enabled");
       process.exit(1);
     }
 

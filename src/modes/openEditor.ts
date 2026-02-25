@@ -1,5 +1,7 @@
+import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import { openEditorAndGetContent } from "../modules/editor";
+import { setupLogger } from "../modules/logger";
 import {
   clearEditorPaneId,
   getCurrentPaneId,
@@ -7,11 +9,15 @@ import {
 } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
+
+const logger = getLogger(["editprompt", "open"]);
 import {
   ARG_ALWAYS_COPY,
   ARG_EDITOR,
   ARG_MUX,
+  ARG_QUIET,
   ARG_TARGET_PANE_MULTI,
+  ARG_VERBOSE,
   normalizeTargetPanes,
   validateMux,
 } from "./args";
@@ -55,7 +61,7 @@ export async function runOpenEditorMode(
       alwaysCopy: options.alwaysCopy,
     };
 
-    console.log("Opening editor...");
+    logger.info("Opening editor...");
 
     const content = await openEditorAndGetContent(
       options.editor,
@@ -64,7 +70,7 @@ export async function runOpenEditorMode(
     );
 
     if (!content) {
-      console.log("No content entered. Exiting.");
+      logger.info("No content entered. Exiting.");
       return;
     }
 
@@ -82,7 +88,7 @@ export async function runOpenEditorMode(
       // Copy to clipboard if alwaysCopy is enabled
       if (options.alwaysCopy && !result.allFailed) {
         await copyToClipboard(content);
-        console.log("Also copied to clipboard.");
+        logger.info("Also copied to clipboard.");
       }
 
       // Focus on the first successful pane
@@ -99,8 +105,8 @@ export async function runOpenEditorMode(
         process.exit(1);
       }
     } catch (error) {
-      console.error(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      logger.error(
+        `${error instanceof Error ? error.message : "Unknown error"}`,
       );
       process.exit(1);
     }
@@ -133,6 +139,8 @@ export const openCommand = define({
     "target-pane": ARG_TARGET_PANE_MULTI,
     editor: ARG_EDITOR,
     "always-copy": ARG_ALWAYS_COPY,
+    quiet: ARG_QUIET,
+    verbose: ARG_VERBOSE,
     env: {
       short: "E",
       description: "Environment variables to set (e.g., KEY=VALUE)",
@@ -141,6 +149,10 @@ export const openCommand = define({
     },
   },
   async run(ctx) {
+    setupLogger({
+      quiet: Boolean(ctx.values.quiet),
+      verbose: Boolean(ctx.values.verbose),
+    });
     const mux = validateMux(ctx.values.mux);
     const targetPanes = normalizeTargetPanes(ctx.values["target-pane"]);
 
