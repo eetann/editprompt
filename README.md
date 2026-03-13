@@ -202,6 +202,39 @@ This sends the content to the target pane (or clipboard) while keeping your edit
 
 For Neovim users, we recommend using [editprompt.nvim](https://github.com/eetann/editprompt.nvim) for easy setup. For manual configuration, see [docs/neovim.md](docs/neovim.md).
 
+### Key Sending (press)
+
+Send individual key inputs to the target pane without leaving your editor. Useful for responding to AI agent selection prompts (e.g., choosing option 1, 2, 3, 4) without switching panes.
+
+```bash
+# Send a character key
+editprompt press -- 1
+
+# Send special keys (tmux format)
+editprompt press -- Tab
+editprompt press -- Up
+editprompt press -- C-m    # Enter
+editprompt press -- C-c    # Ctrl+C
+
+# Send with delay
+editprompt press --delay 500 -- Tab
+```
+
+**Key differences from `input`:**
+
+- No Enter key is automatically appended
+- Focus stays on the editor pane (no pane switching)
+- Designed for single key inputs, not text content
+
+**Key notation** depends on your multiplexer:
+
+| Key           | tmux          | WezTerm             |
+| ------------- | ------------- | ------------------- |
+| Enter         | `C-m`         | `\r`                |
+| Tab           | `Tab`         | `\t`                |
+| Escape        | `Escape`      | `\x1b`              |
+| Arrow Up/Down | `Up` / `Down` | `\x1b[A` / `\x1b[B` |
+
 ### Quote Workflow Setup
 
 #### Collecting Quotes in tmux Copy Mode

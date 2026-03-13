@@ -8,6 +8,7 @@ This document provides technical details about how each subcommand works, includ
 - register
 - resume
 - input
+- press
 - collect
 - dump
 - stash
@@ -199,6 +200,73 @@ vim.system(
 - Send content multiple times without closing the editor
 - Environment variable inheritance happens naturally, requiring no additional configuration or arguments
 - Supports sending to multiple target panes
+
+---
+
+## press Subcommand
+
+### Purpose
+
+Sends a single key input to the target pane without appending Enter, and without changing focus. Designed to be executed from within an editor session for responding to AI agent prompts (e.g., AskUserQuestion selections like 1, 2, 3, 4) without leaving the editor pane.
+
+### Mechanism
+
+This mode shares the same editor pane verification and target pane discovery as input subcommand, but sends keys instead of text content.
+
+#### Workflow
+
+1. **Read environment variables**: Gets multiplexer type from `EDITPROMPT_MUX`
+2. **Get current pane ID**: Identifies the editor pane
+3. **Verify editor pane**: Checks that the current pane is registered as an editor pane
+4. **Get target pane IDs**: Retrieves target panes from pane variables (tmux) or Conf (WezTerm)
+5. **Send key**: Sends the specified key to each target pane using `sendKeyToTmuxPane` or `sendKeyToWeztermPane`
+6. **No focus change**: Focus remains on the editor pane
+
+#### Key Notation
+
+Keys are passed directly to the multiplexer's key-sending mechanism. The notation differs by multiplexer:
+
+| Key        | tmux     | WezTerm  |
+| ---------- | -------- | -------- |
+| Enter      | `C-m`    | `\r`     |
+| Tab        | `Tab`    | `\t`     |
+| Escape     | `Escape` | `\x1b`   |
+| Arrow Up   | `Up`     | `\x1b[A` |
+| Arrow Down | `Down`   | `\x1b[B` |
+| Ctrl+C     | `C-c`    | `\x03`   |
+| Character  | `1`, `a` | `1`, `a` |
+
+#### Usage
+
+```bash
+# Send a character key (works the same for both multiplexers)
+editprompt press -- 1
+
+# Send a special key (tmux)
+editprompt press -- Tab
+
+# Send a special key (WezTerm, via editor keybinding)
+editprompt press -- "\t"
+
+# Send with delay before key
+editprompt press --delay 500 -- Tab
+```
+
+### Differences from input Subcommand
+
+|               | input                    | press              |
+| ------------- | ------------------------ | ------------------ |
+| Sends         | Text content             | Key input          |
+| Auto Enter    | Yes (with `--auto-send`) | No (explicit only) |
+| Focus change  | Yes (normal mode)        | No                 |
+| Default delay | 1000ms                   | 0ms                |
+
+### Benefits
+
+- Respond to AI agent selections without leaving the editor
+- No Enter key is automatically appended, preventing accidental submissions
+- Supports consecutive key sends (e.g., arrow keys to navigate, then Enter to confirm)
+- Environment variable inheritance works naturally, same as input subcommand
 
 ---
 
