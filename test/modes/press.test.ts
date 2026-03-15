@@ -6,7 +6,7 @@ const mockIsEditorPane = mock(() => Promise.resolve(true));
 const mockGetTargetPaneIds = mock(() => Promise.resolve(["%1", "%2"]));
 const mockFocusTmuxPane = mock(() => Promise.resolve());
 
-mock.module("../../src/modules/tmux", () => ({
+void mock.module("../../src/modules/tmux", () => ({
   getCurrentPaneId: mockGetCurrentPaneId,
   isEditorPane: mockIsEditorPane,
   getTargetPaneIds: mockGetTargetPaneIds,
