@@ -9,6 +9,7 @@ import { inputCommand } from "./modes/input";
 import { openCommand } from "./modes/openEditor";
 import { registerCommand } from "./modes/register";
 import { resumeCommand } from "./modes/resume";
+import { pressCommand } from "./modes/press";
 import { stashCommand } from "./modes/stash";
 
 const argv = process.argv.slice(2);
@@ -45,6 +46,7 @@ await cli(
       register: registerCommand,
       resume: resumeCommand,
       input: inputCommand,
+      press: pressCommand,
       collect: collectCommand,
       dump: dumpCommand,
       stash: stashCommand,
