@@ -1,10 +1,17 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import {
   getEditor,
   launchEditor,
   openEditorAndGetContent,
   readFileContent,
 } from "../../src/modules/editor";
+
+async function cleanupTempFile(filePath: string): Promise<void> {
+  await rm(filePath, { force: true });
+  await rm(dirname(filePath), { recursive: true, force: true });
+}
 
 describe("Editor Module", () => {
   beforeEach(() => {
@@ -156,68 +163,87 @@ describe("Editor Module", () => {
 
   describe("openEditorAndGetContent", () => {
     test("should complete full editor workflow successfully", async () => {
-      const createTempFileMock = mock(() => Promise.resolve("/tmp/test.md"));
-      void mock.module("../../src/utils/tempFile", () => ({
-        createTempFile: createTempFileMock,
-      }));
+      let tempFilePath: string | undefined;
 
-      const mockProcess = {
-        on: mock((event: string, callback) => {
-          if (event === "exit") {
-            setTimeout(() => callback(0), 10);
-          }
-        }),
-      };
-
-      const spawnMock = mock(() => mockProcess);
+      const spawnMock = mock((_editor: string, args: string[]) => {
+        tempFilePath = args[0];
+        return {
+          on: mock((event: string, callback) => {
+            if (event === "exit") {
+              setTimeout(() => callback(0), 10);
+            }
+          }),
+        };
+      });
       void mock.module("node:child_process", () => ({
         spawn: spawnMock,
       }));
 
       const readFileMock = mock(() => Promise.resolve("Test content"));
       void mock.module("node:fs/promises", () => ({
+        mkdir,
         readFile: readFileMock,
+        rm,
+        writeFile,
       }));
 
-      const result = await openEditorAndGetContent("vim");
-      expect(result).toBe("Test content");
-      expect(createTempFileMock).toHaveBeenCalled();
-      expect(spawnMock).toHaveBeenCalledWith("vim", ["/tmp/test.md"], {
-        stdio: "inherit",
-        shell: true,
-        env: expect.objectContaining({
-          EDITPROMPT: "1",
-        }),
-      });
-      expect(readFileMock).toHaveBeenCalledWith("/tmp/test.md", "utf-8");
+      try {
+        const result = await openEditorAndGetContent("vim");
+        expect(result).toBe("Test content");
+        expect(spawnMock).toHaveBeenCalledWith("vim", [expect.any(String)], {
+          stdio: "inherit",
+          shell: true,
+          env: expect.objectContaining({
+            EDITPROMPT: "1",
+          }),
+        });
+      } finally {
+        if (tempFilePath) {
+          await cleanupTempFile(tempFilePath);
+        }
+      }
     });
 
     test("should throw error when no content is entered", async () => {
-      const createTempFileMock = mock(() => Promise.resolve("/tmp/test.md"));
-      void mock.module("../../src/utils/tempFile", () => ({
-        createTempFile: createTempFileMock,
-      }));
+      let tempFilePath: string | undefined;
 
-      const mockProcess = {
-        on: mock((event: string, callback) => {
-          if (event === "exit") {
-            setTimeout(() => callback(0), 10);
-          }
-        }),
-      };
-
-      const spawnMock = mock(() => mockProcess);
+      const spawnMock = mock((_editor: string, args: string[]) => {
+        tempFilePath = args[0];
+        return {
+          on: mock((event: string, callback) => {
+            if (event === "exit") {
+              setTimeout(() => callback(0), 10);
+            }
+          }),
+        };
+      });
       void mock.module("node:child_process", () => ({
         spawn: spawnMock,
       }));
 
       const readFileMock = mock(() => Promise.resolve(""));
       void mock.module("node:fs/promises", () => ({
+        mkdir,
         readFile: readFileMock,
+        rm,
+        writeFile,
       }));
 
-      const result = await openEditorAndGetContent("vim");
-      expect(result).toBe("");
+      try {
+        const result = await openEditorAndGetContent("vim");
+        expect(result).toBe("");
+        expect(spawnMock).toHaveBeenCalledWith("vim", [expect.any(String)], {
+          stdio: "inherit",
+          shell: true,
+          env: expect.objectContaining({
+            EDITPROMPT: "1",
+          }),
+        });
+      } finally {
+        if (tempFilePath) {
+          await cleanupTempFile(tempFilePath);
+        }
+      }
     });
   });
 });
