@@ -6,19 +6,6 @@ import {
   readFileContent,
 } from "../../src/modules/editor";
 
-// Mock external dependencies
-void mock.module("node:child_process", () => ({
-  spawn: mock(),
-}));
-
-void mock.module("node:fs/promises", () => ({
-  readFile: mock(),
-}));
-
-void mock.module("../../src/utils/tempFile", () => ({
-  createTempFile: mock(),
-}));
-
 describe("Editor Module", () => {
   beforeEach(() => {
     // Reset all mocks
