@@ -2,6 +2,7 @@ import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
+import * as niwaterm from "../modules/niwaterm";
 import {
   getCurrentPaneId,
   getTargetPaneIds,
@@ -43,6 +44,9 @@ export async function runInputMode(
   } else if (config.mux === "wezterm") {
     currentPaneId = await wezterm.getCurrentPaneId();
     isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
+  } else if (config.mux === "niwaterm") {
+    currentPaneId = await niwaterm.getCurrentPaneId();
+    isEditor = await niwaterm.isEditorPane(currentPaneId);
   } else {
     currentPaneId = await herdr.getCurrentPaneId();
     isEditor = herdr.isEditorPaneFromConf(currentPaneId);
@@ -59,6 +63,8 @@ export async function runInputMode(
     targetPanes = await getTargetPaneIds(currentPaneId);
   } else if (config.mux === "wezterm") {
     targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
+  } else if (config.mux === "niwaterm") {
+    targetPanes = await niwaterm.getTargetPaneIds(currentPaneId);
   } else {
     targetPanes = await herdr.getTargetPaneIds(currentPaneId);
   }
@@ -86,6 +92,9 @@ export async function runInputMode(
         } else if (config.mux === "herdr") {
           await herdr.inputToHerdrPane(targetPane, content);
           await herdr.sendKeyToHerdrPane(targetPane, key, delay);
+        } else if (config.mux === "niwaterm") {
+          await niwaterm.inputToNiwatermPane(targetPane, content);
+          await niwaterm.sendKeyToNiwatermPane(targetPane, key, delay);
         } else {
           await inputToTmuxPane(targetPane, content);
           await sendKeyToTmuxPane(targetPane, key, delay);

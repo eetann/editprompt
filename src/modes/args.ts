@@ -6,7 +6,8 @@ const logger = getLogger(["editprompt"]);
 
 export const ARG_MUX: ArgSchema = {
   short: "m",
-  description: "Multiplexer type (tmux, wezterm, or herdr; auto-detects Herdr, otherwise tmux)",
+  description:
+    "Multiplexer type (tmux, wezterm, herdr, or niwaterm; auto-detects Herdr and niwaterm, otherwise tmux)",
   type: "string",
 };
 

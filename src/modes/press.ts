@@ -2,6 +2,7 @@ import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
+import * as niwaterm from "../modules/niwaterm";
 import {
   getCurrentPaneId,
   getTargetPaneIds,
@@ -32,6 +33,9 @@ export async function runPressMode(key: string, delay = 0): Promise<void> {
   } else if (config.mux === "wezterm") {
     currentPaneId = await wezterm.getCurrentPaneId();
     isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
+  } else if (config.mux === "niwaterm") {
+    currentPaneId = await niwaterm.getCurrentPaneId();
+    isEditor = await niwaterm.isEditorPane(currentPaneId);
   } else {
     currentPaneId = await herdr.getCurrentPaneId();
     isEditor = herdr.isEditorPaneFromConf(currentPaneId);
@@ -47,6 +51,8 @@ export async function runPressMode(key: string, delay = 0): Promise<void> {
     targetPanes = await getTargetPaneIds(currentPaneId);
   } else if (config.mux === "wezterm") {
     targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
+  } else if (config.mux === "niwaterm") {
+    targetPanes = await niwaterm.getTargetPaneIds(currentPaneId);
   } else {
     targetPanes = await herdr.getTargetPaneIds(currentPaneId);
   }
@@ -63,6 +69,8 @@ export async function runPressMode(key: string, delay = 0): Promise<void> {
         await wezterm.sendKeyToWeztermPane(targetPane, key, delay);
       } else if (config.mux === "herdr") {
         await herdr.sendKeyToHerdrPane(targetPane, key, delay);
+      } else if (config.mux === "niwaterm") {
+        await niwaterm.sendKeyToNiwatermPane(targetPane, key, delay);
       } else {
         await sendKeyToTmuxPane(targetPane, key, delay);
       }

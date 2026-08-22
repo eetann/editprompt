@@ -1,6 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import * as herdr from "../modules/herdr";
+import * as niwaterm from "../modules/niwaterm";
 import {
   checkPaneExists,
   clearEditorPaneId,
@@ -31,6 +32,66 @@ export async function runResumeMode(targetPane: string, mux: MuxType): Promise<v
       process.exit((await herdr.resumeEditorPane(targetPane)) ? 0 : 1);
     } catch (error) {
       logger.debug("Herdr resume failed: {error}", { error });
+      process.exit(1);
+    }
+  }
+
+  if (mux === "niwaterm") {
+    const currentPaneId = await niwaterm.getCurrentPaneId();
+    const isEditor = await niwaterm.isEditorPane(currentPaneId);
+
+    if (isEditor) {
+      logger.debug("Current pane is an editor pane");
+      const originalTargetPaneIds = await niwaterm.getTargetPaneIds(currentPaneId);
+      if (originalTargetPaneIds.length === 0) {
+        logger.debug("No target pane IDs found for editor pane");
+        process.exit(1);
+      }
+
+      // Try to focus on the first available pane (retry logic)
+      let focused = false;
+      for (const paneId of originalTargetPaneIds) {
+        const exists = await niwaterm.checkPaneExists(paneId);
+        if (exists) {
+          await niwaterm.focusPane(paneId);
+          focused = true;
+          break;
+        }
+      }
+
+      if (!focused) {
+        logger.debug("All target panes do not exist");
+        process.exit(1);
+      }
+
+      process.exit(0);
+    }
+    logger.debug("Current pane is not an editor pane");
+
+    // Focus from target pane to editor pane
+    const editorPaneId = await niwaterm.getEditorPaneId(targetPane);
+    logger.debug("niwaterm editorPaneId: {editorPaneId}", { editorPaneId });
+
+    if (editorPaneId === "") {
+      logger.debug("Editor pane ID not found");
+      process.exit(1);
+    }
+
+    const exists = await niwaterm.checkPaneExists(editorPaneId);
+    if (!exists) {
+      logger.debug("Editor pane does not exist");
+      await niwaterm.clearEditorPaneId(targetPane);
+      process.exit(1);
+    }
+
+    try {
+      await niwaterm.focusPane(editorPaneId);
+      process.exit(0);
+    } catch (error) {
+      logger.debug("Can't focus editorPaneId: {editorPaneId}, error: {error}", {
+        editorPaneId,
+        error,
+      });
       process.exit(1);
     }
   }

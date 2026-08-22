@@ -1,9 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { isHerdrEnvironment, resolveMux } from "../../src/utils/mux";
+import { isHerdrEnvironment, isNiwatermEnvironment, resolveMux } from "../../src/utils/mux";
 
 const herdrEnv: NodeJS.ProcessEnv = {
   HERDR_SOCKET_PATH: "/tmp/herdr.sock",
   HERDR_PANE_ID: "w1:p1",
+};
+
+const niwatermEnv: NodeJS.ProcessEnv = {
+  NIWATERM_TAB_ID: "tab-3",
 };
 
 describe("isHerdrEnvironment", () => {
@@ -26,6 +30,17 @@ describe("isHerdrEnvironment", () => {
   });
 });
 
+describe("isNiwatermEnvironment", () => {
+  test("detects a niwaterm tab", () => {
+    expect(isNiwatermEnvironment(niwatermEnv)).toBe(true);
+  });
+
+  test("requires a non-empty tab ID", () => {
+    expect(isNiwatermEnvironment({ NIWATERM_TAB_ID: "" })).toBe(false);
+    expect(isNiwatermEnvironment({})).toBe(false);
+  });
+});
+
 describe("resolveMux", () => {
   test("prefers an explicit mux over the environment", () => {
     expect(resolveMux("tmux", { ...herdrEnv, EDITPROMPT_MUX: "wezterm" })).toBe("tmux");
@@ -39,7 +54,15 @@ describe("resolveMux", () => {
     expect(resolveMux(undefined, herdrEnv)).toBe("herdr");
   });
 
-  test("defaults to tmux outside Herdr", () => {
+  test("detects niwaterm when no mux is explicitly configured", () => {
+    expect(resolveMux(undefined, niwatermEnv)).toBe("niwaterm");
+  });
+
+  test("prefers Herdr detection over niwaterm when both are present", () => {
+    expect(resolveMux(undefined, { ...herdrEnv, ...niwatermEnv })).toBe("herdr");
+  });
+
+  test("defaults to tmux outside Herdr and niwaterm", () => {
     expect(resolveMux(undefined, {})).toBe("tmux");
   });
 
