@@ -114,7 +114,7 @@ export async function sendKeyToNiwatermPane(
 ): Promise<void> {
   // Sleep so as not to be treated as a newline (e.g., codex)
   await new Promise((resolve) => setTimeout(resolve, delay));
-  await execAsync(`niwaterm tab send-keys -t ${quoteShellWord(paneId)} -- ${quoteShellWord(key)}`);
+  await execAsync(`niwaterm tab send-keys -t ${quoteShellWord(paneId)} ${quoteShellWord(key)}`);
 }
 
 export async function inputToNiwatermPane(paneId: string, content: string): Promise<void> {
@@ -124,9 +124,7 @@ export async function inputToNiwatermPane(paneId: string, content: string): Prom
   // once.
   const chunks = splitByByteSize(content, NIWATERM_SEND_CHUNK_BYTES);
   for (const chunk of chunks) {
-    await execAsync(
-      `niwaterm tab send-keys -t ${quoteShellWord(paneId)} -- ${quoteShellWord(chunk)}`,
-    );
+    await execAsync(`niwaterm tab send-keys -t ${quoteShellWord(paneId)} ${quoteShellWord(chunk)}`);
   }
   logger.debug("Content sent to niwaterm pane: {paneId} ({chunks} chunk(s))", {
     paneId,
