@@ -53,7 +53,7 @@ export async function checkPaneExists(paneId: string): Promise<boolean> {
 }
 
 export async function focusPane(paneId: string): Promise<void> {
-  await execAsync(`niwaterm tab show -t ${quoteShellWord(paneId)}`);
+  await execAsync(`niwaterm tab focus -t ${quoteShellWord(paneId)}`);
 }
 
 export async function saveEditorPaneId(targetPaneId: string, editorPaneId: string): Promise<void> {
