@@ -1,6 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import { appendToQuoteText as appendToHerdrQuoteText } from "../modules/herdr";
+import { appendToQuoteVariable as appendToNiwatermQuoteVariable } from "../modules/niwaterm";
 import { appendToQuoteVariable } from "../modules/tmux";
 import { appendToQuoteText } from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
@@ -93,6 +94,8 @@ export async function runCollectMode(
           await appendToQuoteVariable(targetPaneId, processedText);
         } else if (mux === "wezterm") {
           await appendToQuoteText(targetPaneId, processedText);
+        } else if (mux === "niwaterm") {
+          await appendToNiwatermQuoteVariable(targetPaneId, processedText);
         } else {
           await appendToHerdrQuoteText(targetPaneId, processedText);
         }
@@ -129,10 +132,10 @@ export const collectCommand = define({
     const outputs = normalizeCollectOutputs(ctx.values.output);
     const withQuote = !ctx.values["no-quote"];
 
-    // For WezTerm and Herdr, content must be provided as an argument.
+    // For WezTerm, Herdr, and niwaterm, content must be provided as an argument.
     // For tmux, content is read from stdin
     let rawContent: string | undefined;
-    if (mux === "wezterm" || mux === "herdr") {
+    if (mux === "wezterm" || mux === "herdr" || mux === "niwaterm") {
       rawContent = extractRawContent(ctx.rest, ctx.positionals);
       if (rawContent === undefined) {
         logger.error(

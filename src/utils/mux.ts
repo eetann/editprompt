@@ -1,9 +1,9 @@
-export type MuxType = "tmux" | "wezterm" | "herdr";
+export type MuxType = "tmux" | "wezterm" | "herdr" | "niwaterm";
 
-export const SUPPORTED_MUXES: MuxType[] = ["tmux", "wezterm", "herdr"];
+export const SUPPORTED_MUXES: MuxType[] = ["tmux", "wezterm", "herdr", "niwaterm"];
 
 export function isMuxType(value: unknown): value is MuxType {
-  return value === "tmux" || value === "wezterm" || value === "herdr";
+  return value === "tmux" || value === "wezterm" || value === "herdr" || value === "niwaterm";
 }
 
 function hasValue(value: string | undefined): boolean {
@@ -17,9 +17,15 @@ export function isHerdrEnvironment(env: NodeJS.ProcessEnv = process.env): boolea
   );
 }
 
+export function isNiwatermEnvironment(env: NodeJS.ProcessEnv = process.env): boolean {
+  return hasValue(env.NIWATERM_TAB_ID);
+}
+
 export function resolveMux(explicitMux?: unknown, env: NodeJS.ProcessEnv = process.env): MuxType {
   const muxValue =
-    explicitMux || env.EDITPROMPT_MUX || (isHerdrEnvironment(env) ? "herdr" : "tmux");
+    explicitMux ||
+    env.EDITPROMPT_MUX ||
+    (isHerdrEnvironment(env) ? "herdr" : isNiwatermEnvironment(env) ? "niwaterm" : "tmux");
 
   if (!isMuxType(muxValue)) {
     const displayValue = typeof muxValue === "string" ? muxValue : `<${typeof muxValue}>`;

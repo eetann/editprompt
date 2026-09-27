@@ -3,6 +3,7 @@ import { define } from "gunshi";
 import { openEditorAndGetContent } from "../modules/editor";
 import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
+import * as niwaterm from "../modules/niwaterm";
 import { clearEditorPaneId, getCurrentPaneId, markAsEditorPane } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
@@ -57,6 +58,13 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
       const currentPaneId = await herdr.getCurrentPaneId();
       herdrEditorPaneId = currentPaneId;
       await herdr.markAsEditorPane(currentPaneId, options.targetPanes);
+    } catch {
+      //
+    }
+  } else if (options.targetPanes.length > 0 && options.mux === "niwaterm") {
+    try {
+      const currentPaneId = await niwaterm.getCurrentPaneId();
+      await niwaterm.markAsEditorPane(currentPaneId, options.targetPanes);
     } catch {
       //
     }
@@ -125,6 +133,14 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
       try {
         for (const targetPane of options.targetPanes) {
           await herdr.clearEditorPaneId(targetPane, herdrEditorPaneId);
+        }
+      } catch {
+        //
+      }
+    } else if (options.targetPanes.length > 0 && options.mux === "niwaterm") {
+      try {
+        for (const targetPane of options.targetPanes) {
+          await niwaterm.clearEditorPaneId(targetPane);
         }
       } catch {
         //

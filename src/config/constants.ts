@@ -22,3 +22,8 @@ export const WEZTERM_SEND_CHUNK_BYTES = TMUX_SEND_CHUNK_BYTES;
 // envelope.
 const HERDR_REQUEST_LIMIT_BYTES = 1024 * 1024;
 export const HERDR_SEND_CHUNK_BYTES = HERDR_REQUEST_LIMIT_BYTES / 8;
+
+// The niwaterm CLI's `tab send-keys` receives content as a shell argument
+// (like wezterm's send-text), so it is bounded by ARG_MAX rather than a
+// fixed-size socket frame. Reuse the wezterm chunk size for the same reason.
+export const NIWATERM_SEND_CHUNK_BYTES = WEZTERM_SEND_CHUNK_BYTES;

@@ -2,6 +2,7 @@ import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
+import * as niwaterm from "../modules/niwaterm";
 import {
   clearQuoteVariable,
   getCurrentPaneId,
@@ -30,6 +31,9 @@ export async function runDumpMode(): Promise<void> {
     } else if (config.mux === "wezterm") {
       currentPaneId = await wezterm.getCurrentPaneId();
       isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
+    } else if (config.mux === "niwaterm") {
+      currentPaneId = await niwaterm.getCurrentPaneId();
+      isEditor = await niwaterm.isEditorPane(currentPaneId);
     } else {
       currentPaneId = await herdr.getCurrentPaneId();
       isEditor = herdr.isEditorPaneFromConf(currentPaneId);
@@ -46,6 +50,8 @@ export async function runDumpMode(): Promise<void> {
       targetPanes = await getTargetPaneIds(currentPaneId);
     } else if (config.mux === "wezterm") {
       targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
+    } else if (config.mux === "niwaterm") {
+      targetPanes = await niwaterm.getTargetPaneIds(currentPaneId);
     } else {
       targetPanes = await herdr.getTargetPaneIds(currentPaneId);
     }
@@ -65,6 +71,9 @@ export async function runDumpMode(): Promise<void> {
       } else if (config.mux === "wezterm") {
         content = await wezterm.getQuoteText(targetPane);
         await wezterm.clearQuoteText(targetPane);
+      } else if (config.mux === "niwaterm") {
+        content = await niwaterm.getQuoteVariableContent(targetPane);
+        await niwaterm.clearQuoteVariable(targetPane);
       } else {
         content = await herdr.getQuoteText(targetPane);
         await herdr.clearQuoteText(targetPane);
