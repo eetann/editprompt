@@ -32,7 +32,7 @@ describe("Editor Module", () => {
     });
 
     test("should return default editor when no option or env var", () => {
-      process.env.EDITOR = undefined;
+      delete process.env.EDITOR;
       const result = getEditor();
       expect(result).toBe("vim");
     });
