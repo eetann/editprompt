@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { isHerdrEnvironment, isNiwatermEnvironment, resolveMux } from "../../src/utils/mux";
+import {
+  isHerdrEnvironment,
+  isNiwatermEnvironment,
+  isRexEnvironment,
+  resolveMux,
+} from "../../src/utils/mux";
 
 const herdrEnv: NodeJS.ProcessEnv = {
   HERDR_SOCKET_PATH: "/tmp/herdr.sock",
@@ -8,6 +13,11 @@ const herdrEnv: NodeJS.ProcessEnv = {
 
 const niwatermEnv: NodeJS.ProcessEnv = {
   NIWATERM_TAB_ID: "tab-3",
+};
+
+const rexEnv: NodeJS.ProcessEnv = {
+  REX_SESSION: "session:01a18b8b-f941-77a1-a135-5b96ea5827fb",
+  REX_BLOCK: "block:01a18b8b-f942-717a-b4c5-f2f397bf64cb",
 };
 
 describe("isHerdrEnvironment", () => {
@@ -41,6 +51,22 @@ describe("isNiwatermEnvironment", () => {
   });
 });
 
+describe("isRexEnvironment", () => {
+  test("detects a Rex block", () => {
+    expect(isRexEnvironment(rexEnv)).toBe(true);
+  });
+
+  test("needs only the block ID, not the session", () => {
+    expect(isRexEnvironment({ REX_BLOCK: rexEnv.REX_BLOCK })).toBe(true);
+    expect(isRexEnvironment({ REX_SESSION: rexEnv.REX_SESSION })).toBe(false);
+  });
+
+  test("requires a non-empty block ID", () => {
+    expect(isRexEnvironment({ REX_BLOCK: "" })).toBe(false);
+    expect(isRexEnvironment({})).toBe(false);
+  });
+});
+
 describe("resolveMux", () => {
   test("prefers an explicit mux over the environment", () => {
     expect(resolveMux("tmux", { ...herdrEnv, EDITPROMPT_MUX: "wezterm" })).toBe("tmux");
@@ -58,11 +84,24 @@ describe("resolveMux", () => {
     expect(resolveMux(undefined, niwatermEnv)).toBe("niwaterm");
   });
 
+  test("detects Rex when no mux is explicitly configured", () => {
+    expect(resolveMux(undefined, rexEnv)).toBe("rex");
+  });
+
+  test("prefers EDITPROMPT_MUX over Rex detection", () => {
+    expect(resolveMux(undefined, { ...rexEnv, EDITPROMPT_MUX: "tmux" })).toBe("tmux");
+  });
+
   test("prefers Herdr detection over niwaterm when both are present", () => {
     expect(resolveMux(undefined, { ...herdrEnv, ...niwatermEnv })).toBe("herdr");
   });
 
-  test("defaults to tmux outside Herdr and niwaterm", () => {
+  test("prefers Herdr and niwaterm detection over Rex when they are present", () => {
+    expect(resolveMux(undefined, { ...herdrEnv, ...rexEnv })).toBe("herdr");
+    expect(resolveMux(undefined, { ...niwatermEnv, ...rexEnv })).toBe("niwaterm");
+  });
+
+  test("defaults to tmux outside Herdr, niwaterm and Rex", () => {
     expect(resolveMux(undefined, {})).toBe("tmux");
   });
 

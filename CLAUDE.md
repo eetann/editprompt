@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using your favorite text editor. Originally designed for Claude Code, but now works with any CLI process. It detects running target processes and sends content to them via tmux, WezTerm, or Herdr integration, or via the clipboard.
+This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using your favorite text editor. Originally designed for Claude Code, but now works with any CLI process. It detects running target processes and sends content to them via tmux, WezTerm, Herdr, niwaterm, or Rex integration, or via the clipboard.
 
 ## Development Commands
 
@@ -30,7 +30,7 @@ This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using
 2. **Mode Selection** (`src/modes/`) - Routes to appropriate mode handler (openEditor, resume, sendOnly)
 3. **Editor Module** (`src/modules/editor.ts`) - Handles editor launching and content extraction
 4. **Process Detection** (`src/modules/process.ts`) - Finds target processes (configurable)
-5. **Multiplexer Integration** (`src/modules/tmux.ts`, `src/modules/wezterm.ts`, `src/modules/herdr.ts`) - Handles multiplexer-specific operations
+5. **Multiplexer Integration** (`src/modules/tmux.ts`, `src/modules/wezterm.ts`, `src/modules/herdr.ts`, `src/modules/niwaterm.ts`, `src/modules/rex.ts`) - Handles multiplexer-specific operations
 6. **Content Delivery** - Sends to multiplexer panes via `send-keys` or falls back to clipboard
 
 ### Modes
@@ -45,7 +45,7 @@ For detailed mode implementation including constraints and solutions for differe
 
 ### Key Design Patterns
 
-- **Multiplexer-First Strategy**: Supports tmux, WezTerm, and Herdr with multiplexer-specific implementations
+- **Multiplexer-First Strategy**: Supports tmux, WezTerm, Herdr, niwaterm, and Rex with multiplexer-specific implementations
 - **Graceful Fallbacks**: Editor → Process Detection → Multiplexer → Clipboard (with user feedback)
 - **Process Matching**: Links system processes to multiplexer panes for accurate targeting
 - **Mode Separation**: Each mode has isolated logic for different use cases
@@ -53,7 +53,7 @@ For detailed mode implementation including constraints and solutions for differe
 ### Directory Structure
 
 - `modes/`: Mode implementations (openEditor, resume, sendOnly, common)
-- `modules/`: Core functionality modules (editor, process, tmux, wezterm, herdr)
+- `modules/`: Core functionality modules (editor, process, tmux, wezterm, herdr, niwaterm, rex)
 - `utils/`: Utility functions (argumentParser, contentProcessor, envParser, sendConfig, tempFile)
 - `config/`: Configuration values (constants)
 - `types/`: TypeScript type definitions
@@ -69,6 +69,7 @@ For detailed mode implementation including constraints and solutions for differe
 - `modules/tmux.ts`: tmux-specific operations (pane variables, focus switching)
 - `modules/wezterm.ts`: WezTerm-specific operations (Conf-based state management, focus switching)
 - `modules/herdr.ts`: Herdr socket API operations and session-scoped Conf state management
+- `modules/rex.ts`: Rex CLI operations and Conf state management
 - `utils/tempFile.ts`: Secure temporary file creation and cleanup
 - `config/constants.ts`: Configuration values (default process name, file patterns, default editor)
 
@@ -76,7 +77,7 @@ For detailed mode implementation including constraints and solutions for differe
 
 - `gunshi` - CLI framework
 - `clipboardy` - Clipboard operations
-- `conf` - Persistent configuration storage (used for WezTerm and Herdr state management)
+- `conf` - Persistent configuration storage (used for WezTerm, Herdr, niwaterm, and Rex state management)
 - Native Node.js modules for multiplexer integration and file operations
 
 ## Testing

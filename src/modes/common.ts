@@ -4,6 +4,7 @@ import clipboardy from "clipboardy";
 const logger = getLogger(["editprompt", "delivery"]);
 import { focusPane as focusHerdrPane, inputToHerdrPane } from "../modules/herdr";
 import { focusPane as focusNiwatermPane, inputToNiwatermPane } from "../modules/niwaterm";
+import { focusPane as focusRexPane, inputToRexPane } from "../modules/rex";
 import { focusPane as focusTmuxPane, inputToTmuxPane } from "../modules/tmux";
 import { focusPane as focusWeztermPane, inputToWeztermPane } from "../modules/wezterm";
 import type { MuxType } from "../utils/mux";
@@ -33,6 +34,8 @@ async function inputContentToPane(
     await inputToHerdrPane(targetPaneId, content);
   } else if (mux === "niwaterm") {
     await inputToNiwatermPane(targetPaneId, content);
+  } else if (mux === "rex") {
+    await inputToRexPane(targetPaneId, content);
   } else {
     await inputToTmuxPane(targetPaneId, content);
   }
@@ -51,6 +54,8 @@ export async function focusFirstSuccessPane(
       await focusWeztermPane(firstSuccessPane);
     } else if (mux === "niwaterm") {
       await focusNiwatermPane(firstSuccessPane);
+    } else if (mux === "rex") {
+      await focusRexPane(firstSuccessPane);
     } else {
       await focusHerdrPane(firstSuccessPane);
     }

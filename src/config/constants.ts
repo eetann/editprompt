@@ -27,3 +27,12 @@ export const HERDR_SEND_CHUNK_BYTES = HERDR_REQUEST_LIMIT_BYTES / 8;
 // (like wezterm's send-text), so it is bounded by ARG_MAX rather than a
 // fixed-size socket frame. Reuse the wezterm chunk size for the same reason.
 export const NIWATERM_SEND_CHUNK_BYTES = WEZTERM_SEND_CHUNK_BYTES;
+
+// `rex send` reads the text from stdin, so ARG_MAX does not apply, but the
+// request it builds travels over Rex's control API, which rejects anything
+// whose JSON encoding exceeds 64KB (65536 bytes). Measured against Rex
+// 0.0.1793299046, the envelope takes 223 of those bytes, and the text is
+// counted after JSON escaping: a control character can expand from one byte to
+// six. Use one eighth of the limit so the worst case still fits.
+const REX_CONTROL_LIMIT_BYTES = 64 * 1024;
+export const REX_SEND_CHUNK_BYTES = REX_CONTROL_LIMIT_BYTES / 8;
