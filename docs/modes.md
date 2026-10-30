@@ -97,6 +97,7 @@ editprompt register --editor-pane %10 --target-pane %1 --target-pane %2
    - **tmux**: Save as comma-separated values in `@editprompt_target_panes` pane variable
    - **WezTerm**: Save `targetPaneIds` as an array using Conf library
    - **Herdr**: Save `targetPaneIds` as an array using Conf library
+   - **Rex**: Save `targetPaneIds` as an array using Conf library
 
 ---
 
@@ -170,6 +171,25 @@ This approach enables bidirectional focus switching in WezTerm, similar to tmux.
 - **Focus switching**: Uses `pane.get` to validate a pane and `pane.focus` to focus it
   - Herdr custom commands run detached, so `toggle` uses `HERDR_ACTIVE_PANE_ID` to switch between the editor and its first available target pane
 
+#### Rex Implementation
+
+- **Pane discovery**: Uses `REX_BLOCK`, which Rex sets in every terminal it opens. No session scope is passed to the CLI: a block ID is unique across the server, and `register --target-pane` may name a pane in another session, which a scope would hide
+- **Pane control**: Shells out to the `rex` CLI
+  - The CLI is taken from `REX_BIN_DIR`, which Rex sets in the terminals it opens, and falls back to a PATH lookup. A terminal that `init.lua` starts runs the login shell's environment but not its interactive configuration, and that shell may rebuild PATH without the directory Rex added, leaving no `rex` to find
+  - Arguments are passed as an argv array to `spawn`, so pane IDs and content need no shell quoting
+  - Only `send` is given any standard input; the rest run with it closed, so a wrong argv fails instead of waiting for input that never comes
+  - Every call passes `--autostart=false`: these commands only act on blocks that already exist, so a missing server means the panes are gone rather than that one should be started
+- **Editor launch**: Done by the Rex configuration file, not by editprompt
+  - `init.lua` runs `editprompt resume` first and, when that fails, creates the split itself with `session.new_split` and starts `editprompt open` in it
+  - This is the tmux and WezTerm shape rather than the Herdr one, because Rex's Lua configuration can both run commands and build layouts
+  - The split is sized by a fraction, so the binding derives one from the target pane's row count, allowing for the rows a pane spends on its header and border. It only holds with the app's "Autobalance Splits" setting off, which otherwise equalises the panes as soon as the block is created
+- **State storage**: Uses Conf because Rex offers no per-block key/value store; `set_block_label` is a user-visible label, not metadata
+  - Rex block IDs are `block:<uuid>` and unique across the server, so no session namespace is needed
+  - `rex.targetPane.pane_${targetPaneId}`: Stores the editor pane ID
+  - `rex.editorPane.pane_${editorPaneId}`: Stores target pane IDs
+- **Focus switching**: Uses `block inspect` to validate a pane and `block focus` to focus it
+  - `resumeEditorPane` lives in the backend, as it does for Herdr, so the resume mode does not repeat the branch a fifth time
+
 ---
 
 ## input Subcommand
@@ -186,13 +206,14 @@ This mode is designed to be executed from within the editor, reading configurati
 
 1. **When launching the editor in open subcommand**:
    - The following environment variables are set when launching the editor:
-     - `EDITPROMPT_MUX`: Multiplexer to use (`tmux`, `wezterm`, or `herdr`)
+     - `EDITPROMPT_MUX`: Multiplexer to use (`tmux`, `wezterm`, `herdr`, `niwaterm`, or `rex`)
      - `EDITPROMPT_ALWAYS_COPY`: Clipboard copy configuration
      - `EDITPROMPT=1`: Flag indicating launched by editprompt
    - Target pane IDs are stored in pane variables or Conf:
      - tmux: `@editprompt_target_panes` (comma-separated)
      - wezterm: `targetPaneIds` (array)
      - herdr: `targetPaneIds` (array)
+     - rex: `targetPaneIds` (array)
 
 2. **When executing input subcommand from within the editor**:
    - Execute `editprompt input -- "content"` from editors like Neovim
@@ -231,10 +252,10 @@ This mode shares the same editor pane verification and target pane discovery as 
 
 #### Workflow
 
-1. **Resolve the multiplexer**: Uses `EDITPROMPT_MUX`, then detects Herdr from `HERDR_SOCKET_PATH` and the pane environment, and otherwise defaults to tmux
+1. **Resolve the multiplexer**: Uses `EDITPROMPT_MUX`, then detects Herdr from `HERDR_SOCKET_PATH` and the pane environment, niwaterm from `NIWATERM_TAB_ID` and Rex from `REX_BLOCK`, and otherwise defaults to tmux
 2. **Get current pane ID**: Identifies the editor pane
 3. **Verify editor pane**: Checks that the current pane is registered as an editor pane
-4. **Get target pane IDs**: Retrieves target panes from pane variables (tmux) or Conf (WezTerm/Herdr)
+4. **Get target pane IDs**: Retrieves target panes from pane variables (tmux) or Conf (WezTerm/Herdr/Rex)
 5. **Send key**: Sends the specified key to each target pane using the selected multiplexer backend
 6. **No focus change**: Focus remains on the editor pane
 
@@ -242,15 +263,15 @@ This mode shares the same editor pane verification and target pane discovery as 
 
 Keys are passed directly to the multiplexer's key-sending mechanism. The notation differs by multiplexer:
 
-| Key        | tmux     | WezTerm  | Herdr    |
-| ---------- | -------- | -------- | -------- |
-| Enter      | `C-m`    | `\r`     | `enter`  |
-| Tab        | `Tab`    | `\t`     | `tab`    |
-| Escape     | `Escape` | `\x1b`   | `esc`    |
-| Arrow Up   | `Up`     | `\x1b[A` | `up`     |
-| Arrow Down | `Down`   | `\x1b[B` | `down`   |
-| Ctrl+C     | `C-c`    | `\x03`   | `ctrl+c` |
-| Character  | `1`, `a` | `1`, `a` | `1`, `a` |
+| Key        | tmux     | WezTerm  | Herdr    | Rex      |
+| ---------- | -------- | -------- | -------- | -------- |
+| Enter      | `C-m`    | `\r`     | `enter`  | `enter`  |
+| Tab        | `Tab`    | `\t`     | `tab`    | `tab`    |
+| Escape     | `Escape` | `\x1b`   | `esc`    | `escape` |
+| Arrow Up   | `Up`     | `\x1b[A` | `up`     | `up`     |
+| Arrow Down | `Down`   | `\x1b[B` | `down`   | `down`   |
+| Ctrl+C     | `C-c`    | `\x03`   | `ctrl+c` | `ctrl+c` |
+| Character  | `1`, `a` | `1`, `a` | `1`, `a` | `1`, `a` |
 
 #### Usage
 
@@ -315,6 +336,12 @@ This mode enables collecting multiple text selections while reading AI responses
 
 - Receives text as a positional argument
 - Example: `editprompt collect --mux herdr --target-pane <id> -- "<text>"`
+
+**Rex Implementation:**
+
+- Receives text as a positional argument
+- Example: `editprompt collect --mux rex --target-pane <id> -- "<text>"`
+- From `init.lua`, `rex.exec` takes an argv table, so the text needs no escaping
 
 #### Text Processing
 

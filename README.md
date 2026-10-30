@@ -22,7 +22,7 @@ A CLI tool that lets you write prompts for CLI tools using your favorite text ed
 ## ✨ Features
 
 - 🖊️ **Editor Integration**: Use your preferred text editor to write prompts
-- 🖥️ **Multiplexer Support**: Send prompts directly to tmux, WezTerm, or Herdr sessions
+- 🖥️ **Multiplexer Support**: Send prompts directly to tmux, WezTerm, Herdr, or Rex sessions
 - 🖥️ **Universal Terminal Support**: Works with any terminal via clipboard - no multiplexer required
 - 📤 **Send Without Closing**: Iterate on prompts without closing your editor
 - 📋 **Quote Buffering**: Collect text selections and send them as quoted replies
@@ -187,6 +187,92 @@ Run the binding from a target pane. editprompt opens a regular bottom split for 
 
 Inside a Herdr pane, editprompt automatically selects the Herdr backend when `HERDR_SOCKET_PATH` and a pane ID are available. An explicit `--mux` option or `EDITPROMPT_MUX` value takes precedence, so the binding above keeps `--mux herdr` to make its intent clear.
 
+### Rex Integration
+
+[Rex](https://www.superlogical.com/rex/docs) is configured in Lua, and its configuration file can both run commands and build layouts, so the binding does the splitting and editprompt only opens the editor. Add this to `~/.config/rex/init.lua`:
+
+```lua
+-- Height of the editor pane, in rows. new_split takes a fraction, so it is
+-- derived from the target pane's current height; a fixed fraction would make
+-- the editor grow with the window. PANE_CHROME_ROWS is what a pane spends on
+-- its header and border, which hold no text.
+local EDITOR_ROWS = 12
+local PANE_CHROME_ROWS = 3
+
+local function editor_ratio(block_id)
+  local size = rex.block.call("com.superlogical.terminal", "size", { block_id = block_id })
+  local rows = size and size.rows
+  if not rows or rows <= 1 then
+    return 0.8
+  end
+  -- Never let the editor take more than half, for a pane too short to spare the
+  -- rows, and stay inside the fraction new_split accepts.
+  return math.max(0.5, math.min(0.9, 1 - (EDITOR_ROWS + PANE_CHROME_ROWS) / rows))
+end
+
+-- Start the editor in the directory the target pane last reported. A shell that
+-- uses OSC 7, such as nushell, reports it as a file:// URL.
+local function pane_cwd(block_id)
+  local result = rex.block.call("com.superlogical.terminal", "pwd", { block_id = block_id })
+  local pwd = result and result.pwd
+  if not pwd then
+    return nil
+  end
+  return (pwd:gsub("^file://[^/]*", ""))
+end
+
+rex.bind("alt+q", function(ctx)
+  -- Focus an editor pane that is already open, or, when pressed from the editor
+  -- pane, go back to the target pane.
+  local resumed, err = rex.exec({
+    "editprompt", "resume", "--mux", "rex", "--target-pane", ctx.block_id,
+  })
+  if not resumed then
+    -- The command never ran at all, which is not the same as having no editor
+    -- pane to go back to. Say so rather than opening a split that would fail
+    -- the same way.
+    rex.log("error", "editprompt could not be run: " .. tostring(err))
+    return true
+  end
+  if resumed.ok then
+    return true
+  end
+
+  rex.session.new_split{
+    anchor_id = ctx.block_id,
+    direction = "vertical",
+    side = "after",
+    ratio = editor_ratio(ctx.block_id),
+    focus = true,
+    layout = rex.layout.block{
+      flavor = "com.superlogical.terminal.shell",
+      options = {
+        command = {
+          "editprompt", "open", "--mux", "rex",
+          "--target-pane", ctx.block_id, "--editor", "nvim", "--always-copy",
+        },
+        cwd = pane_cwd(ctx.block_id),
+      },
+    },
+  }
+  return true
+end)
+```
+
+Reload it with `rex config reload`; Rex does not watch the file for changes. `rex config check` reports mistakes without applying them.
+
+`ratio` is the share the `before` part keeps, which here is the target pane, so a larger value leaves the editor less room. `direction = "vertical"` stacks the panes and `side = "after"` puts the new one below. `EDITOR_ROWS` is the knob worth tuning: it keeps the editor the same height whatever the window's size, the way `--pane-rows` does for Herdr.
+
+**Turn off the app's "Autobalance Splits" setting.** With it on, Rex equalises every pane as soon as a block is created, which discards the `ratio` the binding asked for and leaves the editor half the window. Setting the border afterwards with `session.resize_pane` does not help either: the equalisation lands after it. `focus` defaults to false, so the binding asks for it explicitly. The pane closes once the editor exits, which is Rex's default for a terminal started with a `command`; it stays open after a quick failure instead, so a startup error remains readable.
+
+editprompt locates the `rex` CLI through `REX_BIN_DIR`, which Rex sets in every terminal it opens, and falls back to the PATH. That matters because the login shell can rebuild PATH and drop the directory Rex added. On NixOS and nix-darwin it does, and the fix Rex documents for that runs in interactive shells only, which a terminal started from `init.lua` is not.
+
+`rex.exec` runs in the Rex server's environment rather than a shell's, so give `editprompt` an absolute path there if the server's PATH does not include it.
+
+Name the editor with `--editor`. A terminal Rex starts gets the login shell's environment, not the interactive one, so `$EDITOR` is whatever that environment sets rather than what your prompt uses — on nix-darwin, for instance, it is `nano`.
+
+Inside a Rex pane, editprompt automatically selects the Rex backend when `REX_BLOCK` is set. Running tmux inside a Rex pane sets both, and Rex wins, so pass `--mux tmux` or set `EDITPROMPT_MUX` for that case.
+
 ### Editor Integration (Send Without Closing)
 
 While editprompt is running, you can send content to the target pane or clipboard without closing the editor. This allows you to iterate quickly on your prompts.
@@ -205,7 +291,7 @@ editprompt input --auto-send -- "your content here"
 editprompt input --auto-send --send-key "C-m" -- "your content here"
 # Customize the key to send after content (tmux format example)
 # WezTerm example: --send-key "\r"
-# Herdr example: --send-key "enter"
+# Herdr and Rex example: --send-key "enter"
 ```
 
 This sends the content to the target pane (or clipboard) while keeping your editor open, so you can continue editing and send multiple times.
@@ -217,6 +303,7 @@ This sends the content to the target pane (or clipboard) while keeping your edit
   - tmux format: `Enter` (default), `C-a`, etc.
   - WezTerm format: `\r` (default), `\x01`, etc.
   - Herdr format: `enter` (default), `ctrl+a`, etc.
+  - Rex format: `enter` (default), `ctrl+a`, etc.
 
 #### Neovim Integration
 
@@ -236,7 +323,7 @@ editprompt press -- Up
 editprompt press -- C-m    # Enter
 editprompt press -- C-c    # Ctrl+C
 
-# Herdr examples
+# Herdr and Rex examples
 editprompt press -- enter
 editprompt press -- ctrl+c
 
@@ -252,12 +339,12 @@ editprompt press --delay 500 -- Tab
 
 **Key notation** depends on your multiplexer:
 
-| Key           | tmux          | WezTerm             | Herdr         |
-| ------------- | ------------- | ------------------- | ------------- |
-| Enter         | `C-m`         | `\r`                | `enter`       |
-| Tab           | `Tab`         | `\t`                | `tab`         |
-| Escape        | `Escape`      | `\x1b`              | `esc`         |
-| Arrow Up/Down | `Up` / `Down` | `\x1b[A` / `\x1b[B` | `up` / `down` |
+| Key           | tmux          | WezTerm             | Herdr         | Rex           |
+| ------------- | ------------- | ------------------- | ------------- | ------------- |
+| Enter         | `C-m`         | `\r`                | `enter`       | `enter`       |
+| Tab           | `Tab`         | `\t`                | `tab`         | `tab`         |
+| Escape        | `Escape`      | `\x1b`              | `esc`         | `escape`      |
+| Arrow Up/Down | `Up` / `Down` | `\x1b[A` / `\x1b[B` | `up` / `down` | `up` / `down` |
 
 ### Quote Workflow Setup
 
@@ -326,6 +413,22 @@ editprompt collect --mux herdr --target-pane "$HERDR_PANE_ID" -- "selected text"
 ```
 
 This can be called from a script or editor integration that has access to the selected text. Herdr quote buffers are stored in editprompt's configuration, associated with the target pane.
+
+#### Collecting Quotes in Rex
+
+Pass selected text as an argument together with the target block ID:
+
+```bash
+editprompt collect --mux rex --target-pane "$REX_BLOCK" -- "selected text"
+```
+
+From `init.lua`, call it with `rex.exec`, which takes an argv table so the text needs no quoting:
+
+```lua
+rex.exec({ "editprompt", "collect", "--mux", "rex", "--target-pane", ctx.block_id, "--", text })
+```
+
+As with Herdr, Rex quote buffers live in editprompt's configuration, associated with the target pane.
 
 #### Capturing Collected Quotes
 
