@@ -2,6 +2,7 @@ import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import * as herdr from "../modules/herdr";
 import * as niwaterm from "../modules/niwaterm";
+import * as rex from "../modules/rex";
 import {
   checkPaneExists,
   clearEditorPaneId,
@@ -32,6 +33,15 @@ export async function runResumeMode(targetPane: string, mux: MuxType): Promise<v
       process.exit((await herdr.resumeEditorPane(targetPane)) ? 0 : 1);
     } catch (error) {
       logger.debug("Herdr resume failed: {error}", { error });
+      process.exit(1);
+    }
+  }
+
+  if (mux === "rex") {
+    try {
+      process.exit((await rex.resumeEditorPane(targetPane)) ? 0 : 1);
+    } catch (error) {
+      logger.debug("Rex resume failed: {error}", { error });
       process.exit(1);
     }
   }
