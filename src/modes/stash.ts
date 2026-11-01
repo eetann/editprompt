@@ -4,6 +4,7 @@ import { conf } from "../modules/conf";
 import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
 import * as niwaterm from "../modules/niwaterm";
+import * as rex from "../modules/rex";
 import { getCurrentPaneId, getTargetPaneIds, isEditorPane } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
@@ -114,6 +115,9 @@ async function getTargetPaneForStash(): Promise<{
   } else if (config.mux === "niwaterm") {
     currentPaneId = await niwaterm.getCurrentPaneId();
     isEditor = await niwaterm.isEditorPane(currentPaneId);
+  } else if (config.mux === "rex") {
+    currentPaneId = await rex.getCurrentPaneId();
+    isEditor = rex.isEditorPaneFromConf(currentPaneId);
   } else {
     currentPaneId = await herdr.getCurrentPaneId();
     isEditor = herdr.isEditorPaneFromConf(currentPaneId);
@@ -132,6 +136,8 @@ async function getTargetPaneForStash(): Promise<{
     targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
   } else if (config.mux === "niwaterm") {
     targetPanes = await niwaterm.getTargetPaneIds(currentPaneId);
+  } else if (config.mux === "rex") {
+    targetPanes = await rex.getTargetPaneIds(currentPaneId);
   } else {
     targetPanes = await herdr.getTargetPaneIds(currentPaneId);
   }

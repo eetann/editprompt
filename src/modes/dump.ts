@@ -3,6 +3,7 @@ import { define } from "gunshi";
 import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
 import * as niwaterm from "../modules/niwaterm";
+import * as rex from "../modules/rex";
 import {
   clearQuoteVariable,
   getCurrentPaneId,
@@ -34,6 +35,9 @@ export async function runDumpMode(): Promise<void> {
     } else if (config.mux === "niwaterm") {
       currentPaneId = await niwaterm.getCurrentPaneId();
       isEditor = await niwaterm.isEditorPane(currentPaneId);
+    } else if (config.mux === "rex") {
+      currentPaneId = await rex.getCurrentPaneId();
+      isEditor = rex.isEditorPaneFromConf(currentPaneId);
     } else {
       currentPaneId = await herdr.getCurrentPaneId();
       isEditor = herdr.isEditorPaneFromConf(currentPaneId);
@@ -52,6 +56,8 @@ export async function runDumpMode(): Promise<void> {
       targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
     } else if (config.mux === "niwaterm") {
       targetPanes = await niwaterm.getTargetPaneIds(currentPaneId);
+    } else if (config.mux === "rex") {
+      targetPanes = await rex.getTargetPaneIds(currentPaneId);
     } else {
       targetPanes = await herdr.getTargetPaneIds(currentPaneId);
     }
@@ -74,6 +80,9 @@ export async function runDumpMode(): Promise<void> {
       } else if (config.mux === "niwaterm") {
         content = await niwaterm.getQuoteVariableContent(targetPane);
         await niwaterm.clearQuoteVariable(targetPane);
+      } else if (config.mux === "rex") {
+        content = await rex.getQuoteText(targetPane);
+        await rex.clearQuoteText(targetPane);
       } else {
         content = await herdr.getQuoteText(targetPane);
         await herdr.clearQuoteText(targetPane);

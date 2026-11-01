@@ -4,6 +4,7 @@ import { openEditorAndGetContent } from "../modules/editor";
 import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
 import * as niwaterm from "../modules/niwaterm";
+import * as rex from "../modules/rex";
 import { clearEditorPaneId, getCurrentPaneId, markAsEditorPane } from "../modules/tmux";
 import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
@@ -65,6 +66,13 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
     try {
       const currentPaneId = await niwaterm.getCurrentPaneId();
       await niwaterm.markAsEditorPane(currentPaneId, options.targetPanes);
+    } catch {
+      //
+    }
+  } else if (options.targetPanes.length > 0 && options.mux === "rex") {
+    try {
+      const currentPaneId = await rex.getCurrentPaneId();
+      await rex.markAsEditorPane(currentPaneId, options.targetPanes);
     } catch {
       //
     }
@@ -141,6 +149,14 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
       try {
         for (const targetPane of options.targetPanes) {
           await niwaterm.clearEditorPaneId(targetPane);
+        }
+      } catch {
+        //
+      }
+    } else if (options.targetPanes.length > 0 && options.mux === "rex") {
+      try {
+        for (const targetPane of options.targetPanes) {
+          await rex.clearEditorPaneId(targetPane);
         }
       } catch {
         //

@@ -2,6 +2,7 @@ import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import * as herdr from "../modules/herdr";
 import * as niwaterm from "../modules/niwaterm";
+import * as rex from "../modules/rex";
 import {
   getCurrentPaneId,
   getTargetPaneIds,
@@ -78,6 +79,15 @@ export async function runRegisterMode(options: RegisterModeOptions): Promise<voi
         );
         process.exit(1);
       }
+    } else if (options.mux === "rex") {
+      editorPaneId = await rex.getCurrentPaneId();
+      const isEditor = rex.isEditorPaneFromConf(editorPaneId);
+      if (!isEditor) {
+        logger.error(
+          "Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
+        );
+        process.exit(1);
+      }
     } else {
       logger.error("Unsupported multiplexer");
       process.exit(1);
@@ -96,6 +106,8 @@ export async function runRegisterMode(options: RegisterModeOptions): Promise<voi
       existingPanes = await herdr.getTargetPaneIds(editorPaneId);
     } else if (options.mux === "niwaterm") {
       existingPanes = await niwaterm.getTargetPaneIds(editorPaneId);
+    } else if (options.mux === "rex") {
+      existingPanes = await rex.getTargetPaneIds(editorPaneId);
     }
 
     // Merge with new target panes and remove duplicates
@@ -110,6 +122,8 @@ export async function runRegisterMode(options: RegisterModeOptions): Promise<voi
       await herdr.markAsEditorPane(editorPaneId, mergedTargetPanes);
     } else if (options.mux === "niwaterm") {
       await niwaterm.markAsEditorPane(editorPaneId, mergedTargetPanes);
+    } else if (options.mux === "rex") {
+      await rex.markAsEditorPane(editorPaneId, mergedTargetPanes);
     }
 
     logger.info(
