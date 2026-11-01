@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import * as childProcess from "node:child_process";
+import * as fsPromises from "node:fs/promises";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import {
@@ -12,6 +14,18 @@ async function cleanupTempFile(filePath: string): Promise<void> {
   await rm(filePath, { force: true });
   await rm(dirname(filePath), { recursive: true, force: true });
 }
+
+// Snapshot the real modules before any test replaces them. mock.restore() does
+// not undo mock.module(), and a module mock outlives this file, so without
+// putting these back every later test file (such as rex.test.ts, which spawns
+// a fake CLI) would get the mocked spawn and readFile.
+const realChildProcess = { ...childProcess };
+const realFsPromises = { ...fsPromises };
+
+afterAll(() => {
+  void mock.module("node:child_process", () => realChildProcess);
+  void mock.module("node:fs/promises", () => realFsPromises);
+});
 
 describe("Editor Module", () => {
   beforeEach(() => {
