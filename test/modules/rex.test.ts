@@ -96,10 +96,10 @@ describe("Rex pane API", () => {
 
   test("throws when the current pane ID is unavailable", async () => {
     delete process.env.REX_BLOCK;
-    await expect(getCurrentPaneId()).rejects.toThrow("REX_BLOCK is not set");
+    expect(getCurrentPaneId()).rejects.toThrow("REX_BLOCK is not set");
 
     process.env.REX_BLOCK = "  ";
-    await expect(getCurrentPaneId()).rejects.toThrow("REX_BLOCK is not set");
+    expect(getCurrentPaneId()).rejects.toThrow("REX_BLOCK is not set");
   });
 
   test("checks pane existence through block inspect", async () => {
@@ -177,7 +177,7 @@ describe("Rex pane API", () => {
 
   test("reports which command failed and why", async () => {
     await failNextCalls();
-    await expect(inputToRexPane(TARGET_PANE, "hello")).rejects.toThrow("exited with 3");
+    expect(inputToRexPane(TARGET_PANE, "hello")).rejects.toThrow("exited with 3");
   });
 
   test("sends a key through send-key", async () => {
