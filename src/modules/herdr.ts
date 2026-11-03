@@ -231,10 +231,18 @@ export async function closePane(paneId: string): Promise<void> {
   await sendRequest("pane.close", { pane_id: paneId });
 }
 
+export async function sendTextChunk(paneId: string, chunk: string): Promise<void> {
+  await sendRequest("pane.send_text", { pane_id: paneId, text: chunk });
+}
+
+export async function sendKey(paneId: string, key: string): Promise<void> {
+  await sendRequest("pane.send_keys", { pane_id: paneId, keys: [key] });
+}
+
 export async function inputToHerdrPane(paneId: string, content: string): Promise<void> {
   const chunks = splitByByteSize(content, HERDR_SEND_CHUNK_BYTES);
   for (const chunk of chunks) {
-    await sendRequest("pane.send_text", { pane_id: paneId, text: chunk });
+    await sendTextChunk(paneId, chunk);
   }
   logger.debug("Content sent to Herdr pane: {paneId} ({chunkCount} chunks)", {
     paneId,
@@ -244,7 +252,7 @@ export async function inputToHerdrPane(paneId: string, content: string): Promise
 
 export async function sendKeyToHerdrPane(paneId: string, key: string, delay = 1000): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, delay));
-  await sendRequest("pane.send_keys", { pane_id: paneId, keys: [key] });
+  await sendKey(paneId, key);
 }
 
 export async function saveEditorPaneId(targetPaneId: string, editorPaneId: string): Promise<void> {

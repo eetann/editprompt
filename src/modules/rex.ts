@@ -251,7 +251,7 @@ export async function inputToRexPane(paneId: string, content: string): Promise<v
   // once.
   const chunks = splitByByteSize(content, REX_SEND_CHUNK_BYTES);
   for (const chunk of chunks) {
-    await runRex(["send", "-b", paneId], chunk);
+    await sendTextChunk(paneId, chunk);
   }
   logger.debug("Content sent to Rex pane: {paneId} ({chunks} chunk(s))", {
     paneId,
@@ -262,5 +262,13 @@ export async function inputToRexPane(paneId: string, content: string): Promise<v
 export async function sendKeyToRexPane(paneId: string, key: string, delay = 1000): Promise<void> {
   // Sleep so as not to be treated as a newline (e.g., codex)
   await new Promise((resolve) => setTimeout(resolve, delay));
+  await sendKey(paneId, key);
+}
+
+export async function sendTextChunk(paneId: string, chunk: string): Promise<void> {
+  await runRex(["send", "-b", paneId], chunk);
+}
+
+export async function sendKey(paneId: string, key: string): Promise<void> {
   await runRex(["send-key", "-b", paneId, key]);
 }

@@ -181,14 +181,24 @@ export async function clearQuoteText(paneId: string): Promise<void> {
   }
 }
 
+export async function sendKey(paneId: string, key: string): Promise<void> {
+  // Wrap user-provided key in $'...' for bash escape sequences
+  await execAsync(`wezterm cli send-text --no-paste --pane-id '${paneId}' $'${key}'`);
+}
+
 export async function sendKeyToWeztermPane(
   paneId: string,
   key: string,
   delay = 1000,
 ): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, delay));
-  // Wrap user-provided key in $'...' for bash escape sequences
-  await execAsync(`wezterm cli send-text --no-paste --pane-id '${paneId}' $'${key}'`);
+  await sendKey(paneId, key);
+}
+
+export async function sendTextChunk(paneId: string, chunk: string): Promise<void> {
+  await execAsync(
+    `wezterm cli send-text --no-paste --pane-id '${paneId}' -- '${chunk.replace(/'/g, "'\\''")}'`,
+  );
 }
 
 export async function inputToWeztermPane(paneId: string, content: string): Promise<void> {
@@ -197,9 +207,7 @@ export async function inputToWeztermPane(paneId: string, content: string): Promi
   // caller after all chunks, so it fires only once.
   const chunks = splitByByteSize(content, WEZTERM_SEND_CHUNK_BYTES);
   for (const chunk of chunks) {
-    await execAsync(
-      `wezterm cli send-text --no-paste --pane-id '${paneId}' -- '${chunk.replace(/'/g, "'\\''")}'`,
-    );
+    await sendTextChunk(paneId, chunk);
   }
   logger.debug("Content sent to wezterm pane: {paneId} ({chunks} chunk(s))", {
     paneId,

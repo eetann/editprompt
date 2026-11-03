@@ -117,24 +117,50 @@ export async function clearQuoteVariable(targetPaneId: string): Promise<void> {
   await execAsync(`tmux set-option -pt '${targetPaneId}' @editprompt_quote ""`);
 }
 
-export async function sendKeyToTmuxPane(paneId: string, key: string, delay = 1000): Promise<void> {
-  // Sleep so as not to be treated as a newline (e.g., codex)
-  await new Promise((resolve) => setTimeout(resolve, delay));
+export async function getPaneOption(paneId: string, name: string): Promise<string> {
+  try {
+    const { stdout } = await execAsync(`tmux show -pt '${paneId}' -v ${name}`);
+    return stdout;
+  } catch {
+    return "";
+  }
+}
+
+export async function setPaneOption(paneId: string, name: string, value: string): Promise<void> {
+  await execAsync(`tmux set-option -pt '${paneId}' ${name} '${value.replace(/'/g, "'\\''")}'`);
+}
+
+export async function sendKey(paneId: string, key: string): Promise<void> {
   await execAsync(`tmux send-keys -t '${paneId}' '${key}'`);
 }
 
-export async function inputToTmuxPane(paneId: string, content: string): Promise<void> {
-  // Exit copy mode if the pane is in copy mode
+export async function sendKeyToTmuxPane(paneId: string, key: string, delay = 1000): Promise<void> {
+  // Sleep so as not to be treated as a newline (e.g., codex)
+  await new Promise((resolve) => setTimeout(resolve, delay));
+  await sendKey(paneId, key);
+}
+
+// Exit copy mode if the pane is in copy mode, so that send-keys types text
+// instead of driving copy mode.
+export async function exitCopyMode(paneId: string): Promise<void> {
   await execAsync(
     `tmux if-shell -t '${paneId}' '[ "#{pane_in_mode}" = "1" ]' "copy-mode -q -t '${paneId}'"`,
   );
+}
+
+export async function sendTextChunk(paneId: string, chunk: string): Promise<void> {
+  await execAsync(`tmux send-keys -t '${paneId}' -- '${chunk.replace(/'/g, "'\\''")}'`);
+}
+
+export async function inputToTmuxPane(paneId: string, content: string): Promise<void> {
+  await exitCopyMode(paneId);
 
   // Split long content into chunks to stay under tmux's imsg frame limit,
   // then send each chunk in order (no focus change). The --auto-send Enter is
   // sent separately by the caller after all chunks, so it fires only once.
   const chunks = splitByByteSize(content, TMUX_SEND_CHUNK_BYTES);
   for (const chunk of chunks) {
-    await execAsync(`tmux send-keys -t '${paneId}' -- '${chunk.replace(/'/g, "'\\''")}'`);
+    await sendTextChunk(paneId, chunk);
   }
   logger.debug("Content sent to tmux pane: {paneId} ({chunks} chunk(s))", {
     paneId,

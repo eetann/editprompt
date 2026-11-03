@@ -24,7 +24,7 @@ export async function getCurrentPaneId(): Promise<string> {
   return tabId;
 }
 
-async function getTabVar(tabId: string, key: string): Promise<string> {
+export async function getTabVar(tabId: string, key: string): Promise<string> {
   try {
     const { stdout } = await execAsync(
       `niwa tab var get -t ${quoteShellWord(tabId)} ${quoteShellWord(key)}`,
@@ -36,7 +36,7 @@ async function getTabVar(tabId: string, key: string): Promise<string> {
   }
 }
 
-async function setTabVar(tabId: string, key: string, value: string): Promise<void> {
+export async function setTabVar(tabId: string, key: string, value: string): Promise<void> {
   await execAsync(
     `niwa tab var set -t ${quoteShellWord(tabId)} ${quoteShellWord(key)} ${quoteShellWord(value)}`,
   );
@@ -114,7 +114,15 @@ export async function sendKeyToNiwatermPane(
 ): Promise<void> {
   // Sleep so as not to be treated as a newline (e.g., codex)
   await new Promise((resolve) => setTimeout(resolve, delay));
+  await sendKey(paneId, key);
+}
+
+export async function sendKey(paneId: string, key: string): Promise<void> {
   await execAsync(`niwa tab send-keys -t ${quoteShellWord(paneId)} ${quoteShellWord(key)}`);
+}
+
+export async function sendTextChunk(paneId: string, chunk: string): Promise<void> {
+  await execAsync(`niwa tab send-keys -t ${quoteShellWord(paneId)} ${quoteShellWord(chunk)}`);
 }
 
 export async function inputToNiwatermPane(paneId: string, content: string): Promise<void> {
@@ -124,7 +132,7 @@ export async function inputToNiwatermPane(paneId: string, content: string): Prom
   // once.
   const chunks = splitByByteSize(content, NIWATERM_SEND_CHUNK_BYTES);
   for (const chunk of chunks) {
-    await execAsync(`niwa tab send-keys -t ${quoteShellWord(paneId)} ${quoteShellWord(chunk)}`);
+    await sendTextChunk(paneId, chunk);
   }
   logger.debug("Content sent to niwaterm pane: {paneId} ({chunks} chunk(s))", {
     paneId,
