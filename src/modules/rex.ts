@@ -1,9 +1,6 @@
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { getLogger } from "@logtape/logtape";
-import { REX_SEND_CHUNK_BYTES } from "../config/constants";
-import { splitByByteSize } from "../utils/contentChunker";
-import { conf } from "./conf";
 
 const logger = getLogger(["editprompt", "rex"]);
 
@@ -23,16 +20,6 @@ const REX_GLOBAL_ARGS = ["--autostart=false"];
 function rexCommand(): string {
   const binDir = process.env.REX_BIN_DIR?.trim();
   return binDir ? join(binDir, REX_COMMAND) : REX_COMMAND;
-}
-
-// Every Rex block ID is a `block:<uuid>`, unique across the server, so the keys
-// need no session namespace the way Herdr's do.
-function targetPaneKey(paneId: string): string {
-  return `rex.targetPane.pane_${paneId}`;
-}
-
-function editorPaneKey(paneId: string): string {
-  return `rex.editorPane.pane_${paneId}`;
 }
 
 // No session scope: a block ID is unique across the server, so Rex resolves one
@@ -109,160 +96,6 @@ export async function checkPaneExists(paneId: string): Promise<boolean> {
 
 export async function focusPane(paneId: string): Promise<void> {
   await runRex(["block", "focus", paneId]);
-}
-
-export async function saveEditorPaneId(targetPaneId: string, editorPaneId: string): Promise<void> {
-  const data = conf.get(targetPaneKey(targetPaneId));
-  const existing = typeof data === "object" && data !== null ? data : {};
-  conf.set(targetPaneKey(targetPaneId), {
-    ...existing,
-    editorPaneId,
-  });
-}
-
-export async function getEditorPaneId(targetPaneId: string): Promise<string> {
-  const data = conf.get(targetPaneKey(targetPaneId));
-  if (typeof data === "object" && data !== null && "editorPaneId" in data) {
-    return String(data.editorPaneId);
-  }
-  return "";
-}
-
-export async function clearEditorPaneId(targetPaneId: string): Promise<void> {
-  const editorPaneId = await getEditorPaneId(targetPaneId);
-
-  const data = conf.get(targetPaneKey(targetPaneId));
-  if (typeof data === "object" && data !== null && "editorPaneId" in data) {
-    const { editorPaneId: _, ...remaining } = data;
-    if (Object.keys(remaining).length === 0) {
-      conf.delete(targetPaneKey(targetPaneId));
-    } else {
-      conf.set(targetPaneKey(targetPaneId), remaining);
-    }
-  }
-  if (editorPaneId) {
-    conf.delete(editorPaneKey(editorPaneId));
-  }
-}
-
-export async function markAsEditorPane(
-  editorPaneId: string,
-  targetPaneIds: string[],
-): Promise<void> {
-  const uniqueTargetPaneIds = [...new Set(targetPaneIds)];
-  conf.set(editorPaneKey(editorPaneId), {
-    targetPaneIds: uniqueTargetPaneIds,
-  });
-  // Save editor pane ID to each target pane
-  for (const targetPaneId of uniqueTargetPaneIds) {
-    await saveEditorPaneId(targetPaneId, editorPaneId);
-  }
-}
-
-export async function getTargetPaneIds(editorPaneId: string): Promise<string[]> {
-  const data = conf.get(editorPaneKey(editorPaneId));
-  if (typeof data === "object" && data !== null && "targetPaneIds" in data) {
-    const targetPaneIds = data.targetPaneIds;
-    if (Array.isArray(targetPaneIds)) {
-      return targetPaneIds.map((id) => String(id));
-    }
-  }
-  return [];
-}
-
-export function isEditorPaneFromConf(paneId: string): boolean {
-  return conf.has(editorPaneKey(paneId));
-}
-
-// Focus switching for the resume mode, in one call so that resume.ts does not
-// need a fifth copy of the same branch. From an editor pane, focus the first
-// target pane that is still alive; from a target pane, focus its editor pane.
-// Returns false when there is nothing to switch to, which is resume's signal to
-// let the caller open a new editor pane instead.
-export async function resumeEditorPane(targetPaneId: string): Promise<boolean> {
-  const currentPaneId = await getCurrentPaneId();
-  const editorPaneId = isEditorPaneFromConf(currentPaneId)
-    ? currentPaneId
-    : isEditorPaneFromConf(targetPaneId)
-      ? targetPaneId
-      : "";
-
-  if (editorPaneId) {
-    const targetPaneIds = await getTargetPaneIds(editorPaneId);
-    for (const paneId of targetPaneIds) {
-      if (await checkPaneExists(paneId)) {
-        await focusPane(paneId);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  const registeredEditorPaneId = await getEditorPaneId(targetPaneId);
-  if (registeredEditorPaneId === "") {
-    return false;
-  }
-  if (!(await checkPaneExists(registeredEditorPaneId))) {
-    await clearEditorPaneId(targetPaneId);
-    return false;
-  }
-
-  await focusPane(registeredEditorPaneId);
-  return true;
-}
-
-export async function appendToQuoteText(paneId: string, content: string): Promise<void> {
-  const data = conf.get(targetPaneKey(paneId));
-  const existing = typeof data === "object" && data !== null ? data : {};
-  const existingQuoteText = "quote_text" in existing ? String(existing.quote_text) : "";
-  const quoteText =
-    existingQuoteText.trim() !== "" ? `${existingQuoteText}\n\n${content}` : content;
-
-  conf.set(targetPaneKey(paneId), {
-    ...existing,
-    quote_text: quoteText,
-  });
-}
-
-export async function getQuoteText(paneId: string): Promise<string> {
-  const data = conf.get(targetPaneKey(paneId));
-  if (typeof data === "object" && data !== null && "quote_text" in data) {
-    return String(data.quote_text);
-  }
-  return "";
-}
-
-export async function clearQuoteText(paneId: string): Promise<void> {
-  const data = conf.get(targetPaneKey(paneId));
-  if (typeof data === "object" && data !== null && "quote_text" in data) {
-    const { quote_text: _, ...remaining } = data;
-    if (Object.keys(remaining).length === 0) {
-      conf.delete(targetPaneKey(paneId));
-    } else {
-      conf.set(targetPaneKey(paneId), remaining);
-    }
-  }
-}
-
-export async function inputToRexPane(paneId: string, content: string): Promise<void> {
-  // Split long content into chunks to stay under the control API's request
-  // limit, then send each chunk in order (no focus change). The --auto-send
-  // Enter is sent separately by the caller after all chunks, so it fires only
-  // once.
-  const chunks = splitByByteSize(content, REX_SEND_CHUNK_BYTES);
-  for (const chunk of chunks) {
-    await sendTextChunk(paneId, chunk);
-  }
-  logger.debug("Content sent to Rex pane: {paneId} ({chunks} chunk(s))", {
-    paneId,
-    chunks: chunks.length,
-  });
-}
-
-export async function sendKeyToRexPane(paneId: string, key: string, delay = 1000): Promise<void> {
-  // Sleep so as not to be treated as a newline (e.g., codex)
-  await new Promise((resolve) => setTimeout(resolve, delay));
-  await sendKey(paneId, key);
 }
 
 export async function sendTextChunk(paneId: string, chunk: string): Promise<void> {

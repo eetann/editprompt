@@ -1,9 +1,6 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { getLogger } from "@logtape/logtape";
-import { WEZTERM_SEND_CHUNK_BYTES } from "../config/constants";
-import { splitByByteSize } from "../utils/contentChunker";
-import { conf } from "./conf";
 
 const logger = getLogger(["editprompt", "wezterm"]);
 
@@ -38,147 +35,8 @@ export async function checkPaneExists(paneId: string): Promise<boolean> {
   }
 }
 
-export async function saveEditorPaneId(targetPaneId: string, editorPaneId: string): Promise<void> {
-  logger.debug("Saving editor pane ID to conf key: wezterm.targetPane.pane_{targetPaneId}", {
-    targetPaneId,
-  });
-  try {
-    conf.set(`wezterm.targetPane.pane_${targetPaneId}`, {
-      editorPaneId: editorPaneId,
-    });
-  } catch (error) {
-    logger.debug("saveEditorPaneId failed: {error}", { error });
-  }
-}
-
-export async function getEditorPaneId(targetPaneId: string): Promise<string> {
-  try {
-    const data = conf.get(`wezterm.targetPane.pane_${targetPaneId}`);
-    if (typeof data === "object" && data !== null && "editorPaneId" in data) {
-      return String(data.editorPaneId);
-    }
-    return "";
-  } catch (error) {
-    logger.debug("getEditorPaneId failed: {error}", { error });
-    return "";
-  }
-}
-
-export async function clearEditorPaneId(targetPaneId: string): Promise<void> {
-  try {
-    const editorPaneId = await getEditorPaneId(targetPaneId);
-    conf.delete(`wezterm.targetPane.pane_${targetPaneId}`);
-    if (editorPaneId) {
-      conf.delete(`wezterm.editorPane.pane_${editorPaneId}`);
-    }
-  } catch (error) {
-    logger.debug("clearEditorPaneId failed: {error}", { error });
-  }
-}
-
 export async function focusPane(paneId: string): Promise<void> {
   await execAsync(`wezterm cli activate-pane --pane-id '${paneId}'`);
-}
-
-export function isEditorPaneFromEnv(): boolean {
-  return process.env.EDITPROMPT_IS_EDITOR === "1";
-}
-
-export function getTargetPaneIdFromEnv(): string | undefined {
-  return process.env.EDITPROMPT_TARGET_PANE;
-}
-
-export async function markAsEditorPane(
-  editorPaneId: string,
-  targetPaneIds: string[],
-): Promise<void> {
-  try {
-    const uniqueTargetPaneIds = [...new Set(targetPaneIds)];
-    conf.set(`wezterm.editorPane.pane_${editorPaneId}`, {
-      targetPaneIds: uniqueTargetPaneIds,
-    });
-    // Save editor pane ID to each target pane
-    for (const targetPaneId of uniqueTargetPaneIds) {
-      await saveEditorPaneId(targetPaneId, editorPaneId);
-    }
-  } catch (error) {
-    logger.debug("markAsEditorPane failed: {error}", { error });
-  }
-}
-
-export async function getTargetPaneIds(editorPaneId: string): Promise<string[]> {
-  try {
-    const data = conf.get(`wezterm.editorPane.pane_${editorPaneId}`);
-    if (typeof data === "object" && data !== null && "targetPaneIds" in data) {
-      const targetPaneIds = data.targetPaneIds;
-      if (Array.isArray(targetPaneIds)) {
-        return targetPaneIds.map((id) => String(id));
-      }
-    }
-    return [];
-  } catch (error) {
-    logger.debug("getTargetPaneIds failed: {error}", { error });
-    return [];
-  }
-}
-
-export function isEditorPaneFromConf(paneId: string): boolean {
-  try {
-    return conf.has(`wezterm.editorPane.pane_${paneId}`);
-  } catch (error) {
-    logger.debug("isEditorPaneFromConf failed: {error}", { error });
-    return false;
-  }
-}
-
-export async function appendToQuoteText(paneId: string, content: string): Promise<void> {
-  try {
-    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
-    let newData: Record<string, unknown>;
-
-    if (typeof data === "object" && data !== null) {
-      // Existing data exists, preserve it and add/update quote_text
-      const existingQuoteText = "quote_text" in data ? String(data.quote_text) : "";
-      const newQuoteText =
-        existingQuoteText.trim() !== "" ? `${existingQuoteText}\n\n${content}` : content;
-
-      newData = {
-        ...data,
-        quote_text: newQuoteText,
-      };
-    } else {
-      // No existing data, create new
-      newData = { quote_text: content };
-    }
-
-    conf.set(`wezterm.targetPane.pane_${paneId}`, newData);
-  } catch (error) {
-    logger.debug("appendToQuoteText failed: {error}", { error });
-  }
-}
-
-export async function getQuoteText(paneId: string): Promise<string> {
-  try {
-    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
-    if (typeof data === "object" && data !== null && "quote_text" in data) {
-      return String(data.quote_text);
-    }
-    return "";
-  } catch (error) {
-    logger.debug("getQuoteText failed: {error}", { error });
-    return "";
-  }
-}
-
-export async function clearQuoteText(paneId: string): Promise<void> {
-  try {
-    const key = `wezterm.targetPane.pane_${paneId}.quote_text`;
-    if (conf.has(key)) {
-      conf.delete(key);
-    }
-  } catch (error) {
-    logger.debug("clearQuoteText failed: {error}", { error });
-  }
 }
 
 export async function sendKey(paneId: string, key: string): Promise<void> {
@@ -186,31 +44,8 @@ export async function sendKey(paneId: string, key: string): Promise<void> {
   await execAsync(`wezterm cli send-text --no-paste --pane-id '${paneId}' $'${key}'`);
 }
 
-export async function sendKeyToWeztermPane(
-  paneId: string,
-  key: string,
-  delay = 1000,
-): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, delay));
-  await sendKey(paneId, key);
-}
-
 export async function sendTextChunk(paneId: string, chunk: string): Promise<void> {
   await execAsync(
     `wezterm cli send-text --no-paste --pane-id '${paneId}' -- '${chunk.replace(/'/g, "'\\''")}'`,
   );
-}
-
-export async function inputToWeztermPane(paneId: string, content: string): Promise<void> {
-  // Split long content into chunks and send each in order (no focus change),
-  // mirroring the tmux backend. The --auto-send Enter is sent separately by the
-  // caller after all chunks, so it fires only once.
-  const chunks = splitByByteSize(content, WEZTERM_SEND_CHUNK_BYTES);
-  for (const chunk of chunks) {
-    await sendTextChunk(paneId, chunk);
-  }
-  logger.debug("Content sent to wezterm pane: {paneId} ({chunks} chunk(s))", {
-    paneId,
-    chunks: chunks.length,
-  });
 }

@@ -4,22 +4,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { REX_SEND_CHUNK_BYTES } from "../../src/config/constants";
 import { conf } from "../../src/modules/conf";
+import { rexBackend } from "../../src/backends/rex";
+import { sendContentToPane, sendKeyToPane } from "../../src/core/delivery";
 import {
-  appendToQuoteText,
-  checkPaneExists,
-  clearEditorPaneId,
-  clearQuoteText,
-  focusPane,
-  getCurrentPaneId,
+  clearEditorLink,
   getEditorPaneId,
-  getQuoteText,
   getTargetPaneIds,
-  inputToRexPane,
-  isEditorPaneFromConf,
+  isEditorPane,
   markAsEditorPane,
-  resumeEditorPane,
-  sendKeyToRexPane,
-} from "../../src/modules/rex";
+} from "../../src/core/link";
+import { appendQuote } from "../../src/core/quote";
+import { switchEditorFocus } from "../../src/core/resume";
+import { checkPaneExists, focusPane, getCurrentPaneId } from "../../src/modules/rex";
 
 const SESSION = "session:01a18b8b-f941-77a1-a135-5b96ea5827fb";
 const EDITOR_PANE = "block:01a18b8b-f942-717a-b4c5-f2f397bf64cb";
@@ -138,8 +134,8 @@ describe("Rex pane API", () => {
 
   test("never asks the CLI to autostart a server", async () => {
     await focusPane(TARGET_PANE);
-    await sendKeyToRexPane(TARGET_PANE, "enter", 0);
-    await inputToRexPane(TARGET_PANE, "hello");
+    await sendKeyToPane(rexBackend, TARGET_PANE, "enter", 0);
+    await sendContentToPane(rexBackend, TARGET_PANE, "hello");
 
     for (const call of await calls()) {
       expect(call.args).toContain("--autostart=false");
@@ -158,7 +154,7 @@ describe("Rex pane API", () => {
 
   test("sends text on standard input without shell escaping", async () => {
     const content = `it's "quoted" $(whoami) \`id\` ;rm -rf / \\n`;
-    await inputToRexPane(TARGET_PANE, content);
+    await sendContentToPane(rexBackend, TARGET_PANE, content);
 
     const [call] = await calls();
     expect(call?.args).toEqual(["--autostart=false", "send", "-b", TARGET_PANE]);
@@ -167,7 +163,7 @@ describe("Rex pane API", () => {
 
   test("splits text across requests below the control API's limit", async () => {
     const content = "a".repeat(REX_SEND_CHUNK_BYTES + 100);
-    await inputToRexPane(TARGET_PANE, content);
+    await sendContentToPane(rexBackend, TARGET_PANE, content);
 
     const sent = await calls();
     expect(sent).toHaveLength(2);
@@ -177,11 +173,11 @@ describe("Rex pane API", () => {
 
   test("reports which command failed and why", async () => {
     await failNextCalls();
-    expect(inputToRexPane(TARGET_PANE, "hello")).rejects.toThrow("exited with 3");
+    expect(sendContentToPane(rexBackend, TARGET_PANE, "hello")).rejects.toThrow("exited with 3");
   });
 
   test("sends a key through send-key", async () => {
-    await sendKeyToRexPane(TARGET_PANE, "enter", 0);
+    await sendKeyToPane(rexBackend, TARGET_PANE, "enter", 0);
 
     const [call] = await calls();
     expect(call?.args).toEqual(["--autostart=false", "send-key", "-b", TARGET_PANE, "enter"]);
@@ -190,43 +186,43 @@ describe("Rex pane API", () => {
 
 describe("Rex editor state", () => {
   test("registers an editor pane with unique target panes", async () => {
-    await markAsEditorPane(EDITOR_PANE, [TARGET_PANE, TARGET_PANE]);
+    await markAsEditorPane(rexBackend, EDITOR_PANE, [TARGET_PANE, TARGET_PANE]);
 
-    expect(isEditorPaneFromConf(EDITOR_PANE)).toBe(true);
-    expect(isEditorPaneFromConf(TARGET_PANE)).toBe(false);
-    expect(await getTargetPaneIds(EDITOR_PANE)).toEqual([TARGET_PANE]);
-    expect(await getEditorPaneId(TARGET_PANE)).toBe(EDITOR_PANE);
+    expect(await isEditorPane(rexBackend, EDITOR_PANE)).toBe(true);
+    expect(await isEditorPane(rexBackend, TARGET_PANE)).toBe(false);
+    expect(await getTargetPaneIds(rexBackend, EDITOR_PANE)).toEqual([TARGET_PANE]);
+    expect(await getEditorPaneId(rexBackend, TARGET_PANE)).toBe(EDITOR_PANE);
   });
 
   test("clears editor state while preserving quote text", async () => {
-    await markAsEditorPane(EDITOR_PANE, [TARGET_PANE]);
-    await appendToQuoteText(TARGET_PANE, "> foo\n\n");
+    await markAsEditorPane(rexBackend, EDITOR_PANE, [TARGET_PANE]);
+    await appendQuote(rexBackend, TARGET_PANE, "> foo\n\n");
 
-    await clearEditorPaneId(TARGET_PANE);
+    await clearEditorLink(rexBackend, TARGET_PANE);
 
-    expect(await getEditorPaneId(TARGET_PANE)).toBe("");
-    expect(isEditorPaneFromConf(EDITOR_PANE)).toBe(false);
-    expect(await getQuoteText(TARGET_PANE)).toBe("> foo\n\n");
+    expect(await getEditorPaneId(rexBackend, TARGET_PANE)).toBe("");
+    expect(await isEditorPane(rexBackend, EDITOR_PANE)).toBe(false);
+    expect(await rexBackend.state.getQuote(TARGET_PANE)).toBe("> foo\n\n");
   });
 
   test("appends and clears quote text while preserving editor state", async () => {
-    await markAsEditorPane(EDITOR_PANE, [TARGET_PANE]);
-    await appendToQuoteText(TARGET_PANE, "> foo");
-    await appendToQuoteText(TARGET_PANE, "> bar");
+    await markAsEditorPane(rexBackend, EDITOR_PANE, [TARGET_PANE]);
+    await appendQuote(rexBackend, TARGET_PANE, "> foo");
+    await appendQuote(rexBackend, TARGET_PANE, "> bar");
 
-    expect(await getQuoteText(TARGET_PANE)).toBe("> foo\n\n> bar");
+    expect(await rexBackend.state.getQuote(TARGET_PANE)).toBe("> foo\n\n> bar");
 
-    await clearQuoteText(TARGET_PANE);
+    await rexBackend.state.removeQuote(TARGET_PANE);
 
-    expect(await getQuoteText(TARGET_PANE)).toBe("");
-    expect(await getEditorPaneId(TARGET_PANE)).toBe(EDITOR_PANE);
+    expect(await rexBackend.state.getQuote(TARGET_PANE)).toBe("");
+    expect(await getEditorPaneId(rexBackend, TARGET_PANE)).toBe(EDITOR_PANE);
   });
 
   test("resumes the editor pane from its target pane", async () => {
-    await markAsEditorPane(EDITOR_PANE, [TARGET_PANE]);
+    await markAsEditorPane(rexBackend, EDITOR_PANE, [TARGET_PANE]);
     process.env.REX_BLOCK = TARGET_PANE;
 
-    expect(await resumeEditorPane(TARGET_PANE)).toBe(true);
+    expect(await switchEditorFocus(rexBackend, TARGET_PANE)).toBe(true);
 
     const focused = (await calls()).filter((call) => call.args.includes("focus"));
     expect(focused).toHaveLength(1);
@@ -234,9 +230,9 @@ describe("Rex editor state", () => {
   });
 
   test("resumes back to the target pane from the editor pane", async () => {
-    await markAsEditorPane(EDITOR_PANE, [TARGET_PANE]);
+    await markAsEditorPane(rexBackend, EDITOR_PANE, [TARGET_PANE]);
 
-    expect(await resumeEditorPane(TARGET_PANE)).toBe(true);
+    expect(await switchEditorFocus(rexBackend, TARGET_PANE)).toBe(true);
 
     const focused = (await calls()).filter((call) => call.args.includes("focus"));
     expect(focused).toHaveLength(1);
@@ -244,16 +240,16 @@ describe("Rex editor state", () => {
   });
 
   test("forgets an editor pane that no longer exists", async () => {
-    await markAsEditorPane(EDITOR_PANE, [TARGET_PANE]);
+    await markAsEditorPane(rexBackend, EDITOR_PANE, [TARGET_PANE]);
     process.env.REX_BLOCK = TARGET_PANE;
     await failNextCalls();
 
-    expect(await resumeEditorPane(TARGET_PANE)).toBe(false);
-    expect(await getEditorPaneId(TARGET_PANE)).toBe("");
+    expect(await switchEditorFocus(rexBackend, TARGET_PANE)).toBe(false);
+    expect(await getEditorPaneId(rexBackend, TARGET_PANE)).toBe("");
   });
 
   test("returns false when no editor pane is registered", async () => {
-    expect(await resumeEditorPane(TARGET_PANE)).toBe(false);
+    expect(await switchEditorFocus(rexBackend, TARGET_PANE)).toBe(false);
     expect(await calls()).toHaveLength(0);
   });
 });

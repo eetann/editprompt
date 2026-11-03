@@ -3,27 +3,26 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { herdrBackend } from "../../src/backends/herdr";
 import { HERDR_SEND_CHUNK_BYTES } from "../../src/config/constants";
 import { conf } from "../../src/modules/conf";
+import { herdrBackend } from "../../src/backends/herdr";
+import { sendContentToPane, sendKeyToPane } from "../../src/core/delivery";
 import {
-  appendToQuoteText,
+  clearEditorLink,
+  getEditorPaneId,
+  getTargetPaneIds,
+  isEditorPane,
+  markAsEditorPane,
+} from "../../src/core/link";
+import { appendQuote } from "../../src/core/quote";
+import { switchEditorFocus } from "../../src/core/resume";
+import {
   calculateEditorSplitRatio,
   checkPaneExists,
   closePane,
-  clearEditorPaneId,
-  clearQuoteText,
   focusPane,
   getCurrentPaneId,
-  getEditorPaneId,
-  getQuoteText,
-  getTargetPaneIds,
-  inputToHerdrPane,
-  isEditorPaneFromConf,
-  markAsEditorPane,
-  resumeEditorPane,
   runCommandInPane,
-  sendKeyToHerdrPane,
   splitEditorPane,
 } from "../../src/modules/herdr";
 
@@ -159,8 +158,8 @@ describe("Herdr pane API", () => {
     const requests = await startServer(() => ({ result: { type: "ok" } }));
     const content = "hello 'herdr'\n日本語";
 
-    await inputToHerdrPane("w1:p2", content);
-    await sendKeyToHerdrPane("w1:p2", "enter", 0);
+    await sendContentToPane(herdrBackend, "w1:p2", content);
+    await sendKeyToPane(herdrBackend, "w1:p2", "enter", 0);
 
     expect(requests[0]).toMatchObject({
       method: "pane.send_text",
@@ -176,7 +175,7 @@ describe("Herdr pane API", () => {
     const requests = await startServer(() => ({ result: { type: "ok" } }));
     const content = `先頭${"a".repeat(HERDR_SEND_CHUNK_BYTES)}末尾`;
 
-    await inputToHerdrPane("w1:p2", content);
+    await sendContentToPane(herdrBackend, "w1:p2", content);
 
     expect(requests.length).toBeGreaterThan(1);
     expect(requests.every((request) => request.method === "pane.send_text")).toBe(true);
@@ -277,58 +276,58 @@ describe("Herdr pane API", () => {
 
 describe("Herdr editor state", () => {
   test("registers an editor pane with unique target panes", async () => {
-    await markAsEditorPane("w1:p3", ["w1:p1", "w1:p2", "w1:p1"]);
+    await markAsEditorPane(herdrBackend, "w1:p3", ["w1:p1", "w1:p2", "w1:p1"]);
 
-    expect(isEditorPaneFromConf("w1:p3")).toBe(true);
-    expect(await getTargetPaneIds("w1:p3")).toEqual(["w1:p1", "w1:p2"]);
-    expect(await getEditorPaneId("w1:p1")).toBe("w1:p3");
-    expect(await getEditorPaneId("w1:p2")).toBe("w1:p3");
+    expect(await isEditorPane(herdrBackend, "w1:p3")).toBe(true);
+    expect(await getTargetPaneIds(herdrBackend, "w1:p3")).toEqual(["w1:p1", "w1:p2"]);
+    expect(await getEditorPaneId(herdrBackend, "w1:p1")).toBe("w1:p3");
+    expect(await getEditorPaneId(herdrBackend, "w1:p2")).toBe("w1:p3");
   });
 
   test("clears editor state while preserving quote text", async () => {
-    await markAsEditorPane("w1:p3", ["w1:p1"]);
-    await appendToQuoteText("w1:p1", "> quote\n\n");
+    await markAsEditorPane(herdrBackend, "w1:p3", ["w1:p1"]);
+    await appendQuote(herdrBackend, "w1:p1", "> quote\n\n");
 
-    await clearEditorPaneId("w1:p1");
+    await clearEditorLink(herdrBackend, "w1:p1");
 
-    expect(isEditorPaneFromConf("w1:p3")).toBe(false);
-    expect(await getEditorPaneId("w1:p1")).toBe("");
-    expect(await getQuoteText("w1:p1")).toBe("> quote\n\n");
+    expect(await isEditorPane(herdrBackend, "w1:p3")).toBe(false);
+    expect(await getEditorPaneId(herdrBackend, "w1:p1")).toBe("");
+    expect(await herdrBackend.state.getQuote("w1:p1")).toBe("> quote\n\n");
   });
 
   test("does not clear a newer editor registration when an older editor exits", async () => {
-    await markAsEditorPane("w1:p2", ["w1:p1"]);
-    await markAsEditorPane("w1:p3", ["w1:p1"]);
+    await markAsEditorPane(herdrBackend, "w1:p2", ["w1:p1"]);
+    await markAsEditorPane(herdrBackend, "w1:p3", ["w1:p1"]);
 
-    await clearEditorPaneId("w1:p1", "w1:p2");
+    await clearEditorLink(herdrBackend, "w1:p1", "w1:p2");
 
-    expect(isEditorPaneFromConf("w1:p2")).toBe(false);
-    expect(isEditorPaneFromConf("w1:p3")).toBe(true);
-    expect(await getEditorPaneId("w1:p1")).toBe("w1:p3");
+    expect(await isEditorPane(herdrBackend, "w1:p2")).toBe(false);
+    expect(await isEditorPane(herdrBackend, "w1:p3")).toBe(true);
+    expect(await getEditorPaneId(herdrBackend, "w1:p1")).toBe("w1:p3");
   });
 
   test("appends and clears quote text while preserving editor state", async () => {
-    await markAsEditorPane("w1:p3", ["w1:p1"]);
+    await markAsEditorPane(herdrBackend, "w1:p3", ["w1:p1"]);
 
-    await appendToQuoteText("w1:p1", "> first\n\n");
-    await appendToQuoteText("w1:p1", "> second\n\n");
+    await appendQuote(herdrBackend, "w1:p1", "> first\n\n");
+    await appendQuote(herdrBackend, "w1:p1", "> second\n\n");
 
-    expect(await getQuoteText("w1:p1")).toBe("> first\n\n\n\n> second\n\n");
+    expect(await herdrBackend.state.getQuote("w1:p1")).toBe("> first\n\n\n\n> second\n\n");
 
-    await clearQuoteText("w1:p1");
+    await herdrBackend.state.removeQuote("w1:p1");
 
-    expect(await getQuoteText("w1:p1")).toBe("");
-    expect(await getEditorPaneId("w1:p1")).toBe("w1:p3");
+    expect(await herdrBackend.state.getQuote("w1:p1")).toBe("");
+    expect(await getEditorPaneId(herdrBackend, "w1:p1")).toBe("w1:p3");
   });
 
   test("isolates editor state between Herdr sessions", async () => {
     process.env.HERDR_SOCKET_PATH = "/tmp/herdr-session-a.sock";
-    await markAsEditorPane("w1:p3", ["w1:p1"]);
+    await markAsEditorPane(herdrBackend, "w1:p3", ["w1:p1"]);
 
     process.env.HERDR_SOCKET_PATH = "/tmp/herdr-session-b.sock";
 
-    expect(isEditorPaneFromConf("w1:p3")).toBe(false);
-    expect(await getEditorPaneId("w1:p1")).toBe("");
+    expect(await isEditorPane(herdrBackend, "w1:p3")).toBe(false);
+    expect(await getEditorPaneId(herdrBackend, "w1:p1")).toBe("");
   });
 
   test("resumes a registered editor pane from its target pane", async () => {
@@ -339,9 +338,9 @@ describe("Herdr editor state", () => {
       }
       return { result: { type: "ok" } };
     });
-    await markAsEditorPane("w1:p2", ["w1:p1"]);
+    await markAsEditorPane(herdrBackend, "w1:p2", ["w1:p1"]);
 
-    expect(await resumeEditorPane("w1:p1")).toBe(true);
+    expect(await switchEditorFocus(herdrBackend, "w1:p1")).toBe(true);
     expect(requests.map((request) => request.method)).toEqual(["pane.get", "pane.focus"]);
     expect(requests[1]?.params).toEqual({ pane_id: "w1:p2" });
   });
@@ -349,6 +348,6 @@ describe("Herdr editor state", () => {
   test("returns false when no editor pane is registered", async () => {
     process.env.HERDR_PANE_ID = "w1:p1";
 
-    expect(await resumeEditorPane("w1:p1")).toBe(false);
+    expect(await switchEditorFocus(herdrBackend, "w1:p1")).toBe(false);
   });
 });
