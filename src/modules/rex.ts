@@ -105,3 +105,10 @@ export async function sendTextChunk(paneId: string, chunk: string): Promise<void
 export async function sendKey(paneId: string, key: string): Promise<void> {
   await runRex(["send-key", "-b", paneId, key]);
 }
+
+export function logContentSent(paneId: string, chunkCount: number): void {
+  logger.debug("Content sent to Rex pane: {paneId} ({chunks} chunk(s))", {
+    paneId,
+    chunks: chunkCount,
+  });
+}

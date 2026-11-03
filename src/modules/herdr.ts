@@ -227,3 +227,10 @@ export async function sendTextChunk(paneId: string, chunk: string): Promise<void
 export async function sendKey(paneId: string, key: string): Promise<void> {
   await sendRequest("pane.send_keys", { pane_id: paneId, keys: [key] });
 }
+
+export function logContentSent(paneId: string, chunkCount: number): void {
+  logger.debug("Content sent to Herdr pane: {paneId} ({chunkCount} chunks)", {
+    paneId,
+    chunkCount: chunkCount,
+  });
+}

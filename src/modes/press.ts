@@ -18,7 +18,7 @@ export async function runPressMode(key: string, delay = 0): Promise<void> {
 
   const config = readSendConfig();
   const backend = getBackend(config.mux);
-  const { targetPaneIds } = await requireEditorContext(backend);
+  const { targetPaneIds } = await requireEditorContext(backend, logger);
 
   let successCount = 0;
   for (const targetPane of targetPaneIds) {

@@ -12,6 +12,7 @@ export const tmuxBackend = defineBackend({
   beforeSendText: (paneId) => tmux.exitCopyMode(paneId),
   sendText: (paneId, chunk) => tmux.sendTextChunk(paneId, chunk),
   sendKey: (paneId, key) => tmux.sendKey(paneId, key),
+  logContentSent: (paneId, chunkCount) => tmux.logContentSent(paneId, chunkCount),
   maxChunkBytes: TMUX_SEND_CHUNK_BYTES,
   defaultSubmitKey: "C-m",
   quoteSeparator: "\n",

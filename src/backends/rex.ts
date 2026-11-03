@@ -12,6 +12,7 @@ export const rexBackend = defineBackend({
   focusPane: (paneId) => rex.focusPane(paneId),
   sendText: (paneId, chunk) => rex.sendTextChunk(paneId, chunk),
   sendKey: (paneId, key) => rex.sendKey(paneId, key),
+  logContentSent: (paneId, chunkCount) => rex.logContentSent(paneId, chunkCount),
   maxChunkBytes: REX_SEND_CHUNK_BYTES,
   defaultSubmitKey: "enter",
   quoteSeparator: "\n\n",

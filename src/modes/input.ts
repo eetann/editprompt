@@ -31,7 +31,7 @@ export async function runInputMode(
 
   const config = readSendConfig();
   const backend = getBackend(config.mux);
-  const { targetPaneIds: targetPanes } = await requireEditorContext(backend);
+  const { targetPaneIds: targetPanes } = await requireEditorContext(backend, logger);
 
   // Auto-send mode
   if (autoSend) {

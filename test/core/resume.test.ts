@@ -66,4 +66,23 @@ describe("switchEditorFocus", () => {
 
     expect(await switchEditorFocus(backend, "t1")).toBe(false);
   });
+
+  test("traces each step when asked to", async () => {
+    const backend = createFakeBackend();
+    await markAsEditorPane(backend, "editor", ["t1"]);
+    backend.currentPaneId = "t1";
+    const messages: string[] = [];
+
+    expect(await switchEditorFocus(backend, "t1", (message) => messages.push(message))).toBe(false);
+    expect(messages).toEqual([
+      "Current pane is not an editor pane",
+      "fake editorPaneId: {editorPaneId}",
+      "Editor pane does not exist",
+    ]);
+
+    messages.length = 0;
+    backend.currentPaneId = "editor";
+    expect(await switchEditorFocus(backend, "t1", (message) => messages.push(message))).toBe(false);
+    expect(messages).toEqual(["Current pane is an editor pane", "All target panes do not exist"]);
+  });
 });

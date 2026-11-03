@@ -1,4 +1,4 @@
-import { getLogger } from "@logtape/logtape";
+import type { Logger } from "@logtape/logtape";
 import type { MuxBackend } from "../backends/types";
 import { type EditorContext, EditorContextError, resolveEditorContext } from "../core/link";
 
@@ -10,13 +10,15 @@ export {
   handleContentDelivery,
 } from "../core/delivery";
 
-const logger = getLogger(["editprompt"]);
-
 /**
  * Resolves the editor pane and its target panes for commands that run inside
- * an editor pane, exiting with an error when there are none.
+ * an editor pane, exiting with an error (logged to the command's logger) when
+ * there are none.
  */
-export async function requireEditorContext(backend: MuxBackend): Promise<EditorContext> {
+export async function requireEditorContext(
+  backend: MuxBackend,
+  logger: Logger,
+): Promise<EditorContext> {
   try {
     return await resolveEditorContext(backend);
   } catch (error) {

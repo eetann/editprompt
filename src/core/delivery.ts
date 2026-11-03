@@ -31,11 +31,15 @@ export async function sendContentToPane(
   for (const chunk of chunks) {
     await backend.sendText(paneId, chunk);
   }
-  logger.debug("Content sent to {backend} pane: {paneId} ({chunks} chunk(s))", {
-    backend: backend.name,
-    paneId,
-    chunks: chunks.length,
-  });
+  if (backend.logContentSent) {
+    backend.logContentSent(paneId, chunks.length);
+  } else {
+    logger.debug("Content sent to {backend} pane: {paneId} ({chunks} chunk(s))", {
+      backend: backend.name,
+      paneId,
+      chunks: chunks.length,
+    });
+  }
 }
 
 /**

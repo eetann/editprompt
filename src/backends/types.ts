@@ -90,6 +90,10 @@ export interface MuxBackend {
    * surface.
    */
   readonly quietResumeErrors?: "all" | "editorFocus";
+  /** Logs each step of `resume` at debug level, as WezTerm and niwaterm always have. */
+  readonly traceResume?: boolean;
+  /** Logs a finished delivery; when unset, core logs a generic message. */
+  logContentSent?(paneId: string, chunkCount: number): void;
 
   // --- State ---
   readonly state: PaneStateStore;

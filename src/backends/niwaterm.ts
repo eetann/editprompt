@@ -12,11 +12,13 @@ export const niwatermBackend = defineBackend({
   focusPane: (paneId) => niwaterm.focusPane(paneId),
   sendText: (paneId, chunk) => niwaterm.sendTextChunk(paneId, chunk),
   sendKey: (paneId, key) => niwaterm.sendKey(paneId, key),
+  logContentSent: (paneId, chunkCount) => niwaterm.logContentSent(paneId, chunkCount),
   maxChunkBytes: NIWATERM_SEND_CHUNK_BYTES,
   defaultSubmitKey: "C-m",
   quoteSeparator: "\n",
   collectInput: "argument",
   quietResumeErrors: "editorFocus",
+  traceResume: true,
   storageNamespace: () => "niwaterm",
   state: paneVariableStore(
     {

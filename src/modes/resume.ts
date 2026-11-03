@@ -23,7 +23,11 @@ export async function runResumeMode(targetPane: string, mux: MuxType): Promise<v
   const backend = getBackend(mux);
   let switched: boolean;
   try {
-    switched = await switchEditorFocus(backend, targetPane);
+    switched = await switchEditorFocus(
+      backend,
+      targetPane,
+      backend.traceResume ? (message, properties) => logger.debug(message, properties) : undefined,
+    );
   } catch (error) {
     const quiet =
       backend.quietResumeErrors === "all" ||

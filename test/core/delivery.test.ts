@@ -26,6 +26,20 @@ describe("content delivery", () => {
     ]);
   });
 
+  test("lets the backend log the finished delivery", async () => {
+    const logged: unknown[][] = [];
+    const backend = createFakeBackend("fake", {
+      maxChunkBytes: 4,
+      logContentSent: (paneId, chunkCount) => {
+        logged.push([paneId, chunkCount]);
+      },
+    });
+
+    await sendContentToPane(backend, "t1", "abcdefghij");
+
+    expect(logged).toEqual([["t1", 3]]);
+  });
+
   test("sends a key after the delay", async () => {
     const backend = createFakeBackend();
 

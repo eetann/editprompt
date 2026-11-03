@@ -1,7 +1,9 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { getLogger } from "@logtape/logtape";
 
 const execAsync = promisify(exec);
+const logger = getLogger(["editprompt", "tmux"]);
 
 export async function getCurrentPaneId(): Promise<string> {
   const envPaneId = process.env.TMUX_PANE?.trim();
@@ -53,4 +55,11 @@ export async function exitCopyMode(paneId: string): Promise<void> {
 
 export async function sendTextChunk(paneId: string, chunk: string): Promise<void> {
   await execAsync(`tmux send-keys -t '${paneId}' -- '${chunk.replace(/'/g, "'\\''")}'`);
+}
+
+export function logContentSent(paneId: string, chunkCount: number): void {
+  logger.debug("Content sent to tmux pane: {paneId} ({chunks} chunk(s))", {
+    paneId,
+    chunks: chunkCount,
+  });
 }

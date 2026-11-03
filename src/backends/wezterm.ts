@@ -12,11 +12,16 @@ export const weztermBackend = defineBackend({
   focusPane: (paneId) => wezterm.focusPane(paneId),
   sendText: (paneId, chunk) => wezterm.sendTextChunk(paneId, chunk),
   sendKey: (paneId, key) => wezterm.sendKey(paneId, key),
+  logContentSent: (paneId, chunkCount) => wezterm.logContentSent(paneId, chunkCount),
   maxChunkBytes: WEZTERM_SEND_CHUNK_BYTES,
   defaultSubmitKey: "\\r",
   quoteSeparator: "\n\n",
   collectInput: "argument",
   quietResumeErrors: "editorFocus",
+  traceResume: true,
   storageNamespace: () => "wezterm",
-  state: confStore(() => "wezterm", { wholeTargetRecord: true }),
+  state: confStore(() => "wezterm", {
+    wholeTargetRecord: true,
+    logCategory: ["editprompt", "wezterm"],
+  }),
 });

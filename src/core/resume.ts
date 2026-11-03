@@ -24,9 +24,12 @@ export class EditorFocusError extends Error {
  * target pane, focus its editor pane, forgetting the link when that pane is
  * gone. Returns false when there is nothing to switch to.
  */
+export type ResumeTrace = (message: string, properties?: Record<string, unknown>) => void;
+
 export async function switchEditorFocus(
   backend: MuxBackend,
   targetPaneId: string,
+  trace: ResumeTrace = () => {},
 ): Promise<boolean> {
   const currentPaneId = await backend.getCurrentPaneId();
   const editorPaneId = (await backend.state.isEditorPane(currentPaneId))
@@ -36,20 +39,31 @@ export async function switchEditorFocus(
       : "";
 
   if (editorPaneId) {
-    for (const paneId of await backend.state.getTargetPaneIds(editorPaneId)) {
+    trace("Current pane is an editor pane");
+    const targetPaneIds = await backend.state.getTargetPaneIds(editorPaneId);
+    if (targetPaneIds.length === 0) {
+      trace("No target pane IDs found for editor pane");
+      return false;
+    }
+    for (const paneId of targetPaneIds) {
       if (await backend.paneExists(paneId)) {
         await backend.focusPane(paneId);
         return true;
       }
     }
+    trace("All target panes do not exist");
     return false;
   }
+  trace("Current pane is not an editor pane");
 
   const registeredEditorPaneId = await backend.state.getEditorPaneId(targetPaneId);
+  trace(`${backend.name} editorPaneId: {editorPaneId}`, { editorPaneId: registeredEditorPaneId });
   if (registeredEditorPaneId === "") {
+    trace("Editor pane ID not found");
     return false;
   }
   if (!(await backend.paneExists(registeredEditorPaneId))) {
+    trace("Editor pane does not exist");
     await clearEditorLink(backend, targetPaneId);
     return false;
   }

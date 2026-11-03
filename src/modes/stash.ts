@@ -96,7 +96,7 @@ async function getTargetPaneForStash(): Promise<{
   targetPaneId: string;
 }> {
   const config = readSendConfig();
-  const { targetPaneIds } = await requireEditorContext(getBackend(config.mux));
+  const { targetPaneIds } = await requireEditorContext(getBackend(config.mux), logger);
 
   // Use the first target pane
   return { mux: config.mux, targetPaneId: targetPaneIds[0] as string };

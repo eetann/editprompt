@@ -1,8 +1,6 @@
-import { getLogger } from "@logtape/logtape";
+import { getLogger, type Logger } from "@logtape/logtape";
 import { conf } from "../modules/conf";
 import type { PaneStateStore } from "./types";
-
-const logger = getLogger(["editprompt", "state"]);
 
 /** Reads and writes one variable on one pane. */
 export interface PaneVariableIO {
@@ -87,10 +85,13 @@ export interface ConfStoreOptions {
    * always has: linking an editor pane replaces the record, unlinking deletes
    * it (the quote buffer included), and clearing the quote only deletes the
    * `quote_text` field, leaving an empty record behind. Failures are logged
-   * at debug level and swallowed. Kept so that WezTerm behaves exactly as
+   * at debug level, under `logCategory` and the WezTerm module's original
+   * function names, and swallowed. Kept so that WezTerm behaves exactly as
    * before; new backends should not set it.
    */
   wholeTargetRecord?: boolean;
+  /** Logger category for wholeTargetRecord's debug logs. */
+  logCategory?: readonly string[];
 }
 
 /**
@@ -146,9 +147,16 @@ export function confStore(namespace: () => string, options: ConfStoreOptions = {
   if (!options.wholeTargetRecord) {
     return store;
   }
-  return swallowErrors({
+  const logger = getLogger([...(options.logCategory ?? ["editprompt", "state"])]);
+  return swallowErrors(logger, {
     ...store,
     setEditorPaneId: async (targetPaneId, editorPaneId) => {
+      logger.debug(
+        `Saving editor pane ID to conf key: ${namespace()}.targetPane.pane_{targetPaneId}`,
+        {
+          targetPaneId,
+        },
+      );
       conf.set(targetKey(targetPaneId), { editorPaneId });
     },
     removeEditorPaneId: async (targetPaneId) => {
@@ -176,7 +184,21 @@ const FAILURE_RESULTS: { [K in keyof PaneStateStore]: Awaited<ReturnType<PaneSta
   removeQuote: undefined,
 };
 
-function swallowErrors(store: PaneStateStore): PaneStateStore {
+// The WezTerm module's function names, used in its failure logs.
+const LEGACY_METHOD_NAMES: { [K in keyof PaneStateStore]: string } = {
+  getEditorPaneId: "getEditorPaneId",
+  setEditorPaneId: "saveEditorPaneId",
+  removeEditorPaneId: "clearEditorPaneId",
+  isEditorPane: "isEditorPaneFromConf",
+  getTargetPaneIds: "getTargetPaneIds",
+  setTargetPaneIds: "markAsEditorPane",
+  removeEditorPane: "clearEditorPaneId",
+  getQuote: "getQuoteText",
+  setQuote: "appendToQuoteText",
+  removeQuote: "clearQuoteText",
+};
+
+function swallowErrors(logger: Logger, store: PaneStateStore): PaneStateStore {
   const wrapped = {} as Record<string, unknown>;
   for (const method of Object.keys(FAILURE_RESULTS) as (keyof PaneStateStore)[]) {
     const call = store[method] as (...args: string[]) => Promise<unknown>;
@@ -184,7 +206,7 @@ function swallowErrors(store: PaneStateStore): PaneStateStore {
       try {
         return await call(...args);
       } catch (error) {
-        logger.debug("{method} failed: {error}", { method, error });
+        logger.debug(`${LEGACY_METHOD_NAMES[method]} failed: {error}`, { error });
         return FAILURE_RESULTS[method];
       }
     };

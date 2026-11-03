@@ -12,6 +12,7 @@ export const herdrBackend = defineBackend({
   focusPane: (paneId) => herdr.focusPane(paneId),
   sendText: (paneId, chunk) => herdr.sendTextChunk(paneId, chunk),
   sendKey: (paneId, key) => herdr.sendKey(paneId, key),
+  logContentSent: (paneId, chunkCount) => herdr.logContentSent(paneId, chunkCount),
   maxChunkBytes: HERDR_SEND_CHUNK_BYTES,
   defaultSubmitKey: "enter",
   quoteSeparator: "\n\n",

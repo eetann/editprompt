@@ -49,3 +49,10 @@ export async function sendTextChunk(paneId: string, chunk: string): Promise<void
     `wezterm cli send-text --no-paste --pane-id '${paneId}' -- '${chunk.replace(/'/g, "'\\''")}'`,
   );
 }
+
+export function logContentSent(paneId: string, chunkCount: number): void {
+  logger.debug("Content sent to wezterm pane: {paneId} ({chunks} chunk(s))", {
+    paneId,
+    chunks: chunkCount,
+  });
+}

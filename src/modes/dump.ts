@@ -14,7 +14,7 @@ export async function runDumpMode(): Promise<void> {
     // Get config from environment variables
     const config = readSendConfig();
     const backend = getBackend(config.mux);
-    const { targetPaneIds } = await requireEditorContext(backend);
+    const { targetPaneIds } = await requireEditorContext(backend, logger);
 
     // Get and clear quote content from all target panes
     const quoteContents: string[] = [];
