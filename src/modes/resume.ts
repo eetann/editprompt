@@ -32,7 +32,15 @@ export async function runResumeMode(targetPane: string, mux: MuxType): Promise<v
       // Surface the backend's own error, as resume always has for this backend.
       throw error instanceof EditorFocusError ? error.cause : error;
     }
-    logger.debug("Resume failed: {error}", { error });
+    if (error instanceof EditorFocusError) {
+      logger.debug("Can't focus editorPaneId: {editorPaneId}, error: {error}", {
+        editorPaneId: error.editorPaneId,
+        error: error.cause,
+      });
+    } else {
+      const label = backend.name.charAt(0).toUpperCase() + backend.name.slice(1);
+      logger.debug(`${label} resume failed: {error}`, { error });
+    }
     process.exit(1);
   }
   process.exit(switched ? 0 : 1);
