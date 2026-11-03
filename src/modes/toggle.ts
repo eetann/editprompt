@@ -1,6 +1,8 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
-import * as herdr from "../modules/herdr";
+import { getBackend } from "../backends/registry";
+import { canSplitPane, type MuxBackend } from "../backends/types";
+import { switchEditorFocus } from "../core/resume";
 import { setupLogger } from "../modules/logger";
 import type { MuxType } from "../utils/mux";
 import {
@@ -36,11 +38,6 @@ export interface ToggleModeOptions {
   verbose: boolean;
   invocation?: EditpromptInvocation;
 }
-
-type ToggleHerdrApi = Pick<
-  typeof herdr,
-  "closePane" | "resumeEditorPane" | "runCommandInPane" | "splitEditorPane"
->;
 
 export function buildOpenEditorArgv(options: ToggleModeOptions): string[] {
   const invocation = options.invocation ?? {
@@ -83,16 +80,18 @@ export function buildOpenEditorArgv(options: ToggleModeOptions): string[] {
 
 export async function runToggleMode(
   options: ToggleModeOptions,
-  herdrApi: ToggleHerdrApi = herdr,
+  backend: MuxBackend = getBackend(options.mux),
 ): Promise<void> {
-  if (options.mux !== "herdr") {
-    throw new Error("toggle currently supports only the Herdr multiplexer");
+  if (!canSplitPane(backend)) {
+    throw new Error(
+      `toggle is not supported by the '${backend.name}' multiplexer because it cannot split panes`,
+    );
   }
   if (!Number.isInteger(options.paneRows) || options.paneRows <= 0) {
     throw new Error("--pane-rows must be a positive integer");
   }
 
-  if (await herdrApi.resumeEditorPane(options.targetPane)) {
+  if (await switchEditorFocus(backend, options.targetPane)) {
     return;
   }
 
@@ -103,17 +102,15 @@ export async function runToggleMode(
     launchEnv.NODE_NO_WARNINGS = process.env.NODE_NO_WARNINGS;
   }
 
-  const editorPaneId = await herdrApi.splitEditorPane(
-    options.targetPane,
-    options.paneRows,
-    process.env.HERDR_ACTIVE_PANE_CWD,
-    launchEnv,
-  );
+  const editorPaneId = await backend.splitPane(options.targetPane, {
+    rows: options.paneRows,
+    env: launchEnv,
+  });
   try {
-    await herdrApi.runCommandInPane(editorPaneId, buildOpenEditorArgv(options));
+    await backend.runInPane(editorPaneId, buildOpenEditorArgv(options));
   } catch (error) {
     try {
-      await herdrApi.closePane(editorPaneId);
+      await backend.closePane(editorPaneId);
     } catch (closeError) {
       logger.warn("Failed to close editor pane after launch failure: {error}", {
         error: closeError,
@@ -130,7 +127,7 @@ export const toggleCommand = define({
     mux: ARG_MUX,
     "target-pane": ARG_TARGET_PANE_SINGLE,
     "pane-rows": {
-      description: "Desired rows for the Herdr editor pane",
+      description: "Desired rows for the editor pane",
       type: "number",
       default: DEFAULT_EDITOR_PANE_ROWS,
     },

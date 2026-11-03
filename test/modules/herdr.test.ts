@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { herdrBackend } from "../../src/backends/herdr";
 import { HERDR_SEND_CHUNK_BYTES } from "../../src/config/constants";
 import { conf } from "../../src/modules/conf";
 import {
@@ -228,6 +229,24 @@ describe("Herdr pane API", () => {
         env: { NODE_NO_WARNINGS: "1" },
       },
     });
+  });
+
+  test("splits from the backend in the active pane's working directory", async () => {
+    process.env.HERDR_ACTIVE_PANE_CWD = "/repo";
+    const requests = await startServer((request) => {
+      if (request.method === "pane.layout") {
+        return {
+          result: {
+            type: "pane_layout",
+            layout: { panes: [{ pane_id: "w1:p1", rect: { height: 65 } }] },
+          },
+        };
+      }
+      return { result: { type: "pane_info", pane: { pane_id: "w1:p2" } } };
+    });
+
+    expect(await herdrBackend.splitPane("w1:p1", { rows: 12, env: {} })).toBe("w1:p2");
+    expect(requests[1]).toMatchObject({ method: "pane.split", params: { cwd: "/repo" } });
   });
 
   test("runs an argv command safely and closes panes through the socket API", async () => {
