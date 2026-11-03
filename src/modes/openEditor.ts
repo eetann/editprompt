@@ -40,9 +40,8 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
 
   if (options.targetPanes.length > 0) {
     try {
-      const currentPaneId = await backend.getCurrentPaneId();
-      await markAsEditorPane(backend, currentPaneId, options.targetPanes);
-      editorPaneId = currentPaneId;
+      editorPaneId = await backend.getCurrentPaneId();
+      await markAsEditorPane(backend, editorPaneId, options.targetPanes);
     } catch {
       //
     }
@@ -93,10 +92,11 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
   } finally {
     if (options.targetPanes.length > 0) {
       try {
-        // Pass this editor's pane ID so that a newer editor registered on the
-        // same target pane meanwhile keeps its link.
+        // Where the backend asks for it, pass this editor's pane ID so that a
+        // newer editor registered on the same target pane keeps its link.
+        const expectedEditorPaneId = backend.keepNewerEditorLink ? editorPaneId : undefined;
         for (const targetPane of options.targetPanes) {
-          await clearEditorLink(backend, targetPane, editorPaneId);
+          await clearEditorLink(backend, targetPane, expectedEditorPaneId);
         }
       } catch {
         //

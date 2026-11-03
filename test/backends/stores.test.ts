@@ -130,3 +130,46 @@ describe("confStore", () => {
     expect(await store.getEditorPaneId("w1:p1")).toBe("w1:p2");
   });
 });
+
+describe("confStore with wholeTargetRecord (WezTerm)", () => {
+  test("replaces the target record when linking, dropping the quote", async () => {
+    const store = confStore(() => "wezterm", { wholeTargetRecord: true });
+    await store.setQuote("1", "> quote\n\n");
+
+    await store.setEditorPaneId("1", "3");
+
+    expect(conf.get("wezterm.targetPane.pane_1")).toEqual({ editorPaneId: "3" });
+  });
+
+  test("deletes the whole target record when unlinking", async () => {
+    const store = confStore(() => "wezterm", { wholeTargetRecord: true });
+    conf.set("wezterm.targetPane.pane_1", { editorPaneId: "3", quote_text: "> quote\n\n" });
+
+    await store.removeEditorPaneId("1");
+
+    expect(conf.has("wezterm.targetPane.pane_1")).toBe(false);
+  });
+
+  test("leaves an empty record behind when clearing the quote", async () => {
+    const store = confStore(() => "wezterm", { wholeTargetRecord: true });
+    conf.set("wezterm.targetPane.pane_1", { quote_text: "> quote\n\n" });
+
+    await store.removeQuote("1");
+
+    expect(conf.get("wezterm.targetPane.pane_1")).toEqual({});
+  });
+
+  test("swallows storage failures", async () => {
+    const store = confStore(
+      () => {
+        throw new Error("broken");
+      },
+      { wholeTargetRecord: true },
+    );
+
+    expect(await store.getEditorPaneId("1")).toBe("");
+    expect(await store.isEditorPane("1")).toBe(false);
+    expect(await store.getTargetPaneIds("1")).toEqual([]);
+    await store.setTargetPaneIds("1", ["2"]);
+  });
+});

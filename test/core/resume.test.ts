@@ -24,13 +24,23 @@ describe("switchEditorFocus", () => {
   });
 
   test("treats a target pane argument that is an editor pane as the editor", async () => {
-    const backend = createFakeBackend();
+    const backend = createFakeBackend("fake", { resumeAcceptsEditorPane: true });
     await markAsEditorPane(backend, "editor", ["t1"]);
     backend.currentPaneId = "elsewhere";
     backend.livePanes.add("t1");
 
     expect(await switchEditorFocus(backend, "editor")).toBe(true);
     expect(backend.calls).toEqual([["focusPane", "t1"]]);
+  });
+
+  test("ignores an editor pane passed as the target unless the backend allows it", async () => {
+    const backend = createFakeBackend();
+    await markAsEditorPane(backend, "editor", ["t1"]);
+    backend.currentPaneId = "elsewhere";
+    backend.livePanes.add("t1");
+
+    expect(await switchEditorFocus(backend, "editor")).toBe(false);
+    expect(backend.calls).toEqual([]);
   });
 
   test("returns false when no target pane of the editor is alive", async () => {

@@ -1,5 +1,8 @@
+import { getLogger } from "@logtape/logtape";
 import { conf } from "../modules/conf";
 import type { PaneStateStore } from "./types";
+
+const logger = getLogger(["editprompt", "state"]);
 
 /** Reads and writes one variable on one pane. */
 export interface PaneVariableIO {
@@ -78,6 +81,18 @@ function removeField(key: string, field: string): void {
   }
 }
 
+export interface ConfStoreOptions {
+  /**
+   * Write the target pane record as a whole, the way the WezTerm backend
+   * always has: linking an editor pane replaces the record, unlinking deletes
+   * it (the quote buffer included), and clearing the quote only deletes the
+   * `quote_text` field, leaving an empty record behind. Failures are logged
+   * at debug level and swallowed. Kept so that WezTerm behaves exactly as
+   * before; new backends should not set it.
+   */
+  wholeTargetRecord?: boolean;
+}
+
 /**
  * State kept in editprompt's Conf storage, for backends whose panes cannot hold
  * variables. The layout is:
@@ -88,11 +103,11 @@ function removeField(key: string, field: string): void {
  * The namespace is resolved on every access so that it can depend on the
  * environment (Herdr scopes it to the session socket).
  */
-export function confStore(namespace: () => string): PaneStateStore {
+export function confStore(namespace: () => string, options: ConfStoreOptions = {}): PaneStateStore {
   const targetKey = (paneId: string) => `${namespace()}.targetPane.pane_${paneId}`;
   const editorKey = (paneId: string) => `${namespace()}.editorPane.pane_${paneId}`;
 
-  return {
+  const store: PaneStateStore = {
     getEditorPaneId: async (targetPaneId) => {
       const data = readRecord(targetKey(targetPaneId));
       return data && "editorPaneId" in data ? String(data.editorPaneId) : "";
@@ -127,4 +142,52 @@ export function confStore(namespace: () => string): PaneStateStore {
       removeField(targetKey(targetPaneId), "quote_text");
     },
   };
+
+  if (!options.wholeTargetRecord) {
+    return store;
+  }
+  return swallowErrors({
+    ...store,
+    setEditorPaneId: async (targetPaneId, editorPaneId) => {
+      conf.set(targetKey(targetPaneId), { editorPaneId });
+    },
+    removeEditorPaneId: async (targetPaneId) => {
+      conf.delete(targetKey(targetPaneId));
+    },
+    removeQuote: async (targetPaneId) => {
+      const key = `${targetKey(targetPaneId)}.quote_text`;
+      if (conf.has(key)) {
+        conf.delete(key);
+      }
+    },
+  });
+}
+
+const FAILURE_RESULTS: { [K in keyof PaneStateStore]: Awaited<ReturnType<PaneStateStore[K]>> } = {
+  getEditorPaneId: "",
+  setEditorPaneId: undefined,
+  removeEditorPaneId: undefined,
+  isEditorPane: false,
+  getTargetPaneIds: [],
+  setTargetPaneIds: undefined,
+  removeEditorPane: undefined,
+  getQuote: "",
+  setQuote: undefined,
+  removeQuote: undefined,
+};
+
+function swallowErrors(store: PaneStateStore): PaneStateStore {
+  const wrapped = {} as Record<string, unknown>;
+  for (const method of Object.keys(FAILURE_RESULTS) as (keyof PaneStateStore)[]) {
+    const call = store[method] as (...args: string[]) => Promise<unknown>;
+    wrapped[method] = async (...args: string[]) => {
+      try {
+        return await call(...args);
+      } catch (error) {
+        logger.debug("{method} failed: {error}", { method, error });
+        return FAILURE_RESULTS[method];
+      }
+    };
+  }
+  return wrapped as unknown as PaneStateStore;
 }

@@ -16,6 +16,8 @@ export const herdrBackend = defineBackend({
   defaultSubmitKey: "enter",
   quoteSeparator: "\n\n",
   collectInput: "argument",
+  resumeAcceptsEditorPane: true,
+  keepNewerEditorLink: true,
   // Herdr pane IDs are only unique within one session, so the state is scoped
   // to the session socket.
   storageNamespace: () => herdr.getStorageNamespace(),

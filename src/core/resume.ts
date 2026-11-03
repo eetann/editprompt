@@ -5,7 +5,8 @@ import { clearEditorLink } from "./link";
  * Switches focus between an editor pane and its target panes.
  *
  * From an editor pane (the current pane, or `targetPaneId` itself when it is
- * one), focus the first registered target pane that still exists. From a
+ * one and the backend allows it), focus the first registered target pane that
+ * still exists. From a
  * target pane, focus its editor pane, forgetting the link when that pane is
  * gone. Returns false when there is nothing to switch to.
  */
@@ -16,7 +17,7 @@ export async function switchEditorFocus(
   const currentPaneId = await backend.getCurrentPaneId();
   const editorPaneId = (await backend.state.isEditorPane(currentPaneId))
     ? currentPaneId
-    : (await backend.state.isEditorPane(targetPaneId))
+    : backend.resumeAcceptsEditorPane && (await backend.state.isEditorPane(targetPaneId))
       ? targetPaneId
       : "";
 

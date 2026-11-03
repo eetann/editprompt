@@ -308,6 +308,8 @@ export function createCommandBackend(name: string, spec: unknown): MuxBackend {
     quoteSeparator: quoteSeparator as string,
     collectInput: collectInput as "stdin" | "argument",
     storageNamespace: namespace,
+    resumeAcceptsEditorPane: true,
+    keepNewerEditorLink: true,
     state: confStore(namespace),
   });
 

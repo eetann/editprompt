@@ -17,5 +17,5 @@ export const weztermBackend = defineBackend({
   quoteSeparator: "\n\n",
   collectInput: "argument",
   storageNamespace: () => "wezterm",
-  state: confStore(() => "wezterm"),
+  state: confStore(() => "wezterm", { wholeTargetRecord: true }),
 });

@@ -72,6 +72,17 @@ export interface MuxBackend {
   readonly collectInput: "stdin" | "argument";
   /** Prefix of Conf keys owned by this backend (used by stash). */
   storageNamespace(): string;
+  /**
+   * Lets `resume --target-pane` name the editor pane itself, switching back to
+   * its target pane. Needed where resume runs outside the editor pane, such as
+   * Herdr's detached custom commands.
+   */
+  readonly resumeAcceptsEditorPane?: boolean;
+  /**
+   * When an editor pane exits, keep the target pane's link if a newer editor
+   * pane has meanwhile been registered on it, instead of clearing it.
+   */
+  readonly keepNewerEditorLink?: boolean;
 
   // --- State ---
   readonly state: PaneStateStore;

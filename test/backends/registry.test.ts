@@ -74,6 +74,28 @@ describe("backend registry", () => {
   });
 });
 
+describe("built-in behavior flags", () => {
+  test("keep each backend's earlier resume and link behavior", () => {
+    const flags = Object.fromEntries(
+      ["tmux", "wezterm", "herdr", "niwaterm", "rex"].map((name) => {
+        const backend = getBackend(name);
+        return [
+          name,
+          [Boolean(backend.resumeAcceptsEditorPane), Boolean(backend.keepNewerEditorLink)],
+        ];
+      }),
+    );
+
+    expect(flags).toEqual({
+      tmux: [false, false],
+      wezterm: [false, false],
+      herdr: [true, true],
+      niwaterm: [false, false],
+      rex: [true, false],
+    });
+  });
+});
+
 describe("canSplitPane", () => {
   test("requires splitPane, runInPane and closePane", () => {
     expect(canSplitPane(getBackend("herdr"))).toBe(true);

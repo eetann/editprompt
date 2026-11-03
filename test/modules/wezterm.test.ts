@@ -74,7 +74,8 @@ describe("clearQuoteText", () => {
 
     await weztermBackend.state.removeQuote(paneId);
 
-    expect(conf.has(`wezterm.targetPane.pane_${paneId}`)).toBe(false);
+    const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
+    expect(data).toEqual({});
   });
 
   test("should preserve editorPaneId when clearing quote_text", async () => {
