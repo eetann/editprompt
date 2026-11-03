@@ -1,18 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
-import * as herdr from "../modules/herdr";
-import * as niwaterm from "../modules/niwaterm";
-import * as rex from "../modules/rex";
-import {
-  checkPaneExists,
-  clearEditorPaneId,
-  focusPane,
-  getCurrentPaneId,
-  getEditorPaneId,
-  getTargetPaneIds,
-  isEditorPane,
-} from "../modules/tmux";
-import * as wezterm from "../modules/wezterm";
+import { getBackend } from "../backends/registry";
+import { switchEditorFocus } from "../core/resume";
 import { setupLogger } from "../modules/logger";
 import {
   ARG_LOG_FILE,
@@ -27,190 +16,16 @@ import type { MuxType } from "./common";
 
 const logger = getLogger(["editprompt", "resume"]);
 
+// Exits 0 after switching focus between the editor pane and its target pane,
+// and 1 when there is nothing to switch to, which tells the caller to open a
+// new editor pane instead.
 export async function runResumeMode(targetPane: string, mux: MuxType): Promise<void> {
-  if (mux === "herdr") {
-    try {
-      process.exit((await herdr.resumeEditorPane(targetPane)) ? 0 : 1);
-    } catch (error) {
-      logger.debug("Herdr resume failed: {error}", { error });
-      process.exit(1);
-    }
-  }
-
-  if (mux === "rex") {
-    try {
-      process.exit((await rex.resumeEditorPane(targetPane)) ? 0 : 1);
-    } catch (error) {
-      logger.debug("Rex resume failed: {error}", { error });
-      process.exit(1);
-    }
-  }
-
-  if (mux === "niwaterm") {
-    const currentPaneId = await niwaterm.getCurrentPaneId();
-    const isEditor = await niwaterm.isEditorPane(currentPaneId);
-
-    if (isEditor) {
-      logger.debug("Current pane is an editor pane");
-      const originalTargetPaneIds = await niwaterm.getTargetPaneIds(currentPaneId);
-      if (originalTargetPaneIds.length === 0) {
-        logger.debug("No target pane IDs found for editor pane");
-        process.exit(1);
-      }
-
-      // Try to focus on the first available pane (retry logic)
-      let focused = false;
-      for (const paneId of originalTargetPaneIds) {
-        const exists = await niwaterm.checkPaneExists(paneId);
-        if (exists) {
-          await niwaterm.focusPane(paneId);
-          focused = true;
-          break;
-        }
-      }
-
-      if (!focused) {
-        logger.debug("All target panes do not exist");
-        process.exit(1);
-      }
-
-      process.exit(0);
-    }
-    logger.debug("Current pane is not an editor pane");
-
-    // Focus from target pane to editor pane
-    const editorPaneId = await niwaterm.getEditorPaneId(targetPane);
-    logger.debug("niwaterm editorPaneId: {editorPaneId}", { editorPaneId });
-
-    if (editorPaneId === "") {
-      logger.debug("Editor pane ID not found");
-      process.exit(1);
-    }
-
-    const exists = await niwaterm.checkPaneExists(editorPaneId);
-    if (!exists) {
-      logger.debug("Editor pane does not exist");
-      await niwaterm.clearEditorPaneId(targetPane);
-      process.exit(1);
-    }
-
-    try {
-      await niwaterm.focusPane(editorPaneId);
-      process.exit(0);
-    } catch (error) {
-      logger.debug("Can't focus editorPaneId: {editorPaneId}, error: {error}", {
-        editorPaneId,
-        error,
-      });
-      process.exit(1);
-    }
-  }
-
-  if (mux === "wezterm") {
-    const currentPaneId = await wezterm.getCurrentPaneId();
-    const isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
-
-    if (isEditor) {
-      logger.debug("Current pane is an editor pane");
-      const originalTargetPaneIds = await wezterm.getTargetPaneIds(currentPaneId);
-      if (originalTargetPaneIds.length === 0) {
-        logger.debug("No target pane IDs found for editor pane");
-        process.exit(1);
-      }
-
-      // Try to focus on the first available pane (retry logic)
-      let focused = false;
-      for (const paneId of originalTargetPaneIds) {
-        const exists = await wezterm.checkPaneExists(paneId);
-        if (exists) {
-          await wezterm.focusPane(paneId);
-          focused = true;
-          break;
-        }
-      }
-
-      if (!focused) {
-        logger.debug("All target panes do not exist");
-        process.exit(1);
-      }
-
-      process.exit(0);
-    }
-    logger.debug("Current pane is not an editor pane");
-
-    // Focus from target pane to editor pane
-    const editorPaneId = await wezterm.getEditorPaneId(targetPane);
-    logger.debug("wezterm editorPaneId: {editorPaneId}", { editorPaneId });
-
-    if (editorPaneId === "") {
-      logger.debug("Editor pane ID not found");
-      process.exit(1);
-    }
-
-    const exists = await wezterm.checkPaneExists(editorPaneId);
-    if (!exists) {
-      logger.debug("Editor pane does not exist");
-      await wezterm.clearEditorPaneId(targetPane);
-      process.exit(1);
-    }
-
-    try {
-      await wezterm.focusPane(editorPaneId);
-      process.exit(0);
-    } catch (error) {
-      logger.debug("Can't focus editorPaneId: {editorPaneId}, error: {error}", {
-        editorPaneId,
-        error,
-      });
-      process.exit(1);
-    }
-  }
-
-  // tmux logic
-  const currentPaneId = await getCurrentPaneId();
-  const isEditor = await isEditorPane(currentPaneId);
-
-  if (isEditor) {
-    // Focus back to the first available target pane
-    const originalTargetPaneIds = await getTargetPaneIds(currentPaneId);
-    if (originalTargetPaneIds.length === 0) {
-      process.exit(1);
-    }
-
-    // Try to focus on the first available pane (retry logic)
-    let focused = false;
-    for (const paneId of originalTargetPaneIds) {
-      const exists = await checkPaneExists(paneId);
-      if (exists) {
-        await focusPane(paneId);
-        focused = true;
-        break;
-      }
-    }
-
-    if (!focused) {
-      // All target panes do not exist
-      process.exit(1);
-    }
-
-    process.exit(0);
-  }
-
-  // focus to editor pane from target pane
-  const editorPaneId = await getEditorPaneId(targetPane);
-
-  if (editorPaneId === "") {
+  try {
+    process.exit((await switchEditorFocus(getBackend(mux), targetPane)) ? 0 : 1);
+  } catch (error) {
+    logger.debug("Resume failed: {error}", { error });
     process.exit(1);
   }
-
-  const exists = await checkPaneExists(editorPaneId);
-  if (!exists) {
-    await clearEditorPaneId(targetPane);
-    process.exit(1);
-  }
-
-  await focusPane(editorPaneId);
-  process.exit(0);
 }
 
 export const resumeCommand = define({
