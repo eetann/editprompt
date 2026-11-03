@@ -41,6 +41,11 @@ export async function clearEditorLink(
   targetPaneId: string,
   expectedEditorPaneId?: string,
 ): Promise<void> {
+  if (!expectedEditorPaneId && backend.state.keepsEditorPaneMarks) {
+    // Nothing to forget on the editor pane, so only clear the target's link.
+    await backend.state.removeEditorPaneId(targetPaneId);
+    return;
+  }
   const editorPaneId = await backend.state.getEditorPaneId(targetPaneId);
   if (expectedEditorPaneId && editorPaneId !== expectedEditorPaneId) {
     await backend.state.removeEditorPane(expectedEditorPaneId);

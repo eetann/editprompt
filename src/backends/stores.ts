@@ -45,6 +45,7 @@ export function paneVariableStore(io: PaneVariableIO, prefix: string): PaneState
       await io.set(editorPaneId, name(VAR_TARGET_PANES), targetPaneIds.join(","));
     },
     removeEditorPane: async () => {},
+    keepsEditorPaneMarks: true,
 
     // The quote is returned as stored: trailing blank lines are significant.
     getQuote: (targetPaneId) => io.get(targetPaneId, name(VAR_QUOTE)),
@@ -171,7 +172,9 @@ export function confStore(namespace: () => string, options: ConfStoreOptions = {
   });
 }
 
-const FAILURE_RESULTS: { [K in keyof PaneStateStore]: Awaited<ReturnType<PaneStateStore[K]>> } = {
+type StoreMethod = Exclude<keyof PaneStateStore, "keepsEditorPaneMarks">;
+
+const FAILURE_RESULTS: { [K in StoreMethod]: Awaited<ReturnType<PaneStateStore[K]>> } = {
   getEditorPaneId: "",
   setEditorPaneId: undefined,
   removeEditorPaneId: undefined,
@@ -185,7 +188,7 @@ const FAILURE_RESULTS: { [K in keyof PaneStateStore]: Awaited<ReturnType<PaneSta
 };
 
 // The WezTerm module's function names, used in its failure logs.
-const LEGACY_METHOD_NAMES: { [K in keyof PaneStateStore]: string } = {
+const LEGACY_METHOD_NAMES: { [K in StoreMethod]: string } = {
   getEditorPaneId: "getEditorPaneId",
   setEditorPaneId: "saveEditorPaneId",
   removeEditorPaneId: "clearEditorPaneId",
@@ -200,7 +203,7 @@ const LEGACY_METHOD_NAMES: { [K in keyof PaneStateStore]: string } = {
 
 function swallowErrors(logger: Logger, store: PaneStateStore): PaneStateStore {
   const wrapped = {} as Record<string, unknown>;
-  for (const method of Object.keys(FAILURE_RESULTS) as (keyof PaneStateStore)[]) {
+  for (const method of Object.keys(FAILURE_RESULTS) as StoreMethod[]) {
     const call = store[method] as (...args: string[]) => Promise<unknown>;
     wrapped[method] = async (...args: string[]) => {
       try {

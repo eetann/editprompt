@@ -20,9 +20,12 @@ export interface PaneStateStore {
   setTargetPaneIds(editorPaneId: string, targetPaneIds: string[]): Promise<void>;
   /**
    * Forgets that a pane is an editor pane. Stores whose state dies with the
-   * pane (pane variables) may treat this as a no-op.
+   * pane (pane variables) may treat this as a no-op and set
+   * `keepsEditorPaneMarks`.
    */
   removeEditorPane(editorPaneId: string): Promise<void>;
+  /** True when removeEditorPane is a no-op, so unlinking need not look it up. */
+  readonly keepsEditorPaneMarks?: boolean;
 
   getQuote(targetPaneId: string): Promise<string>;
   setQuote(targetPaneId: string, text: string): Promise<void>;
