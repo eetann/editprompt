@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "@logtape/logtape": "^2.0.2",
+    "c12": "^3.3.4",
     "clipboardy": "^4.0.0",
     "conf": "^15.0.2",
     "gunshi": "^0.29.2"

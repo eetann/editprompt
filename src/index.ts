@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { getLogger } from "@logtape/logtape";
 import { cli } from "gunshi";
+import { mayUseConfiguredBackend, setupUserConfig } from "./config/userConfig";
 import { setupLogger } from "./modules/logger";
 import * as pkg from "../package.json";
 import { collectCommand } from "./modes/collect";
@@ -14,6 +15,13 @@ import { stashCommand } from "./modes/stash";
 import { toggleCommand } from "./modes/toggle";
 
 const argv = process.argv.slice(2);
+
+// Register backends from the configuration file before any command resolves
+// --mux or EDITPROMPT_MUX. Skipped when only a built-in backend can be chosen,
+// which keeps c12 out of the startup of the common case.
+if (mayUseConfiguredBackend(argv)) {
+  await setupUserConfig();
+}
 
 await cli(
   argv,
