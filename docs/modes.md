@@ -2,6 +2,8 @@
 
 This document provides technical details about how each subcommand works, including constraints and solutions for different terminal multiplexers.
 
+Subcommands talk to the multiplexer only through the `MuxBackend` interface, and the shared logic lives in `src/core/` (see [developer.md](developer.md#-backend-architecture)). The per-multiplexer sections below describe what each built-in backend does underneath. `toggle` works with any backend that can split panes: Herdr among the built-in ones, and configured backends that define `splitPane`, `runInPane` and `closePane` ([backends.md](backends.md)).
+
 ## Available Subcommands
 
 - open
@@ -188,7 +190,7 @@ This approach enables bidirectional focus switching in WezTerm, similar to tmux.
   - `rex.targetPane.pane_${targetPaneId}`: Stores the editor pane ID
   - `rex.editorPane.pane_${editorPaneId}`: Stores target pane IDs
 - **Focus switching**: Uses `block inspect` to validate a pane and `block focus` to focus it
-  - `resumeEditorPane` lives in the backend, as it does for Herdr, so the resume mode does not repeat the branch a fifth time
+  - The focus switching itself is the shared `switchEditorFocus` in `src/core/resume.ts`, as it is for every backend
 
 ---
 

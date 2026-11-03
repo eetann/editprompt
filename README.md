@@ -22,7 +22,8 @@ A CLI tool that lets you write prompts for CLI tools using your favorite text ed
 ## ✨ Features
 
 - 🖊️ **Editor Integration**: Use your preferred text editor to write prompts
-- 🖥️ **Multiplexer Support**: Send prompts directly to tmux, WezTerm, Herdr, or Rex sessions
+- 🖥️ **Multiplexer Support**: Send prompts directly to tmux, WezTerm, Herdr, niwaterm, or Rex sessions
+- 🧩 **Custom Backends**: Add any other terminal with a CLI from your configuration file
 - 🖥️ **Universal Terminal Support**: Works with any terminal via clipboard - no multiplexer required
 - 📤 **Send Without Closing**: Iterate on prompts without closing your editor
 - 📋 **Quote Buffering**: Collect text selections and send them as quoted replies
@@ -272,6 +273,27 @@ editprompt locates the `rex` CLI through `REX_BIN_DIR`, which Rex sets in every 
 Name the editor with `--editor`. A terminal Rex starts gets the login shell's environment, not the interactive one, so `$EDITOR` is whatever that environment sets rather than what your prompt uses — on nix-darwin, for instance, it is `nano`.
 
 Inside a Rex pane, editprompt automatically selects the Rex backend when `REX_BLOCK` is set. Running tmux inside a Rex pane sets both, and Rex wins, so pass `--mux tmux` or set `EDITPROMPT_MUX` for that case.
+
+### Other Terminals (Custom Backends)
+
+Any other terminal or multiplexer with a command-line interface can be added in `~/.config/editprompt/config.jsonc`, without waiting for editprompt to support it:
+
+```jsonc
+{
+  "backends": {
+    "mytty": {
+      "detect": { "env": "MYTTY_PANE_ID" },
+      "currentPane": { "env": "MYTTY_PANE_ID" },
+      "paneExists": ["mytty", "pane", "exists", "{pane}"],
+      "focus": ["mytty", "pane", "focus", "{pane}"],
+      "sendText": { "argv": ["mytty", "send-text", "--pane", "{pane}"], "stdin": true },
+      "sendKey": ["mytty", "send-key", "--pane", "{pane}", "{key}"],
+    },
+  },
+}
+```
+
+Then select it with `--mux mytty`, `EDITPROMPT_MUX=mytty`, or let `detect` pick it. See [docs/backends.md](docs/backends.md) for every option, including the commands that enable `editprompt toggle`.
 
 ### Editor Integration (Send Without Closing)
 

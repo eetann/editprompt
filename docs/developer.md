@@ -106,9 +106,22 @@ Log level resolution for stderr:
 
 File log level follows the same logic but ignores `--quiet` (file logging is always active if a path is configured).
 
+### 🧩 Backend Architecture
+
+Modes never branch on a multiplexer name. Each backend implements `MuxBackend` (`src/backends/types.ts`) and is looked up through the registry (`src/backends/registry.ts`):
+
+- **Transport**: `getCurrentPaneId`, `paneExists`, `focusPane`, `sendText` (one chunk), `sendKey`, and `maxChunkBytes`
+- **Behavior knobs**: `defaultSubmitKey`, `quoteSeparator`, `collectInput`, `storageNamespace()`
+- **State**: a `PaneStateStore`, either `paneVariableStore` (tmux pane options, niwaterm tab variables) or `confStore` (WezTerm, Herdr, Rex, configured backends). Both keep the storage keys earlier versions wrote
+- **Capabilities**: `splitPane`, `runInPane` and `closePane`, which `toggle` requires
+
+Linking editor and target panes, the quote buffer, resume focus switching and chunked delivery are written once in `src/core/`.
+
+To add a built-in backend, write the CLI calls in `src/modules/<name>.ts`, define the backend in `src/backends/<name>.ts`, and add it to `BUILTIN_BACKENDS` in the registry. Backends declared in the user's configuration file are built by `src/backends/command.ts`; see [backends.md](backends.md).
+
 ### 🔄 Fallback Strategy
 
 editprompt implements a robust fallback strategy:
 
-1. **Tmux Integration**: Direct input to tmux panes (when available)
+1. **Multiplexer Integration**: Direct input to the target panes through the selected backend (when available)
 2. **Clipboard**: Copy content to clipboard with user notification
