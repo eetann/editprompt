@@ -1,6 +1,20 @@
 import type { MuxBackend } from "../backends/types";
 import { clearEditorLink } from "./link";
 
+/** Raised when focusing the editor pane from its target pane fails. */
+export class EditorFocusError extends Error {
+  override name = "EditorFocusError";
+
+  constructor(
+    readonly editorPaneId: string,
+    override readonly cause: unknown,
+  ) {
+    super(
+      `Can't focus editor pane ${editorPaneId}: ${cause instanceof Error ? cause.message : String(cause)}`,
+    );
+  }
+}
+
 /**
  * Switches focus between an editor pane and its target panes.
  *
@@ -40,6 +54,10 @@ export async function switchEditorFocus(
     return false;
   }
 
-  await backend.focusPane(registeredEditorPaneId);
+  try {
+    await backend.focusPane(registeredEditorPaneId);
+  } catch (error) {
+    throw new EditorFocusError(registeredEditorPaneId, error);
+  }
   return true;
 }

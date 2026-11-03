@@ -16,6 +16,7 @@ export const weztermBackend = defineBackend({
   defaultSubmitKey: "\\r",
   quoteSeparator: "\n\n",
   collectInput: "argument",
+  quietResumeErrors: "editorFocus",
   storageNamespace: () => "wezterm",
   state: confStore(() => "wezterm", { wholeTargetRecord: true }),
 });

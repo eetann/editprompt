@@ -1,7 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
 import { getBackend } from "../backends/registry";
-import { switchEditorFocus } from "../core/resume";
+import { EditorFocusError, switchEditorFocus } from "../core/resume";
 import { setupLogger } from "../modules/logger";
 import {
   ARG_LOG_FILE,
@@ -20,12 +20,22 @@ const logger = getLogger(["editprompt", "resume"]);
 // and 1 when there is nothing to switch to, which tells the caller to open a
 // new editor pane instead.
 export async function runResumeMode(targetPane: string, mux: MuxType): Promise<void> {
+  const backend = getBackend(mux);
+  let switched: boolean;
   try {
-    process.exit((await switchEditorFocus(getBackend(mux), targetPane)) ? 0 : 1);
+    switched = await switchEditorFocus(backend, targetPane);
   } catch (error) {
+    const quiet =
+      backend.quietResumeErrors === "all" ||
+      (backend.quietResumeErrors === "editorFocus" && error instanceof EditorFocusError);
+    if (!quiet) {
+      // Surface the backend's own error, as resume always has for this backend.
+      throw error instanceof EditorFocusError ? error.cause : error;
+    }
     logger.debug("Resume failed: {error}", { error });
     process.exit(1);
   }
+  process.exit(switched ? 0 : 1);
 }
 
 export const resumeCommand = define({

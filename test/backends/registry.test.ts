@@ -81,17 +81,21 @@ describe("built-in behavior flags", () => {
         const backend = getBackend(name);
         return [
           name,
-          [Boolean(backend.resumeAcceptsEditorPane), Boolean(backend.keepNewerEditorLink)],
+          [
+            Boolean(backend.resumeAcceptsEditorPane),
+            Boolean(backend.keepNewerEditorLink),
+            backend.quietResumeErrors,
+          ],
         ];
       }),
     );
 
     expect(flags).toEqual({
-      tmux: [false, false],
-      wezterm: [false, false],
-      herdr: [true, true],
-      niwaterm: [false, false],
-      rex: [true, false],
+      tmux: [false, false, undefined],
+      wezterm: [false, false, "editorFocus"],
+      herdr: [true, true, "all"],
+      niwaterm: [false, false, "editorFocus"],
+      rex: [true, false, "all"],
     });
   });
 });

@@ -1,6 +1,6 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
-import { getBackend } from "../backends/registry";
+import { getBackend, isBuiltinBackendName } from "../backends/registry";
 import { canSplitPane, type MuxBackend } from "../backends/types";
 import { switchEditorFocus } from "../core/resume";
 import { setupLogger } from "../modules/logger";
@@ -83,8 +83,12 @@ export async function runToggleMode(
   backend: MuxBackend = getBackend(options.mux),
 ): Promise<void> {
   if (!canSplitPane(backend)) {
+    // Among the built-in backends only Herdr can split panes, so they keep the
+    // message they have always shown.
     throw new Error(
-      `toggle is not supported by the '${backend.name}' multiplexer because it cannot split panes`,
+      isBuiltinBackendName(backend.name)
+        ? "toggle currently supports only the Herdr multiplexer"
+        : `toggle is not supported by the '${backend.name}' multiplexer because it cannot split panes`,
     );
   }
   if (!Number.isInteger(options.paneRows) || options.paneRows <= 0) {
@@ -127,7 +131,7 @@ export const toggleCommand = define({
     mux: ARG_MUX,
     "target-pane": ARG_TARGET_PANE_SINGLE,
     "pane-rows": {
-      description: "Desired rows for the editor pane",
+      description: "Desired rows for the Herdr editor pane",
       type: "number",
       default: DEFAULT_EDITOR_PANE_ROWS,
     },

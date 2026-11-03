@@ -310,6 +310,7 @@ export function createCommandBackend(name: string, spec: unknown): MuxBackend {
     storageNamespace: namespace,
     resumeAcceptsEditorPane: true,
     keepNewerEditorLink: true,
+    quietResumeErrors: "all",
     state: confStore(namespace),
   });
 

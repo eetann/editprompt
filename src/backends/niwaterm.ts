@@ -16,6 +16,7 @@ export const niwatermBackend = defineBackend({
   defaultSubmitKey: "C-m",
   quoteSeparator: "\n",
   collectInput: "argument",
+  quietResumeErrors: "editorFocus",
   storageNamespace: () => "niwaterm",
   state: paneVariableStore(
     {

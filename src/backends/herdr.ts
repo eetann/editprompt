@@ -16,6 +16,7 @@ export const herdrBackend = defineBackend({
   defaultSubmitKey: "enter",
   quoteSeparator: "\n\n",
   collectInput: "argument",
+  quietResumeErrors: "all",
   resumeAcceptsEditorPane: true,
   keepNewerEditorLink: true,
   // Herdr pane IDs are only unique within one session, so the state is scoped

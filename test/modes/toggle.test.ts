@@ -128,10 +128,23 @@ describe("toggle mode", () => {
 
     expect(muxError).toBeInstanceOf(Error);
     expect((muxError as Error).message).toBe(
-      "toggle is not supported by the 'tmux' multiplexer because it cannot split panes",
+      "toggle currently supports only the Herdr multiplexer",
     );
     expect(rowsError).toBeInstanceOf(Error);
     expect((rowsError as Error).message).toBe("--pane-rows must be a positive integer");
+  });
+
+  test("names a configured backend that cannot split panes", async () => {
+    let thrown: unknown;
+    try {
+      await runToggleMode(createOptions({ mux: "mytty" }), createFakeBackend("mytty"));
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect((thrown as Error).message).toBe(
+      "toggle is not supported by the 'mytty' multiplexer because it cannot split panes",
+    );
   });
 
   test("works with any backend that can split panes", async () => {

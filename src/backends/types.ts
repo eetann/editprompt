@@ -83,6 +83,13 @@ export interface MuxBackend {
    * pane has meanwhile been registered on it, instead of clearing it.
    */
   readonly keepNewerEditorLink?: boolean;
+  /**
+   * Which failures `resume` reports only through its exit status (1), with a
+   * debug log, instead of letting the error surface: "all" of them, or only a
+   * failure to focus the editor pane ("editorFocus"). Unset lets every error
+   * surface.
+   */
+  readonly quietResumeErrors?: "all" | "editorFocus";
 
   // --- State ---
   readonly state: PaneStateStore;

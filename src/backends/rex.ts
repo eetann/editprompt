@@ -16,6 +16,7 @@ export const rexBackend = defineBackend({
   defaultSubmitKey: "enter",
   quoteSeparator: "\n\n",
   collectInput: "argument",
+  quietResumeErrors: "all",
   resumeAcceptsEditorPane: true,
   // Every Rex block ID is a `block:<uuid>`, unique across the server, so the
   // keys need no session namespace the way Herdr's do.
