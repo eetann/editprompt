@@ -1,5 +1,6 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
+import { getBackend } from "../backends/registry";
 import { openEditorAndGetContent } from "../modules/editor";
 import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
@@ -95,7 +96,11 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
     }
 
     try {
-      const result = await handleContentDelivery(content, options.mux, options.targetPanes);
+      const result = await handleContentDelivery(
+        content,
+        getBackend(options.mux),
+        options.targetPanes,
+      );
 
       // Output content for reference
       console.log("---");
@@ -109,7 +114,11 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
 
       // Focus on the first successful pane
       if (options.targetPanes.length > 0 && result.successCount > 0) {
-        await focusFirstSuccessPane(options.mux, options.targetPanes, result.failedPanes);
+        await focusFirstSuccessPane(
+          getBackend(options.mux),
+          options.targetPanes,
+          result.failedPanes,
+        );
       }
 
       // Exit with code 1 if not all panes succeeded (requirement 6)

@@ -1,5 +1,6 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
+import { getBackend } from "../backends/registry";
 import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
 import * as niwaterm from "../modules/niwaterm";
@@ -136,7 +137,7 @@ export async function runInputMode(
 
   // Normal mode (focus on first successful pane)
   try {
-    const result = await handleContentDelivery(content, config.mux, targetPanes);
+    const result = await handleContentDelivery(content, getBackend(config.mux), targetPanes);
 
     // Copy to clipboard if alwaysCopy is enabled
     if (config.alwaysCopy && !result.allFailed) {
@@ -146,7 +147,7 @@ export async function runInputMode(
 
     // Focus on the first successful pane
     if (result.successCount > 0) {
-      await focusFirstSuccessPane(config.mux, targetPanes, result.failedPanes);
+      await focusFirstSuccessPane(getBackend(config.mux), targetPanes, result.failedPanes);
     }
 
     // Exit with code 1 if all panes failed (requirement 3)
