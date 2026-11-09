@@ -41,10 +41,10 @@ async function calls(): Promise<{ args: string[]; stdin: string }[]> {
 function spec(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     currentPane: { env: "MYTTY_PANE_ID" },
-    paneExists: [fakeCli, "exists", "{pane}"],
-    focus: [fakeCli, "focus", "{pane}"],
-    sendText: { argv: [fakeCli, "send", "--pane", "{pane}"], stdin: true },
-    sendKey: [fakeCli, "key", "--pane={pane}", "{key}"],
+    paneExists: `"$FAKE_CLI" exists "$EDITPROMPT_PANE"`,
+    focus: `"$FAKE_CLI" focus "$EDITPROMPT_PANE"`,
+    sendText: `"$FAKE_CLI" send --pane "$EDITPROMPT_PANE"`,
+    sendKey: `"$FAKE_CLI" key --pane="$EDITPROMPT_PANE" "$EDITPROMPT_KEY"`,
     ...overrides,
   };
 }
@@ -58,6 +58,7 @@ beforeEach(async () => {
   await writeFile(fakeCli, FAKE_CLI);
   await chmod(fakeCli, 0o755);
   process.env.FAKE_DIR = fakeDir;
+  process.env.FAKE_CLI = fakeCli;
 });
 
 afterEach(async () => {
@@ -66,9 +67,9 @@ afterEach(async () => {
 });
 
 describe("command backend transport", () => {
-  test("fills placeholders and runs commands without a shell", async () => {
+  test("passes values as environment variables, never as script text", async () => {
     const backend = createCommandBackend("mytty", spec());
-    const key = "it's $(whoami)";
+    const key = "it's $(whoami) `id`";
 
     await backend.focusPane("pane 1");
     await backend.sendKey("pane 1", key);
@@ -77,6 +78,17 @@ describe("command backend transport", () => {
       { args: ["focus", "pane 1"], stdin: "" },
       { args: ["key", "--pane=pane 1", key], stdin: "" },
     ]);
+  });
+
+  test("runs multi-line scripts", async () => {
+    const backend = createCommandBackend(
+      "mytty",
+      spec({ focus: `pane="$EDITPROMPT_PANE"\n"$FAKE_CLI" focus \\\n  "pane-$pane"\n` }),
+    );
+
+    await backend.focusPane("1");
+
+    expect(await calls()).toEqual([{ args: ["focus", "pane-1"], stdin: "" }]);
   });
 
   test("sends text on stdin in chunks", async () => {
@@ -90,15 +102,18 @@ describe("command backend transport", () => {
     ]);
   });
 
-  test("passes text as an argument when sendText uses {text}", async () => {
-    const backend = createCommandBackend("mytty", spec({ sendText: [fakeCli, "type", "{text}"] }));
+  test("lets sendText turn stdin into an argument", async () => {
+    const backend = createCommandBackend(
+      "mytty",
+      spec({ sendText: `"$FAKE_CLI" type "$(cat)" </dev/null` }),
+    );
 
-    await backend.sendText("1", "hello world");
+    await backend.sendText("1", "hello 'world'");
 
-    expect(await calls()).toEqual([{ args: ["type", "hello world"], stdin: "" }]);
+    expect(await calls()).toEqual([{ args: ["type", "hello 'world'"], stdin: "" }]);
   });
 
-  test("reads the current pane from an environment variable or a command", async () => {
+  test("reads the current pane from an environment variable or a script", async () => {
     process.env.MYTTY_PANE_ID = " 7 ";
     expect(await createCommandBackend("mytty", spec()).getCurrentPaneId()).toBe("7");
 
@@ -108,7 +123,7 @@ describe("command backend transport", () => {
     );
 
     await writeFile(join(fakeDir, "stdout"), "42\n");
-    const backend = createCommandBackend("mytty", spec({ currentPane: [fakeCli, "current"] }));
+    const backend = createCommandBackend("mytty", spec({ currentPane: `"$FAKE_CLI" current` }));
     expect(await backend.getCurrentPaneId()).toBe("42");
   });
 
@@ -119,7 +134,7 @@ describe("command backend transport", () => {
     await writeFile(join(fakeDir, "exit"), "1");
     expect(await backend.paneExists("1")).toBe(false);
 
-    const missing = createCommandBackend("mytty", spec({ paneExists: ["/nonexistent/cli"] }));
+    const missing = createCommandBackend("mytty", spec({ paneExists: "/nonexistent/cli" }));
     expect(await missing.paneExists("1")).toBe(false);
   });
 
@@ -127,7 +142,7 @@ describe("command backend transport", () => {
     await writeFile(join(fakeDir, "exit"), "3");
     const backend = createCommandBackend("mytty", spec());
 
-    expect(backend.focusPane("1")).rejects.toThrow(`${fakeCli} focus 1 exited with 3`);
+    expect(backend.focusPane("1")).rejects.toThrow("backends.mytty.focus exited with 3");
   });
 
   test("detects its environment from the configured variable", () => {
@@ -165,9 +180,9 @@ describe("command backend pane management", () => {
     const backend = createCommandBackend(
       "mytty",
       spec({
-        splitPane: [fakeCli, "split", "{pane}", "--rows={rows}", "--cwd={cwd}"],
-        runInPane: [fakeCli, "run", "{pane}", "exec {command}"],
-        closePane: [fakeCli, "close", "{pane}"],
+        splitPane: `"$FAKE_CLI" split "$EDITPROMPT_PANE" --rows="$EDITPROMPT_ROWS" --cwd="$EDITPROMPT_CWD"`,
+        runInPane: `"$FAKE_CLI" run "$EDITPROMPT_PANE" "exec $EDITPROMPT_COMMAND"`,
+        closePane: `"$FAKE_CLI" close "$EDITPROMPT_PANE"`,
       }),
     );
     if (!canSplitPane(backend)) {
@@ -207,14 +222,14 @@ describe("command backend validation", () => {
     ]);
   });
 
-  test("rejects unknown options, placeholders and malformed commands", () => {
+  test("rejects unknown options, misplaced variables and malformed commands", () => {
     const message = errorOf(
       "mytty",
       spec({
-        focs: ["x"],
-        focus: ["x", "{key}"],
-        sendKey: "x {key}",
-        sendText: { argv: ["x"], stdin: "yes", shell: true },
+        focs: "x",
+        focus: 'x "$EDITPROMPT_KEY" "${EDITPROMPT_ROWS}" "$EDITPROMPT_KEY" "$EDITPROMPT_MUX"',
+        sendText: ["x", "$EDITPROMPT_PANE"],
+        sendKey: " \n",
         collectInput: "clipboard",
         maxChunkBytes: 0,
       }),
@@ -222,10 +237,10 @@ describe("command backend validation", () => {
 
     expect(message.split("\n")).toEqual([
       "backends.mytty.focs is not a known option",
-      "backends.mytty.focus uses an unknown placeholder {key} (allowed: {pane})",
-      "backends.mytty.sendText.stdin must be a boolean",
-      "backends.mytty.sendText.shell is not a known option",
-      'backends.mytty.sendKey must be a non-empty array of strings or { "argv": [...] }',
+      "backends.mytty.focus uses $EDITPROMPT_KEY, which is not set for this command (available: $EDITPROMPT_PANE)",
+      "backends.mytty.focus uses $EDITPROMPT_ROWS, which is not set for this command (available: $EDITPROMPT_PANE)",
+      "backends.mytty.sendText must be a non-empty string",
+      "backends.mytty.sendKey must be a non-empty string",
       "backends.mytty.maxChunkBytes must be an integer of at least 4",
       'backends.mytty.collectInput must be "stdin" or "argument"',
     ]);
@@ -233,12 +248,12 @@ describe("command backend validation", () => {
 
   test("rejects functions, so only declarative configuration is accepted", () => {
     expect(errorOf("mytty", spec({ focus: () => {} }))).toBe(
-      'backends.mytty.focus must be a non-empty array of strings or { "argv": [...] }',
+      "backends.mytty.focus must be a non-empty string",
     );
   });
 
   test("requires the pane management commands together", () => {
-    expect(errorOf("mytty", spec({ splitPane: ["x"] }))).toBe(
+    expect(errorOf("mytty", spec({ splitPane: "x" }))).toBe(
       "backends.mytty: splitPane, runInPane and closePane must be set together",
     );
   });

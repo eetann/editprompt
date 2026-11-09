@@ -276,21 +276,16 @@ Inside a Rex pane, editprompt automatically selects the Rex backend when `REX_BL
 
 ### Other Terminals (Custom Backends)
 
-Any other terminal or multiplexer with a command-line interface can be added in `~/.config/editprompt/config.jsonc`, without waiting for editprompt to support it:
+Any other terminal or multiplexer with a command-line interface can be added in `~/.config/editprompt/config.toml`, without waiting for editprompt to support it:
 
-```jsonc
-{
-  "backends": {
-    "mytty": {
-      "detect": { "env": "MYTTY_PANE_ID" },
-      "currentPane": { "env": "MYTTY_PANE_ID" },
-      "paneExists": ["mytty", "pane", "exists", "{pane}"],
-      "focus": ["mytty", "pane", "focus", "{pane}"],
-      "sendText": { "argv": ["mytty", "send-text", "--pane", "{pane}"], "stdin": true },
-      "sendKey": ["mytty", "send-key", "--pane", "{pane}", "{key}"],
-    },
-  },
-}
+```toml
+[backends.mytty]
+detect = { env = "MYTTY_PANE_ID" }
+currentPane = { env = "MYTTY_PANE_ID" }
+paneExists = 'mytty pane exists "$EDITPROMPT_PANE"'
+focus = 'mytty pane focus "$EDITPROMPT_PANE"'
+sendText = 'mytty send-text --pane "$EDITPROMPT_PANE"'
+sendKey = 'mytty send-key --pane "$EDITPROMPT_PANE" "$EDITPROMPT_KEY"'
 ```
 
 Then select it with `--mux mytty`, `EDITPROMPT_MUX=mytty`, or let `detect` pick it. See [docs/backends.md](docs/backends.md) for every option, including the commands that enable `editprompt toggle`.

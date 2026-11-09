@@ -13,10 +13,10 @@ import {
 
 const BACKEND = {
   currentPane: { env: "MYTTY_PANE_ID" },
-  paneExists: ["mytty", "exists", "{pane}"],
-  focus: ["mytty", "focus", "{pane}"],
-  sendText: { argv: ["mytty", "send", "{pane}"], stdin: true },
-  sendKey: ["mytty", "key", "{pane}", "{key}"],
+  paneExists: 'mytty exists "$EDITPROMPT_PANE"',
+  focus: 'mytty focus "$EDITPROMPT_PANE"',
+  sendText: 'mytty send "$EDITPROMPT_PANE"',
+  sendKey: 'mytty key "$EDITPROMPT_PANE" "$EDITPROMPT_KEY"',
 };
 
 let root: string;
@@ -55,36 +55,27 @@ describe("loadUserConfig", () => {
   const formats: [string, string][] = [
     [
       "config.jsonc",
-      `{\n  // a comment\n  "backends": { "mytty": { "focus": ["mytty", "focus", "{pane}"] } },\n}\n`,
+      `{\n  // a comment\n  "backends": { "mytty": { "focus": "mytty focus" } },\n}\n`,
     ],
-    ["config.json", `{ "backends": { "mytty": { "focus": ["mytty", "focus", "{pane}"] } } }`],
-    ["config.json5", `{ backends: { mytty: { focus: ["mytty", "focus", "{pane}"] } } }`],
-    ["config.yaml", `backends:\n  mytty:\n    focus: [mytty, focus, "{pane}"]\n`],
-    ["config.yml", `backends:\n  mytty:\n    focus: [mytty, focus, "{pane}"]\n`],
-    ["config.toml", `[backends.mytty]\nfocus = ["mytty", "focus", "{pane}"]\n`],
-    [
-      "config.js",
-      `export default { backends: { mytty: { focus: ["mytty", "focus", "{pane}"] } } };\n`,
-    ],
-    [
-      "config.mjs",
-      `export default { backends: { mytty: { focus: ["mytty", "focus", "{pane}"] } } };\n`,
-    ],
-    [
-      "config.cjs",
-      `module.exports = { backends: { mytty: { focus: ["mytty", "focus", "{pane}"] } } };\n`,
-    ],
+    ["config.json", `{ "backends": { "mytty": { "focus": "mytty focus" } } }`],
+    ["config.json5", `{ backends: { mytty: { focus: "mytty focus" } } }`],
+    ["config.yaml", `backends:\n  mytty:\n    focus: mytty focus\n`],
+    ["config.yml", `backends:\n  mytty:\n    focus: mytty focus\n`],
+    ["config.toml", `[backends.mytty]\nfocus = "mytty focus"\n`],
+    ["config.js", `export default { backends: { mytty: { focus: "mytty focus" } } };\n`],
+    ["config.mjs", `export default { backends: { mytty: { focus: "mytty focus" } } };\n`],
+    ["config.cjs", `module.exports = { backends: { mytty: { focus: "mytty focus" } } };\n`],
     [
       "config.ts",
-      `const focus: string[] = ["mytty", "focus", "{pane}"];\nexport default { backends: { mytty: { focus } } };\n`,
+      `const focus: string = "mytty focus";\nexport default { backends: { mytty: { focus } } };\n`,
     ],
     [
       "config.mts",
-      `const focus: string[] = ["mytty", "focus", "{pane}"];\nexport default { backends: { mytty: { focus } } };\n`,
+      `const focus: string = "mytty focus";\nexport default { backends: { mytty: { focus } } };\n`,
     ],
     [
       "config.cts",
-      `const focus: string[] = ["mytty", "focus", "{pane}"];\nmodule.exports = { backends: { mytty: { focus } } };\n`,
+      `const focus: string = "mytty focus";\nmodule.exports = { backends: { mytty: { focus } } };\n`,
     ],
   ];
 
@@ -94,7 +85,7 @@ describe("loadUserConfig", () => {
 
       const config = await loadUserConfig(configDir);
 
-      expect(config.backends).toEqual({ mytty: { focus: ["mytty", "focus", "{pane}"] } });
+      expect(config.backends).toEqual({ mytty: { focus: "mytty focus" } });
     });
   }
 
@@ -126,7 +117,7 @@ describe("loadUserConfig", () => {
 describe("registerConfiguredBackends", () => {
   test("registers valid backends and reports invalid ones", () => {
     const errors = registerConfiguredBackends({
-      backends: { mytty: BACKEND, othertty: { focus: ["x"] }, tmux: BACKEND },
+      backends: { mytty: BACKEND, othertty: { focus: "x" }, tmux: BACKEND },
     });
 
     expect(getBackend("mytty").name).toBe("mytty");
@@ -142,13 +133,27 @@ describe("registerConfiguredBackends", () => {
     ]);
   });
 
-  test("registers a backend loaded from config.jsonc end to end", async () => {
+  test("registers a backend loaded from config.toml end to end", async () => {
     await writeFile(
-      join(configDir, "config.jsonc"),
-      JSON.stringify({ backends: { mytty: BACKEND } }),
+      join(configDir, "config.toml"),
+      `[backends.mytty]
+currentPane = { env = "MYTTY_PANE_ID" }
+paneExists = 'mytty exists "$EDITPROMPT_PANE"'
+focus = 'mytty focus "$EDITPROMPT_PANE"'
+sendText = '''
+mytty send \\
+  --pane "$EDITPROMPT_PANE"
+'''
+sendKey = 'mytty key "$EDITPROMPT_PANE" "$EDITPROMPT_KEY"'
+`,
     );
 
-    expect(registerConfiguredBackends(await loadUserConfig(configDir))).toEqual([]);
+    const config = await loadUserConfig(configDir);
+
+    expect(config.backends).toEqual({
+      mytty: { ...BACKEND, sendText: 'mytty send \\\n  --pane "$EDITPROMPT_PANE"\n' },
+    });
+    expect(registerConfiguredBackends(config)).toEqual([]);
     expect(getBackend("mytty").defaultSubmitKey).toBe("Enter");
   });
 });
