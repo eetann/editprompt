@@ -1,23 +1,18 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
+import { getBackend } from "../backends/registry";
 import { conf } from "../modules/conf";
-import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
-import * as niwaterm from "../modules/niwaterm";
-import * as rex from "../modules/rex";
-import { getCurrentPaneId, getTargetPaneIds, isEditorPane } from "../modules/tmux";
-import * as wezterm from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { readSendConfig } from "../utils/sendConfig";
 import { ARG_LOG_FILE, ARG_QUIET, ARG_VERBOSE } from "./args";
-import type { MuxType } from "./common";
+import { type MuxType, requireEditorContext } from "./common";
 
 const logger = getLogger(["editprompt", "stash"]);
 
 // Stash storage key helper
 function getStashKey(mux: MuxType, targetPaneId: string): string {
-  const namespace = mux === "herdr" ? herdr.getStorageNamespace() : mux;
-  return `${namespace}.targetPane.pane_${targetPaneId}.stash`;
+  return `${getBackend(mux).storageNamespace()}.targetPane.pane_${targetPaneId}.stash`;
 }
 
 // Stash data type
@@ -101,54 +96,10 @@ async function getTargetPaneForStash(): Promise<{
   targetPaneId: string;
 }> {
   const config = readSendConfig();
-
-  // Get current pane and check if it's an editor pane
-  let currentPaneId: string;
-  let isEditor: boolean;
-
-  if (config.mux === "tmux") {
-    currentPaneId = await getCurrentPaneId();
-    isEditor = await isEditorPane(currentPaneId);
-  } else if (config.mux === "wezterm") {
-    currentPaneId = await wezterm.getCurrentPaneId();
-    isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
-  } else if (config.mux === "niwaterm") {
-    currentPaneId = await niwaterm.getCurrentPaneId();
-    isEditor = await niwaterm.isEditorPane(currentPaneId);
-  } else if (config.mux === "rex") {
-    currentPaneId = await rex.getCurrentPaneId();
-    isEditor = rex.isEditorPaneFromConf(currentPaneId);
-  } else {
-    currentPaneId = await herdr.getCurrentPaneId();
-    isEditor = herdr.isEditorPaneFromConf(currentPaneId);
-  }
-
-  if (!isEditor) {
-    logger.error("Current pane is not an editor pane");
-    process.exit(1);
-  }
-
-  // Get target pane IDs from pane variables or Conf
-  let targetPanes: string[];
-  if (config.mux === "tmux") {
-    targetPanes = await getTargetPaneIds(currentPaneId);
-  } else if (config.mux === "wezterm") {
-    targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
-  } else if (config.mux === "niwaterm") {
-    targetPanes = await niwaterm.getTargetPaneIds(currentPaneId);
-  } else if (config.mux === "rex") {
-    targetPanes = await rex.getTargetPaneIds(currentPaneId);
-  } else {
-    targetPanes = await herdr.getTargetPaneIds(currentPaneId);
-  }
-
-  if (targetPanes.length === 0) {
-    logger.error("No target panes registered for this editor pane");
-    process.exit(1);
-  }
+  const { targetPaneIds } = await requireEditorContext(getBackend(config.mux), logger);
 
   // Use the first target pane
-  return { mux: config.mux, targetPaneId: targetPanes[0] as string };
+  return { mux: config.mux, targetPaneId: targetPaneIds[0] as string };
 }
 
 // Subcommand handlers

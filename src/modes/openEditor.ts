@@ -1,15 +1,10 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
+import { getBackend } from "../backends/registry";
+import { clearEditorLink, markAsEditorPane } from "../core/link";
 import { openEditorAndGetContent } from "../modules/editor";
-import * as herdr from "../modules/herdr";
 import { setupLogger } from "../modules/logger";
-import * as niwaterm from "../modules/niwaterm";
-import * as rex from "../modules/rex";
-import { clearEditorPaneId, getCurrentPaneId, markAsEditorPane } from "../modules/tmux";
-import * as wezterm from "../modules/wezterm";
 import type { SendConfig } from "../types/send";
-
-const logger = getLogger(["editprompt", "open"]);
 import {
   ARG_ALWAYS_COPY,
   ARG_EDITOR,
@@ -29,6 +24,8 @@ import {
   handleContentDelivery,
 } from "./common";
 
+const logger = getLogger(["editprompt", "open"]);
+
 interface OpenEditorModeOptions {
   mux: MuxType;
   targetPanes: string[];
@@ -38,41 +35,13 @@ interface OpenEditorModeOptions {
 }
 
 export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise<void> {
-  let herdrEditorPaneId: string | undefined;
+  const backend = getBackend(options.mux);
+  let editorPaneId: string | undefined;
 
-  if (options.targetPanes.length > 0 && options.mux === "tmux") {
+  if (options.targetPanes.length > 0) {
     try {
-      const currentPaneId = await getCurrentPaneId();
-      await markAsEditorPane(currentPaneId, options.targetPanes);
-    } catch {
-      //
-    }
-  } else if (options.targetPanes.length > 0 && options.mux === "wezterm") {
-    try {
-      const currentPaneId = await wezterm.getCurrentPaneId();
-      await wezterm.markAsEditorPane(currentPaneId, options.targetPanes);
-    } catch {
-      //
-    }
-  } else if (options.targetPanes.length > 0 && options.mux === "herdr") {
-    try {
-      const currentPaneId = await herdr.getCurrentPaneId();
-      herdrEditorPaneId = currentPaneId;
-      await herdr.markAsEditorPane(currentPaneId, options.targetPanes);
-    } catch {
-      //
-    }
-  } else if (options.targetPanes.length > 0 && options.mux === "niwaterm") {
-    try {
-      const currentPaneId = await niwaterm.getCurrentPaneId();
-      await niwaterm.markAsEditorPane(currentPaneId, options.targetPanes);
-    } catch {
-      //
-    }
-  } else if (options.targetPanes.length > 0 && options.mux === "rex") {
-    try {
-      const currentPaneId = await rex.getCurrentPaneId();
-      await rex.markAsEditorPane(currentPaneId, options.targetPanes);
+      editorPaneId = await backend.getCurrentPaneId();
+      await markAsEditorPane(backend, editorPaneId, options.targetPanes);
     } catch {
       //
     }
@@ -95,7 +64,7 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
     }
 
     try {
-      const result = await handleContentDelivery(content, options.mux, options.targetPanes);
+      const result = await handleContentDelivery(content, backend, options.targetPanes);
 
       // Output content for reference
       console.log("---");
@@ -109,7 +78,7 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
 
       // Focus on the first successful pane
       if (options.targetPanes.length > 0 && result.successCount > 0) {
-        await focusFirstSuccessPane(options.mux, options.targetPanes, result.failedPanes);
+        await focusFirstSuccessPane(backend, options.targetPanes, result.failedPanes);
       }
 
       // Exit with code 1 if not all panes succeeded (requirement 6)
@@ -121,42 +90,13 @@ export async function runOpenEditorMode(options: OpenEditorModeOptions): Promise
       process.exit(1);
     }
   } finally {
-    if (options.targetPanes.length > 0 && options.mux === "tmux") {
+    if (options.targetPanes.length > 0) {
       try {
+        // Where the backend asks for it, pass this editor's pane ID so that a
+        // newer editor registered on the same target pane keeps its link.
+        const expectedEditorPaneId = backend.keepNewerEditorLink ? editorPaneId : undefined;
         for (const targetPane of options.targetPanes) {
-          await clearEditorPaneId(targetPane);
-        }
-      } catch {
-        //
-      }
-    } else if (options.targetPanes.length > 0 && options.mux === "wezterm") {
-      try {
-        for (const targetPane of options.targetPanes) {
-          await wezterm.clearEditorPaneId(targetPane);
-        }
-      } catch {
-        //
-      }
-    } else if (options.targetPanes.length > 0 && options.mux === "herdr") {
-      try {
-        for (const targetPane of options.targetPanes) {
-          await herdr.clearEditorPaneId(targetPane, herdrEditorPaneId);
-        }
-      } catch {
-        //
-      }
-    } else if (options.targetPanes.length > 0 && options.mux === "niwaterm") {
-      try {
-        for (const targetPane of options.targetPanes) {
-          await niwaterm.clearEditorPaneId(targetPane);
-        }
-      } catch {
-        //
-      }
-    } else if (options.targetPanes.length > 0 && options.mux === "rex") {
-      try {
-        for (const targetPane of options.targetPanes) {
-          await rex.clearEditorPaneId(targetPane);
+          await clearEditorLink(backend, targetPane, expectedEditorPaneId);
         }
       } catch {
         //

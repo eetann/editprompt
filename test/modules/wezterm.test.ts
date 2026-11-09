@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { conf } from "../../src/modules/conf";
-import { appendToQuoteText, clearQuoteText, getQuoteText } from "../../src/modules/wezterm";
+import { weztermBackend } from "../../src/backends/wezterm";
+import { appendQuote } from "../../src/core/quote";
 
 beforeEach(() => {
   conf.clear();
@@ -11,7 +12,7 @@ describe("appendToQuoteText", () => {
     const paneId = "123";
     const content = "> foo\n\n";
 
-    await appendToQuoteText(paneId, content);
+    await appendQuote(weztermBackend, paneId, content);
 
     const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
     expect(data).toEqual({ quote_text: content });
@@ -22,8 +23,8 @@ describe("appendToQuoteText", () => {
     const firstContent = "> foo\n\n";
     const secondContent = "> bar\n\n";
 
-    await appendToQuoteText(paneId, firstContent);
-    await appendToQuoteText(paneId, secondContent);
+    await appendQuote(weztermBackend, paneId, firstContent);
+    await appendQuote(weztermBackend, paneId, secondContent);
 
     const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
     expect(data).toEqual({ quote_text: `${firstContent}\n\n${secondContent}` });
@@ -38,7 +39,7 @@ describe("appendToQuoteText", () => {
     conf.set(`wezterm.targetPane.pane_${paneId}`, { editorPaneId });
 
     // Then append quote_text
-    await appendToQuoteText(paneId, content);
+    await appendQuote(weztermBackend, paneId, content);
 
     const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
     expect(data).toEqual({ editorPaneId, quote_text: content });
@@ -52,14 +53,14 @@ describe("getQuoteText", () => {
 
     conf.set(`wezterm.targetPane.pane_${paneId}`, { quote_text: content });
 
-    const result = await getQuoteText(paneId);
+    const result = await weztermBackend.state.getQuote(paneId);
     expect(result).toBe(content);
   });
 
   test("should return empty string when quote_text doesn't exist", async () => {
     const paneId = "123";
 
-    const result = await getQuoteText(paneId);
+    const result = await weztermBackend.state.getQuote(paneId);
     expect(result).toBe("");
   });
 });
@@ -71,7 +72,7 @@ describe("clearQuoteText", () => {
 
     conf.set(`wezterm.targetPane.pane_${paneId}`, { quote_text: content });
 
-    await clearQuoteText(paneId);
+    await weztermBackend.state.removeQuote(paneId);
 
     const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
     expect(data).toEqual({});
@@ -87,7 +88,7 @@ describe("clearQuoteText", () => {
       quote_text: content,
     });
 
-    await clearQuoteText(paneId);
+    await weztermBackend.state.removeQuote(paneId);
 
     const data = conf.get(`wezterm.targetPane.pane_${paneId}`);
     expect(data).toEqual({ editorPaneId });

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using your favorite text editor. Originally designed for Claude Code, but now works with any CLI process. It detects running target processes and sends content to them via tmux, WezTerm, Herdr, niwaterm, or Rex integration, or via the clipboard.
+This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using your favorite text editor. Originally designed for Claude Code, but now works with any CLI process. It sends content to target panes through a pluggable backend (tmux, WezTerm, Herdr, niwaterm, Rex, or a backend declared in the user's configuration file), or via the clipboard.
 
 ## Development Commands
 
@@ -30,8 +30,9 @@ This is `editprompt`, a CLI tool that lets you write prompts for CLI tools using
 2. **Mode Selection** (`src/modes/`) - Routes to appropriate mode handler (openEditor, resume, sendOnly)
 3. **Editor Module** (`src/modules/editor.ts`) - Handles editor launching and content extraction
 4. **Process Detection** (`src/modules/process.ts`) - Finds target processes (configurable)
-5. **Multiplexer Integration** (`src/modules/tmux.ts`, `src/modules/wezterm.ts`, `src/modules/herdr.ts`, `src/modules/niwaterm.ts`, `src/modules/rex.ts`) - Handles multiplexer-specific operations
-6. **Content Delivery** - Sends to multiplexer panes via `send-keys` or falls back to clipboard
+5. **Backend Resolution** (`src/backends/registry.ts`) - Resolves `--mux` / `EDITPROMPT_MUX` / auto-detection to a `MuxBackend`
+6. **Core Logic** (`src/core/`) - Editor-target links, quote buffer, resume focus switching and chunked delivery, written once against `MuxBackend`
+7. **Content Delivery** - Sends to target panes through the backend or falls back to clipboard
 
 ### Modes
 
@@ -45,7 +46,9 @@ For detailed mode implementation including constraints and solutions for differe
 
 ### Key Design Patterns
 
-- **Multiplexer-First Strategy**: Supports tmux, WezTerm, Herdr, niwaterm, and Rex with multiplexer-specific implementations
+- **Backend Interface**: Modes never branch on a multiplexer name; every backend implements `MuxBackend` (`src/backends/types.ts`) and is looked up through the registry
+- **Pluggable Backends**: Users can declare command-template backends in `~/.config/editprompt/config.jsonc` (loaded with c12; see `docs/backends.md`)
+- **Capabilities**: Optional backend methods (`splitPane`, `runInPane`, `closePane`) gate features such as `toggle`
 - **Graceful Fallbacks**: Editor → Process Detection → Multiplexer → Clipboard (with user feedback)
 - **Process Matching**: Links system processes to multiplexer panes for accurate targeting
 - **Mode Separation**: Each mode has isolated logic for different use cases
@@ -53,7 +56,9 @@ For detailed mode implementation including constraints and solutions for differe
 ### Directory Structure
 
 - `modes/`: Mode implementations (openEditor, resume, sendOnly, common)
-- `modules/`: Core functionality modules (editor, process, tmux, wezterm, herdr, niwaterm, rex)
+- `backends/`: `MuxBackend` interface, pane state stores, built-in backend definitions, command-template backends, registry
+- `core/`: Backend-agnostic logic (link, quote, resume, delivery)
+- `modules/`: Low-level modules (editor, logger, conf) and per-multiplexer CLI/API calls (tmux, wezterm, herdr, niwaterm, rex)
 - `utils/`: Utility functions (argumentParser, contentProcessor, envParser, sendConfig, tempFile)
 - `config/`: Configuration values (constants)
 - `types/`: TypeScript type definitions
@@ -66,10 +71,11 @@ For detailed mode implementation including constraints and solutions for differe
 - `modes/sendOnly.ts`: Direct content sending from within editor
 - `modules/editor.ts`: Editor selection ($EDITOR priority), temp file management, content extraction
 - `modules/process.ts`: Process discovery and content delivery mechanisms
-- `modules/tmux.ts`: tmux-specific operations (pane variables, focus switching)
-- `modules/wezterm.ts`: WezTerm-specific operations (Conf-based state management, focus switching)
-- `modules/herdr.ts`: Herdr socket API operations and session-scoped Conf state management
-- `modules/rex.ts`: Rex CLI operations and Conf state management
+- `backends/types.ts`: `MuxBackend` and `PaneStateStore` interfaces
+- `backends/stores.ts`: `paneVariableStore` (tmux, niwaterm) and `confStore` (WezTerm, Herdr, Rex, configured backends), keeping the existing storage keys
+- `backends/command.ts`: Builds and validates backends declared in the configuration file
+- `config/userConfig.ts`: Loads the configuration with c12 from the user's config directory (never the cwd)
+- `modules/tmux.ts`, `wezterm.ts`, `herdr.ts`, `niwaterm.ts`, `rex.ts`: Transport primitives for each multiplexer
 - `utils/tempFile.ts`: Secure temporary file creation and cleanup
 - `config/constants.ts`: Configuration values (default process name, file patterns, default editor)
 
@@ -77,7 +83,8 @@ For detailed mode implementation including constraints and solutions for differe
 
 - `gunshi` - CLI framework
 - `clipboardy` - Clipboard operations
-- `conf` - Persistent configuration storage (used for WezTerm, Herdr, niwaterm, and Rex state management)
+- `conf` - Persistent storage (used for WezTerm, Herdr, Rex and configured backends' state, and stash)
+- `c12` - Configuration file loader
 - Native Node.js modules for multiplexer integration and file operations
 
 ## Testing
