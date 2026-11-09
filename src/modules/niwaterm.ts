@@ -54,7 +54,8 @@ export async function sendKey(paneId: string, key: string): Promise<void> {
 }
 
 export async function sendTextChunk(paneId: string, chunk: string): Promise<void> {
-  await execAsync(`niwa tab send-keys -t ${quoteShellWord(paneId)} ${quoteShellWord(chunk)}`);
+  // `--` keeps a chunk starting with "-" from being parsed as an option.
+  await execAsync(`niwa tab send-keys -t ${quoteShellWord(paneId)} -- ${quoteShellWord(chunk)}`);
 }
 
 export function logContentSent(paneId: string, chunkCount: number): void {
