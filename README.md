@@ -41,7 +41,7 @@ npx editprompt
 
 ### Neovim Plugin
 
-For Neovim users, [editprompt.nvim](https://github.com/eetann/editprompt.nvim) provides easy integration. For manual configuration, see [docs/neovim.md](docs/neovim.md).
+For Neovim users, [editprompt.nvim](https://github.com/eetann/editprompt.nvim) provides easy integration.
 
 ## 🚀 Usage
 
@@ -329,7 +329,7 @@ This sends the content to the target pane (or clipboard) while keeping your edit
 
 #### Neovim Integration
 
-For Neovim users, we recommend using [editprompt.nvim](https://github.com/eetann/editprompt.nvim) for easy setup. For manual configuration, see [docs/neovim.md](docs/neovim.md).
+For Neovim users, we recommend using [editprompt.nvim](https://github.com/eetann/editprompt.nvim) for easy setup.
 
 ### Key Sending (press)
 
@@ -531,7 +531,7 @@ editprompt respects the following editor priority:
 
 #### EDITPROMPT Environment Variable
 
-editprompt automatically sets `EDITPROMPT=1` when launching your editor. This allows you to detect when your editor is launched by editprompt and enable specific configurations or plugins. For Neovim integration examples, see [docs/neovim.md](docs/neovim.md).
+editprompt automatically sets `EDITPROMPT=1` when launching your editor. This allows you to detect when your editor is launched by editprompt and enable specific configurations or plugins.
 
 #### Custom Environment Variables
 
