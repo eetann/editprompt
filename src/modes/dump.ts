@@ -1,18 +1,11 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
-import * as herdr from "../modules/herdr";
+import { getBackend } from "../backends/registry";
+import { takeQuote } from "../core/quote";
 import { setupLogger } from "../modules/logger";
-import * as niwaterm from "../modules/niwaterm";
-import {
-  clearQuoteVariable,
-  getCurrentPaneId,
-  getQuoteVariableContent,
-  getTargetPaneIds,
-  isEditorPane,
-} from "../modules/tmux";
-import * as wezterm from "../modules/wezterm";
 import { readSendConfig } from "../utils/sendConfig";
 import { ARG_LOG_FILE, ARG_QUIET, ARG_VERBOSE } from "./args";
+import { requireEditorContext } from "./common";
 
 const logger = getLogger(["editprompt", "dump"]);
 
@@ -20,64 +13,13 @@ export async function runDumpMode(): Promise<void> {
   try {
     // Get config from environment variables
     const config = readSendConfig();
-
-    // Get current pane and check if it's an editor pane
-    let currentPaneId: string;
-    let isEditor: boolean;
-
-    if (config.mux === "tmux") {
-      currentPaneId = await getCurrentPaneId();
-      isEditor = await isEditorPane(currentPaneId);
-    } else if (config.mux === "wezterm") {
-      currentPaneId = await wezterm.getCurrentPaneId();
-      isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
-    } else if (config.mux === "niwaterm") {
-      currentPaneId = await niwaterm.getCurrentPaneId();
-      isEditor = await niwaterm.isEditorPane(currentPaneId);
-    } else {
-      currentPaneId = await herdr.getCurrentPaneId();
-      isEditor = herdr.isEditorPaneFromConf(currentPaneId);
-    }
-
-    if (!isEditor) {
-      logger.error("Current pane is not an editor pane");
-      process.exit(1);
-    }
-
-    // Get target pane IDs from pane variables or Conf
-    let targetPanes: string[];
-    if (config.mux === "tmux") {
-      targetPanes = await getTargetPaneIds(currentPaneId);
-    } else if (config.mux === "wezterm") {
-      targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
-    } else if (config.mux === "niwaterm") {
-      targetPanes = await niwaterm.getTargetPaneIds(currentPaneId);
-    } else {
-      targetPanes = await herdr.getTargetPaneIds(currentPaneId);
-    }
-
-    if (targetPanes.length === 0) {
-      logger.error("No target panes registered for this editor pane");
-      process.exit(1);
-    }
+    const backend = getBackend(config.mux);
+    const { targetPaneIds } = await requireEditorContext(backend, logger);
 
     // Get and clear quote content from all target panes
     const quoteContents: string[] = [];
-    for (const targetPane of targetPanes) {
-      let content: string;
-      if (config.mux === "tmux") {
-        content = await getQuoteVariableContent(targetPane);
-        await clearQuoteVariable(targetPane);
-      } else if (config.mux === "wezterm") {
-        content = await wezterm.getQuoteText(targetPane);
-        await wezterm.clearQuoteText(targetPane);
-      } else if (config.mux === "niwaterm") {
-        content = await niwaterm.getQuoteVariableContent(targetPane);
-        await niwaterm.clearQuoteVariable(targetPane);
-      } else {
-        content = await herdr.getQuoteText(targetPane);
-        await herdr.clearQuoteText(targetPane);
-      }
+    for (const targetPane of targetPaneIds) {
+      const content = await takeQuote(backend, targetPane);
       if (content.trim() !== "") {
         quoteContents.push(content);
       }

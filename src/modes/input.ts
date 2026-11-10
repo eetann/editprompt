@@ -1,21 +1,18 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
-import * as herdr from "../modules/herdr";
+import { getBackend } from "../backends/registry";
+import { sendContentToPane, sendKeyToPane } from "../core/delivery";
 import { setupLogger } from "../modules/logger";
-import * as niwaterm from "../modules/niwaterm";
-import {
-  getCurrentPaneId,
-  getTargetPaneIds,
-  inputToTmuxPane,
-  isEditorPane,
-  sendKeyToTmuxPane,
-} from "../modules/tmux";
-import * as wezterm from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { processContent } from "../utils/contentProcessor";
 import { readSendConfig } from "../utils/sendConfig";
 import { ARG_LOG_FILE, ARG_QUIET, ARG_VERBOSE } from "./args";
-import { copyToClipboard, focusFirstSuccessPane, handleContentDelivery } from "./common";
+import {
+  copyToClipboard,
+  focusFirstSuccessPane,
+  handleContentDelivery,
+  requireEditorContext,
+} from "./common";
 
 const logger = getLogger(["editprompt", "input"]);
 
@@ -33,51 +30,12 @@ export async function runInputMode(
   }
 
   const config = readSendConfig();
-
-  // Get current pane and check if it's an editor pane
-  let currentPaneId: string;
-  let isEditor: boolean;
-
-  if (config.mux === "tmux") {
-    currentPaneId = await getCurrentPaneId();
-    isEditor = await isEditorPane(currentPaneId);
-  } else if (config.mux === "wezterm") {
-    currentPaneId = await wezterm.getCurrentPaneId();
-    isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
-  } else if (config.mux === "niwaterm") {
-    currentPaneId = await niwaterm.getCurrentPaneId();
-    isEditor = await niwaterm.isEditorPane(currentPaneId);
-  } else {
-    currentPaneId = await herdr.getCurrentPaneId();
-    isEditor = herdr.isEditorPaneFromConf(currentPaneId);
-  }
-
-  if (!isEditor) {
-    logger.error("Current pane is not an editor pane");
-    process.exit(1);
-  }
-
-  // Get target pane IDs from pane variables or Conf
-  let targetPanes: string[];
-  if (config.mux === "tmux") {
-    targetPanes = await getTargetPaneIds(currentPaneId);
-  } else if (config.mux === "wezterm") {
-    targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
-  } else if (config.mux === "niwaterm") {
-    targetPanes = await niwaterm.getTargetPaneIds(currentPaneId);
-  } else {
-    targetPanes = await herdr.getTargetPaneIds(currentPaneId);
-  }
-
-  if (targetPanes.length === 0) {
-    logger.error("No target panes registered for this editor pane");
-    process.exit(1);
-  }
+  const backend = getBackend(config.mux);
+  const { targetPaneIds: targetPanes } = await requireEditorContext(backend, logger);
 
   // Auto-send mode
   if (autoSend) {
-    const key =
-      sendKey || (config.mux === "wezterm" ? "\\r" : config.mux === "herdr" ? "enter" : "C-m");
+    const key = sendKey || backend.defaultSubmitKey;
 
     const IMAGE_EXTENSIONS = /\.(png|webp|avif|jpe?g|gif)\b/i;
     const hasImagePath = IMAGE_EXTENSIONS.test(content);
@@ -86,19 +44,8 @@ export async function runInputMode(
     let successCount = 0;
     for (const targetPane of targetPanes) {
       try {
-        if (config.mux === "wezterm") {
-          await wezterm.inputToWeztermPane(targetPane, content);
-          await wezterm.sendKeyToWeztermPane(targetPane, key, delay);
-        } else if (config.mux === "herdr") {
-          await herdr.inputToHerdrPane(targetPane, content);
-          await herdr.sendKeyToHerdrPane(targetPane, key, delay);
-        } else if (config.mux === "niwaterm") {
-          await niwaterm.inputToNiwatermPane(targetPane, content);
-          await niwaterm.sendKeyToNiwatermPane(targetPane, key, delay);
-        } else {
-          await inputToTmuxPane(targetPane, content);
-          await sendKeyToTmuxPane(targetPane, key, delay);
-        }
+        await sendContentToPane(backend, targetPane, content);
+        await sendKeyToPane(backend, targetPane, key, delay);
         successCount++;
       } catch (error) {
         logger.error(
@@ -122,7 +69,7 @@ export async function runInputMode(
 
   // Normal mode (focus on first successful pane)
   try {
-    const result = await handleContentDelivery(content, config.mux, targetPanes);
+    const result = await handleContentDelivery(content, backend, targetPanes);
 
     // Copy to clipboard if alwaysCopy is enabled
     if (config.alwaysCopy && !result.allFailed) {
@@ -132,7 +79,7 @@ export async function runInputMode(
 
     // Focus on the first successful pane
     if (result.successCount > 0) {
-      await focusFirstSuccessPane(config.mux, targetPanes, result.failedPanes);
+      await focusFirstSuccessPane(backend, targetPanes, result.failedPanes);
     }
 
     // Exit with code 1 if all panes failed (requirement 3)

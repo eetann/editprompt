@@ -1,14 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
-import * as herdr from "../modules/herdr";
-import * as niwaterm from "../modules/niwaterm";
-import {
-  getCurrentPaneId,
-  getTargetPaneIds,
-  isEditorPane,
-  markAsEditorPane,
-} from "../modules/tmux";
-import * as wezterm from "../modules/wezterm";
+import { getBackend } from "../backends/registry";
+import { getTargetPaneIds, isEditorPane, markAsEditorPane } from "../core/link";
 import { setupLogger } from "../modules/logger";
 import {
   ARG_LOG_FILE,
@@ -35,6 +28,7 @@ export async function runRegisterMode(options: RegisterModeOptions): Promise<voi
     process.exit(1);
   }
 
+  const backend = getBackend(options.mux);
   let editorPaneId: string;
 
   // Determine editor pane ID
@@ -42,75 +36,22 @@ export async function runRegisterMode(options: RegisterModeOptions): Promise<voi
     editorPaneId = options.editorPane;
   } else {
     // Use current pane as editor pane
-    if (options.mux === "tmux") {
-      editorPaneId = await getCurrentPaneId();
-      const isEditor = await isEditorPane(editorPaneId);
-      if (!isEditor) {
-        logger.error(
-          "Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
-        );
-        process.exit(1);
-      }
-    } else if (options.mux === "wezterm") {
-      editorPaneId = await wezterm.getCurrentPaneId();
-      const isEditor = wezterm.isEditorPaneFromConf(editorPaneId);
-      if (!isEditor) {
-        logger.error(
-          "Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
-        );
-        process.exit(1);
-      }
-    } else if (options.mux === "herdr") {
-      editorPaneId = await herdr.getCurrentPaneId();
-      const isEditor = herdr.isEditorPaneFromConf(editorPaneId);
-      if (!isEditor) {
-        logger.error(
-          "Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
-        );
-        process.exit(1);
-      }
-    } else if (options.mux === "niwaterm") {
-      editorPaneId = await niwaterm.getCurrentPaneId();
-      const isEditor = await niwaterm.isEditorPane(editorPaneId);
-      if (!isEditor) {
-        logger.error(
-          "Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
-        );
-        process.exit(1);
-      }
-    } else {
-      logger.error("Unsupported multiplexer");
+    editorPaneId = await backend.getCurrentPaneId();
+    if (!(await isEditorPane(backend, editorPaneId))) {
+      logger.error(
+        "Current pane is not an editor pane. Please run this command from an editor pane or specify --editor-pane.",
+      );
       process.exit(1);
     }
   }
 
   // Register editor pane with target panes
   try {
-    // Get existing target panes
-    let existingPanes: string[] = [];
-    if (options.mux === "tmux") {
-      existingPanes = await getTargetPaneIds(editorPaneId);
-    } else if (options.mux === "wezterm") {
-      existingPanes = await wezterm.getTargetPaneIds(editorPaneId);
-    } else if (options.mux === "herdr") {
-      existingPanes = await herdr.getTargetPaneIds(editorPaneId);
-    } else if (options.mux === "niwaterm") {
-      existingPanes = await niwaterm.getTargetPaneIds(editorPaneId);
-    }
-
-    // Merge with new target panes and remove duplicates
+    // Merge existing target panes with the new ones and remove duplicates
+    const existingPanes = await getTargetPaneIds(backend, editorPaneId);
     const mergedTargetPanes = [...new Set([...existingPanes, ...options.targetPanes])];
 
-    // Save merged target panes
-    if (options.mux === "tmux") {
-      await markAsEditorPane(editorPaneId, mergedTargetPanes);
-    } else if (options.mux === "wezterm") {
-      await wezterm.markAsEditorPane(editorPaneId, mergedTargetPanes);
-    } else if (options.mux === "herdr") {
-      await herdr.markAsEditorPane(editorPaneId, mergedTargetPanes);
-    } else if (options.mux === "niwaterm") {
-      await niwaterm.markAsEditorPane(editorPaneId, mergedTargetPanes);
-    }
+    await markAsEditorPane(backend, editorPaneId, mergedTargetPanes);
 
     logger.info(
       `Editor pane ${editorPaneId} registered with target panes: ${mergedTargetPanes.join(", ")}`,

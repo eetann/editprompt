@@ -53,6 +53,7 @@ describe("readSendConfig", () => {
     delete process.env.HERDR_SOCKET_PATH;
     delete process.env.HERDR_PANE_ID;
     delete process.env.HERDR_ACTIVE_PANE_ID;
+    delete process.env.NIWATERM_TAB_ID;
     process.env.EDITPROMPT_ALWAYS_COPY = "0";
 
     const config = readSendConfig();

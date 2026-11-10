@@ -1,18 +1,12 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
-import * as herdr from "../modules/herdr";
+import { getBackend } from "../backends/registry";
+import { sendKeyToPane } from "../core/delivery";
 import { setupLogger } from "../modules/logger";
-import * as niwaterm from "../modules/niwaterm";
-import {
-  getCurrentPaneId,
-  getTargetPaneIds,
-  isEditorPane,
-  sendKeyToTmuxPane,
-} from "../modules/tmux";
-import * as wezterm from "../modules/wezterm";
 import { extractRawContent } from "../utils/argumentParser";
 import { readSendConfig } from "../utils/sendConfig";
 import { ARG_LOG_FILE, ARG_QUIET, ARG_VERBOSE } from "./args";
+import { requireEditorContext } from "./common";
 
 const logger = getLogger(["editprompt", "press"]);
 
@@ -23,57 +17,13 @@ export async function runPressMode(key: string, delay = 0): Promise<void> {
   }
 
   const config = readSendConfig();
-
-  let currentPaneId: string;
-  let isEditor: boolean;
-
-  if (config.mux === "tmux") {
-    currentPaneId = await getCurrentPaneId();
-    isEditor = await isEditorPane(currentPaneId);
-  } else if (config.mux === "wezterm") {
-    currentPaneId = await wezterm.getCurrentPaneId();
-    isEditor = wezterm.isEditorPaneFromConf(currentPaneId);
-  } else if (config.mux === "niwaterm") {
-    currentPaneId = await niwaterm.getCurrentPaneId();
-    isEditor = await niwaterm.isEditorPane(currentPaneId);
-  } else {
-    currentPaneId = await herdr.getCurrentPaneId();
-    isEditor = herdr.isEditorPaneFromConf(currentPaneId);
-  }
-
-  if (!isEditor) {
-    logger.error("Current pane is not an editor pane");
-    process.exit(1);
-  }
-
-  let targetPanes: string[];
-  if (config.mux === "tmux") {
-    targetPanes = await getTargetPaneIds(currentPaneId);
-  } else if (config.mux === "wezterm") {
-    targetPanes = await wezterm.getTargetPaneIds(currentPaneId);
-  } else if (config.mux === "niwaterm") {
-    targetPanes = await niwaterm.getTargetPaneIds(currentPaneId);
-  } else {
-    targetPanes = await herdr.getTargetPaneIds(currentPaneId);
-  }
-
-  if (targetPanes.length === 0) {
-    logger.error("No target panes registered for this editor pane");
-    process.exit(1);
-  }
+  const backend = getBackend(config.mux);
+  const { targetPaneIds } = await requireEditorContext(backend, logger);
 
   let successCount = 0;
-  for (const targetPane of targetPanes) {
+  for (const targetPane of targetPaneIds) {
     try {
-      if (config.mux === "wezterm") {
-        await wezterm.sendKeyToWeztermPane(targetPane, key, delay);
-      } else if (config.mux === "herdr") {
-        await herdr.sendKeyToHerdrPane(targetPane, key, delay);
-      } else if (config.mux === "niwaterm") {
-        await niwaterm.sendKeyToNiwatermPane(targetPane, key, delay);
-      } else {
-        await sendKeyToTmuxPane(targetPane, key, delay);
-      }
+      await sendKeyToPane(backend, targetPane, key, delay);
       successCount++;
     } catch (error) {
       logger.warn(

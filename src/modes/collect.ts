@@ -1,9 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import { define } from "gunshi";
-import { appendToQuoteText as appendToHerdrQuoteText } from "../modules/herdr";
-import { appendToQuoteVariable as appendToNiwatermQuoteVariable } from "../modules/niwaterm";
-import { appendToQuoteVariable } from "../modules/tmux";
-import { appendToQuoteText } from "../modules/wezterm";
+import { getBackend } from "../backends/registry";
+import { appendQuote } from "../core/quote";
 import { extractRawContent } from "../utils/argumentParser";
 import { processQuoteText } from "../utils/quoteProcessor";
 import { setupLogger } from "../modules/logger";
@@ -78,10 +76,10 @@ export async function runCollectMode(
     let selection: string;
 
     if (rawContent !== undefined) {
-      // Use positional argument (wezterm)
+      // Use the positional argument (backends whose collectInput is "argument")
       selection = rawContent;
     } else {
-      // Read from stdin (tmux)
+      // Read from stdin (backends whose collectInput is "stdin", e.g. tmux)
       selection = await readStdin();
     }
 
@@ -90,15 +88,7 @@ export async function runCollectMode(
 
     for (const output of outputs) {
       if (output === "buffer") {
-        if (mux === "tmux") {
-          await appendToQuoteVariable(targetPaneId, processedText);
-        } else if (mux === "wezterm") {
-          await appendToQuoteText(targetPaneId, processedText);
-        } else if (mux === "niwaterm") {
-          await appendToNiwatermQuoteVariable(targetPaneId, processedText);
-        } else {
-          await appendToHerdrQuoteText(targetPaneId, processedText);
-        }
+        await appendQuote(getBackend(mux), targetPaneId, processedText);
       } else if (output === "stdout") {
         process.stdout.write(processedText);
       }
@@ -132,10 +122,9 @@ export const collectCommand = define({
     const outputs = normalizeCollectOutputs(ctx.values.output);
     const withQuote = !ctx.values["no-quote"];
 
-    // For WezTerm, Herdr, and niwaterm, content must be provided as an argument.
-    // For tmux, content is read from stdin
+    // Most backends pass the selection as an argument; tmux pipes it to stdin.
     let rawContent: string | undefined;
-    if (mux === "wezterm" || mux === "herdr" || mux === "niwaterm") {
+    if (getBackend(mux).collectInput === "argument") {
       rawContent = extractRawContent(ctx.rest, ctx.positionals);
       if (rawContent === undefined) {
         logger.error(
