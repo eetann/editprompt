@@ -1,7 +1,7 @@
 {
   "name": "editprompt",
   "version": "0.1.0",
-  "description": "Hand Claude Code's prompt suggestion to editprompt",
+  "description": "Let editprompt pull the draft or the suggestion from Claude Code's prompt box",
   "author": {
     "name": "eetann"
   },

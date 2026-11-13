@@ -69,16 +69,18 @@ describe("paneVariableStore", () => {
     expect(values.get("t3/editprompt_is_editor")).toBe("1");
   });
 
-  test("keeps the suggestion in its own variable", async () => {
+  test("keeps the bridge socket in its own variable", async () => {
     const { values, io } = createMemoryIO();
     const store = paneVariableStore(io, "@editprompt_");
 
-    await store.setSuggestion("%1", "run the tests");
-    expect(values.get("%1/@editprompt_suggestion")).toBe("run the tests");
-    expect(await store.getSuggestion("%1")).toBe("run the tests");
+    await store.setBridgeSocket("%1", "/run/user/1000/editprompt/bridge-1.sock");
+    expect(values.get("%1/@editprompt_bridge_socket")).toBe(
+      "/run/user/1000/editprompt/bridge-1.sock",
+    );
+    expect(await store.getBridgeSocket("%1")).toBe("/run/user/1000/editprompt/bridge-1.sock");
 
-    await store.removeSuggestion("%1");
-    expect(await store.getSuggestion("%1")).toBe("");
+    await store.removeBridgeSocket("%1");
+    expect(await store.getBridgeSocket("%1")).toBe("");
   });
 });
 
@@ -120,19 +122,17 @@ describe("confStore", () => {
     expect(conf.has("wezterm.targetPane.pane_1")).toBe(false);
   });
 
-  test("keeps the suggestion beside the quote", async () => {
-    const store = confStore(() => "wezterm");
-    await store.setQuote("1", "> quote\n\n");
-    await store.setSuggestion("1", "run the tests");
+  test("keeps the bridge socket apart from the target pane record", async () => {
+    const store = confStore(() => "wezterm", { wholeTargetRecord: true });
+    await store.setBridgeSocket("1", "/tmp/bridge-1.sock");
+    await store.setEditorPaneId("1", "3");
+    await store.removeEditorPaneId("1");
 
-    expect(conf.get("wezterm.targetPane.pane_1")).toEqual({
-      quote_text: "> quote\n\n",
-      suggestion_text: "run the tests",
-    });
-    expect(await store.getSuggestion("1")).toBe("run the tests");
+    expect(conf.get("wezterm.bridgeSocket.pane_1")).toBe("/tmp/bridge-1.sock");
+    expect(await store.getBridgeSocket("1")).toBe("/tmp/bridge-1.sock");
 
-    await store.removeSuggestion("1");
-    expect(conf.get("wezterm.targetPane.pane_1")).toEqual({ quote_text: "> quote\n\n" });
+    await store.removeBridgeSocket("1");
+    expect(conf.has("wezterm.bridgeSocket.pane_1")).toBe(false);
   });
 
   test("forgets an editor pane", async () => {

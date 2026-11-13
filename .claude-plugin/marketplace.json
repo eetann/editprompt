@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "editprompt",
-      "description": "Hand Claude Code's prompt suggestion to editprompt",
+      "description": "Let editprompt pull the draft or the suggestion from Claude Code's prompt box",
       "source": "./claude-plugin"
     }
   ]

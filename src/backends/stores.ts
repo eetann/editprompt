@@ -13,12 +13,12 @@ const VAR_EDITOR_PANE = "editor_pane";
 const VAR_IS_EDITOR = "is_editor";
 const VAR_TARGET_PANES = "target_panes";
 const VAR_QUOTE = "quote";
-const VAR_SUGGESTION = "suggestion";
+const VAR_BRIDGE_SOCKET = "bridge_socket";
 
 /**
  * State kept in variables on the panes themselves (tmux pane options, niwaterm
  * tab variables). Variable names are `<prefix>editor_pane`, `<prefix>is_editor`,
- * `<prefix>target_panes`, `<prefix>quote` and `<prefix>suggestion`.
+ * `<prefix>target_panes`, `<prefix>quote` and `<prefix>bridge_socket`.
  *
  * The variables disappear with their pane, so forgetting an editor pane is a
  * no-op here: only the link on the target pane is cleared.
@@ -53,9 +53,10 @@ export function paneVariableStore(io: PaneVariableIO, prefix: string): PaneState
     setQuote: (targetPaneId, text) => io.set(targetPaneId, name(VAR_QUOTE), text),
     removeQuote: (targetPaneId) => io.set(targetPaneId, name(VAR_QUOTE), ""),
 
-    getSuggestion: (targetPaneId) => io.get(targetPaneId, name(VAR_SUGGESTION)),
-    setSuggestion: (targetPaneId, text) => io.set(targetPaneId, name(VAR_SUGGESTION), text),
-    removeSuggestion: (targetPaneId) => io.set(targetPaneId, name(VAR_SUGGESTION), ""),
+    getBridgeSocket: (targetPaneId) => read(targetPaneId, VAR_BRIDGE_SOCKET),
+    setBridgeSocket: (targetPaneId, socketPath) =>
+      io.set(targetPaneId, name(VAR_BRIDGE_SOCKET), socketPath),
+    removeBridgeSocket: (targetPaneId) => io.set(targetPaneId, name(VAR_BRIDGE_SOCKET), ""),
   };
 }
 
@@ -104,8 +105,11 @@ export interface ConfStoreOptions {
  * State kept in editprompt's Conf storage, for backends whose panes cannot hold
  * variables. The layout is:
  *
- * - `<namespace>.targetPane.pane_<id>`: `{ editorPaneId?, quote_text?, suggestion_text? }`
+ * - `<namespace>.targetPane.pane_<id>`: `{ editorPaneId?, quote_text? }`
  * - `<namespace>.editorPane.pane_<id>`: `{ targetPaneIds }`
+ * - `<namespace>.bridgeSocket.pane_<id>`: the socket path of the target pane's
+ *   bridge. It has a key of its own so that rewriting the target pane record
+ *   (wholeTargetRecord) does not drop it.
  *
  * The namespace is resolved on every access so that it can depend on the
  * environment (Herdr scopes it to the session socket).
@@ -113,6 +117,7 @@ export interface ConfStoreOptions {
 export function confStore(namespace: () => string, options: ConfStoreOptions = {}): PaneStateStore {
   const targetKey = (paneId: string) => `${namespace()}.targetPane.pane_${paneId}`;
   const editorKey = (paneId: string) => `${namespace()}.editorPane.pane_${paneId}`;
+  const bridgeKey = (paneId: string) => `${namespace()}.bridgeSocket.pane_${paneId}`;
 
   const store: PaneStateStore = {
     getEditorPaneId: async (targetPaneId) => {
@@ -149,15 +154,15 @@ export function confStore(namespace: () => string, options: ConfStoreOptions = {
       removeField(targetKey(targetPaneId), "quote_text");
     },
 
-    getSuggestion: async (targetPaneId) => {
-      const data = readRecord(targetKey(targetPaneId));
-      return data && "suggestion_text" in data ? String(data.suggestion_text) : "";
+    getBridgeSocket: async (targetPaneId) => {
+      const socketPath = conf.get(bridgeKey(targetPaneId));
+      return typeof socketPath === "string" ? socketPath : "";
     },
-    setSuggestion: async (targetPaneId, text) => {
-      setField(targetKey(targetPaneId), "suggestion_text", text);
+    setBridgeSocket: async (targetPaneId, socketPath) => {
+      conf.set(bridgeKey(targetPaneId), socketPath);
     },
-    removeSuggestion: async (targetPaneId) => {
-      removeField(targetKey(targetPaneId), "suggestion_text");
+    removeBridgeSocket: async (targetPaneId) => {
+      conf.delete(bridgeKey(targetPaneId));
     },
   };
 
@@ -201,9 +206,9 @@ const FAILURE_RESULTS: { [K in StoreMethod]: Awaited<ReturnType<PaneStateStore[K
   getQuote: "",
   setQuote: undefined,
   removeQuote: undefined,
-  getSuggestion: "",
-  setSuggestion: undefined,
-  removeSuggestion: undefined,
+  getBridgeSocket: "",
+  setBridgeSocket: undefined,
+  removeBridgeSocket: undefined,
 };
 
 // The WezTerm module's function names, used in its failure logs.
@@ -218,9 +223,9 @@ const LEGACY_METHOD_NAMES: { [K in StoreMethod]: string } = {
   getQuote: "getQuoteText",
   setQuote: "appendToQuoteText",
   removeQuote: "clearQuoteText",
-  getSuggestion: "getSuggestion",
-  setSuggestion: "setSuggestion",
-  removeSuggestion: "removeSuggestion",
+  getBridgeSocket: "getBridgeSocket",
+  setBridgeSocket: "setBridgeSocket",
+  removeBridgeSocket: "removeBridgeSocket",
 };
 
 function swallowErrors(logger: Logger, store: PaneStateStore): PaneStateStore {

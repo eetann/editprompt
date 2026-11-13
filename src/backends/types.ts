@@ -1,6 +1,6 @@
 /**
  * Per-pane state that editprompt keeps for a backend: which editor pane serves
- * which target panes, and the quote buffer and prompt suggestion kept for each
+ * which target panes, and the quote buffer and bridge socket kept for each
  * target pane.
  *
  * Core logic (linking, resume, quote buffering) is written once against this
@@ -32,10 +32,13 @@ export interface PaneStateStore {
   setQuote(targetPaneId: string, text: string): Promise<void>;
   removeQuote(targetPaneId: string): Promise<void>;
 
-  /** The latest prompt suggestion shown in a target pane, or "" when there is none. */
-  getSuggestion(targetPaneId: string): Promise<string>;
-  setSuggestion(targetPaneId: string, text: string): Promise<void>;
-  removeSuggestion(targetPaneId: string): Promise<void>;
+  /**
+   * The socket of the bridge running in a target pane (`editprompt bridge`),
+   * or "" when there is none. A stale path is possible after a crash.
+   */
+  getBridgeSocket(targetPaneId: string): Promise<string>;
+  setBridgeSocket(targetPaneId: string, socketPath: string): Promise<void>;
+  removeBridgeSocket(targetPaneId: string): Promise<void>;
 }
 
 export interface SplitPaneOptions {

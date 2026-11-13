@@ -5,6 +5,7 @@ import { mayUseConfiguredBackend, setupUserConfig } from "./config/userConfig";
 import { setupLogger } from "./modules/logger";
 import * as pkg from "../package.json";
 import { collectCommand } from "./modes/collect";
+import { bridgeCommand } from "./modes/bridge";
 import { dumpCommand } from "./modes/dump";
 import { inputCommand } from "./modes/input";
 import { openCommand } from "./modes/openEditor";
@@ -12,7 +13,7 @@ import { registerCommand } from "./modes/register";
 import { resumeCommand } from "./modes/resume";
 import { pressCommand } from "./modes/press";
 import { stashCommand } from "./modes/stash";
-import { suggestionCommand } from "./modes/suggestion";
+import { pullCommand } from "./modes/pull";
 import { toggleCommand } from "./modes/toggle";
 
 const argv = process.argv.slice(2);
@@ -61,7 +62,8 @@ await cli(
       collect: collectCommand,
       dump: dumpCommand,
       stash: stashCommand,
-      suggestion: suggestionCommand,
+      pull: pullCommand,
+      bridge: bridgeCommand,
     },
     renderHeader: null,
   },

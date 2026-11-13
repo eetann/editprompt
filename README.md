@@ -27,6 +27,7 @@ A CLI tool that lets you write prompts for CLI tools using your favorite text ed
 - 🖥️ **Universal Terminal Support**: Works with any terminal via clipboard - no multiplexer required
 - 📤 **Send Without Closing**: Iterate on prompts without closing your editor
 - 📋 **Quote Buffering**: Collect text selections and send them as quoted replies
+- 📥 **Pull from Claude Code**: Bring the prompt you started typing in Claude Code into your editor
 - 📋 **Clipboard Fallback**: Automatically copies to clipboard if sending fails
 
 ## 📦 Installation
@@ -514,25 +515,30 @@ editprompt stash pop
 
 **Note:** The stash commands must be run from within an editprompt editor session (where `EDITPROMPT=1` is set). Stash data is associated with the target pane and persisted using the Conf library.
 
-### Prompt Suggestion from Claude Code
+### Pulling from Claude Code's Prompt Box
 
-After a turn, Claude Code may show a dim suggestion for your next prompt (Tab to take it). The editprompt plugin for Claude Code keeps that suggestion so that you can pull it into your editor:
+Started typing a prompt in Claude Code and want to finish it in your editor? Run this from within your editor pane:
 
 ```bash
-# Run from within your editor pane (outputs to stdout)
-editprompt suggestion get
+# Outputs to stdout
+editprompt pull
+
+# Leave the draft in Claude Code's prompt box
+editprompt pull --keep
 ```
 
-The plugin is a Claude Code mod (function hooks), so Claude Code must have them enabled. Install it from this repository:
+`pull` outputs the draft typed in the target pane's prompt box and clears the box, so that sending the prompt back does not duplicate it. When nothing is typed, it outputs the suggestion Claude Code shows for your next prompt (the dim text you take with Tab), and leaves it there.
+
+This needs the editprompt plugin for Claude Code. The plugin is a Claude Code mod (function hooks), so Claude Code must have them enabled. Install it from this repository:
 
 ```bash
 claude plugin marketplace add eetann/editprompt
 claude plugin install editprompt@editprompt
 ```
 
-The plugin runs `editprompt suggestion set` when a suggestion is shown and `editprompt suggestion clear` when you submit a prompt, so `get` returns the suggestion for the current prompt only. It runs the `editprompt` command by default; set the plugin's `command` option to use another one, such as `node /path/to/editprompt/dist/index.js`.
+For each session, the plugin runs `editprompt bridge`, which listens on a socket in `$XDG_RUNTIME_DIR/editprompt` (or the temporary directory) and records it on the pane, so `pull` can ask Claude Code for the prompt box. It runs the `editprompt` command by default; set the plugin's `command` option to use another one, such as `node /path/to/editprompt/dist/index.js`.
 
-The suggestion is stored where quotes are: in a pane variable for tmux and niwaterm, and in editprompt's configuration for the other backends.
+Codex CLI has no way for a plugin to read its prompt box yet, so `pull` works with Claude Code only.
 
 ### Environment Variables
 
