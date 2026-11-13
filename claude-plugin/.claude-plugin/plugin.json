@@ -1,0 +1,16 @@
+{
+  "name": "editprompt",
+  "version": "0.1.0",
+  "description": "Hand Claude Code's prompt suggestion to editprompt",
+  "author": {
+    "name": "eetann"
+  },
+  "userConfig": {
+    "command": {
+      "type": "string",
+      "title": "editprompt command",
+      "description": "Command that runs editprompt, split on spaces (e.g. \"node /path/to/editprompt/dist/index.js\")",
+      "default": "editprompt"
+    }
+  }
+}

@@ -514,6 +514,26 @@ editprompt stash pop
 
 **Note:** The stash commands must be run from within an editprompt editor session (where `EDITPROMPT=1` is set). Stash data is associated with the target pane and persisted using the Conf library.
 
+### Prompt Suggestion from Claude Code
+
+After a turn, Claude Code may show a dim suggestion for your next prompt (Tab to take it). The editprompt plugin for Claude Code keeps that suggestion so that you can pull it into your editor:
+
+```bash
+# Run from within your editor pane (outputs to stdout)
+editprompt suggestion get
+```
+
+The plugin is a Claude Code mod (function hooks), so Claude Code must have them enabled. Install it from this repository:
+
+```bash
+claude plugin marketplace add eetann/editprompt
+claude plugin install editprompt@editprompt
+```
+
+The plugin runs `editprompt suggestion set` when a suggestion is shown and `editprompt suggestion clear` when you submit a prompt, so `get` returns the suggestion for the current prompt only. It runs the `editprompt` command by default; set the plugin's `command` option to use another one, such as `node /path/to/editprompt/dist/index.js`.
+
+The suggestion is stored where quotes are: in a pane variable for tmux and niwaterm, and in editprompt's configuration for the other backends.
+
 ### Environment Variables
 
 #### Editor Selection

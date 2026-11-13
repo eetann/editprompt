@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "editprompt",
+  "owner": {
+    "name": "eetann"
+  },
+  "plugins": [
+    {
+      "name": "editprompt",
+      "description": "Hand Claude Code's prompt suggestion to editprompt",
+      "source": "./claude-plugin"
+    }
+  ]
+}

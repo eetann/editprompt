@@ -13,11 +13,12 @@ const VAR_EDITOR_PANE = "editor_pane";
 const VAR_IS_EDITOR = "is_editor";
 const VAR_TARGET_PANES = "target_panes";
 const VAR_QUOTE = "quote";
+const VAR_SUGGESTION = "suggestion";
 
 /**
  * State kept in variables on the panes themselves (tmux pane options, niwaterm
  * tab variables). Variable names are `<prefix>editor_pane`, `<prefix>is_editor`,
- * `<prefix>target_panes` and `<prefix>quote`.
+ * `<prefix>target_panes`, `<prefix>quote` and `<prefix>suggestion`.
  *
  * The variables disappear with their pane, so forgetting an editor pane is a
  * no-op here: only the link on the target pane is cleared.
@@ -51,6 +52,10 @@ export function paneVariableStore(io: PaneVariableIO, prefix: string): PaneState
     getQuote: (targetPaneId) => io.get(targetPaneId, name(VAR_QUOTE)),
     setQuote: (targetPaneId, text) => io.set(targetPaneId, name(VAR_QUOTE), text),
     removeQuote: (targetPaneId) => io.set(targetPaneId, name(VAR_QUOTE), ""),
+
+    getSuggestion: (targetPaneId) => io.get(targetPaneId, name(VAR_SUGGESTION)),
+    setSuggestion: (targetPaneId, text) => io.set(targetPaneId, name(VAR_SUGGESTION), text),
+    removeSuggestion: (targetPaneId) => io.set(targetPaneId, name(VAR_SUGGESTION), ""),
   };
 }
 
@@ -99,7 +104,7 @@ export interface ConfStoreOptions {
  * State kept in editprompt's Conf storage, for backends whose panes cannot hold
  * variables. The layout is:
  *
- * - `<namespace>.targetPane.pane_<id>`: `{ editorPaneId?, quote_text? }`
+ * - `<namespace>.targetPane.pane_<id>`: `{ editorPaneId?, quote_text?, suggestion_text? }`
  * - `<namespace>.editorPane.pane_<id>`: `{ targetPaneIds }`
  *
  * The namespace is resolved on every access so that it can depend on the
@@ -143,6 +148,17 @@ export function confStore(namespace: () => string, options: ConfStoreOptions = {
     removeQuote: async (targetPaneId) => {
       removeField(targetKey(targetPaneId), "quote_text");
     },
+
+    getSuggestion: async (targetPaneId) => {
+      const data = readRecord(targetKey(targetPaneId));
+      return data && "suggestion_text" in data ? String(data.suggestion_text) : "";
+    },
+    setSuggestion: async (targetPaneId, text) => {
+      setField(targetKey(targetPaneId), "suggestion_text", text);
+    },
+    removeSuggestion: async (targetPaneId) => {
+      removeField(targetKey(targetPaneId), "suggestion_text");
+    },
   };
 
   if (!options.wholeTargetRecord) {
@@ -185,6 +201,9 @@ const FAILURE_RESULTS: { [K in StoreMethod]: Awaited<ReturnType<PaneStateStore[K
   getQuote: "",
   setQuote: undefined,
   removeQuote: undefined,
+  getSuggestion: "",
+  setSuggestion: undefined,
+  removeSuggestion: undefined,
 };
 
 // The WezTerm module's function names, used in its failure logs.
@@ -199,6 +218,9 @@ const LEGACY_METHOD_NAMES: { [K in StoreMethod]: string } = {
   getQuote: "getQuoteText",
   setQuote: "appendToQuoteText",
   removeQuote: "clearQuoteText",
+  getSuggestion: "getSuggestion",
+  setSuggestion: "setSuggestion",
+  removeSuggestion: "removeSuggestion",
 };
 
 function swallowErrors(logger: Logger, store: PaneStateStore): PaneStateStore {

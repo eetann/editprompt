@@ -12,6 +12,7 @@ import { registerCommand } from "./modes/register";
 import { resumeCommand } from "./modes/resume";
 import { pressCommand } from "./modes/press";
 import { stashCommand } from "./modes/stash";
+import { suggestionCommand } from "./modes/suggestion";
 import { toggleCommand } from "./modes/toggle";
 
 const argv = process.argv.slice(2);
@@ -60,6 +61,7 @@ await cli(
       collect: collectCommand,
       dump: dumpCommand,
       stash: stashCommand,
+      suggestion: suggestionCommand,
     },
     renderHeader: null,
   },

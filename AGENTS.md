@@ -27,12 +27,13 @@ CI runs lint, typecheck, test and build. Run them before finishing a change.
 
 ```
 src/index.ts      CLI entry (gunshi); registers configured backends, then dispatches subcommands
-src/modes/        One file per subcommand (open, register, resume, toggle, input, press, collect, dump, stash)
+src/modes/        One file per subcommand (open, register, resume, toggle, input, press, collect, dump, stash, suggestion)
 src/core/         Backend-agnostic logic: editor-target links, quote buffer, resume focus switching, chunked delivery
 src/backends/     MuxBackend interface, state stores, built-in backend definitions, registry, command-template backends
 src/modules/      Low-level calls: one file per multiplexer CLI/API, plus editor, logger, conf
 src/config/       Constants and the user configuration loader
 src/utils/        Pure helpers (argument parsing, content/quote processing, chunking, ...)
+claude-plugin/    Claude Code plugin (mod) that hands prompt suggestions to `editprompt suggestion`; listed by .claude-plugin/marketplace.json
 ```
 
 Rules that the code relies on:

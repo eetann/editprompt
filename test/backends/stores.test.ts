@@ -68,6 +68,18 @@ describe("paneVariableStore", () => {
     // Pane variables die with the pane, so the editor marker is kept.
     expect(values.get("t3/editprompt_is_editor")).toBe("1");
   });
+
+  test("keeps the suggestion in its own variable", async () => {
+    const { values, io } = createMemoryIO();
+    const store = paneVariableStore(io, "@editprompt_");
+
+    await store.setSuggestion("%1", "run the tests");
+    expect(values.get("%1/@editprompt_suggestion")).toBe("run the tests");
+    expect(await store.getSuggestion("%1")).toBe("run the tests");
+
+    await store.removeSuggestion("%1");
+    expect(await store.getSuggestion("%1")).toBe("");
+  });
 });
 
 describe("confStore", () => {
@@ -106,6 +118,21 @@ describe("confStore", () => {
 
     await store.removeQuote("1");
     expect(conf.has("wezterm.targetPane.pane_1")).toBe(false);
+  });
+
+  test("keeps the suggestion beside the quote", async () => {
+    const store = confStore(() => "wezterm");
+    await store.setQuote("1", "> quote\n\n");
+    await store.setSuggestion("1", "run the tests");
+
+    expect(conf.get("wezterm.targetPane.pane_1")).toEqual({
+      quote_text: "> quote\n\n",
+      suggestion_text: "run the tests",
+    });
+    expect(await store.getSuggestion("1")).toBe("run the tests");
+
+    await store.removeSuggestion("1");
+    expect(conf.get("wezterm.targetPane.pane_1")).toEqual({ quote_text: "> quote\n\n" });
   });
 
   test("forgets an editor pane", async () => {

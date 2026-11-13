@@ -1,6 +1,7 @@
 /**
  * Per-pane state that editprompt keeps for a backend: which editor pane serves
- * which target panes, and the quote buffer collected for each target pane.
+ * which target panes, and the quote buffer and prompt suggestion kept for each
+ * target pane.
  *
  * Core logic (linking, resume, quote buffering) is written once against this
  * interface. A backend only decides where the state lives, for example in
@@ -30,6 +31,11 @@ export interface PaneStateStore {
   getQuote(targetPaneId: string): Promise<string>;
   setQuote(targetPaneId: string, text: string): Promise<void>;
   removeQuote(targetPaneId: string): Promise<void>;
+
+  /** The latest prompt suggestion shown in a target pane, or "" when there is none. */
+  getSuggestion(targetPaneId: string): Promise<string>;
+  setSuggestion(targetPaneId: string, text: string): Promise<void>;
+  removeSuggestion(targetPaneId: string): Promise<void>;
 }
 
 export interface SplitPaneOptions {
