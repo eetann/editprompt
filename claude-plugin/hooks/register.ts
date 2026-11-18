@@ -27,12 +27,55 @@ let socketPath = "";
 // The suggestion shown in the empty prompt box, kept until the next submit.
 let suggestion = "";
 
-function warn($: EngineInterface, message: string): void {
+const LOG_FILE_NAME = "error.log";
+// Keep the newest lines only, so the file does not grow without bound.
+const MAX_LOG_LINES = 500;
+
+/** Appends the failure to the log file in the plugin's data folder and returns its path. */
+async function writeErrorLog($: EngineInterface, message: string): Promise<string | undefined> {
+  try {
+    const dataDir = (await $.process.hookEnv()).CLAUDE_PLUGIN_DATA;
+    if (dataDir === undefined || dataDir === "") {
+      return undefined;
+    }
+    const path = `${dataDir}/${LOG_FILE_NAME}`;
+    const previous = await $.fs.read(path).catch(() => "");
+    const entry = `[${new Date().toISOString()}] ${message}\n`;
+    const lines = `${previous}${entry}`.split("\n");
+    await $.fs.write(path, lines.slice(-MAX_LOG_LINES).join("\n"));
+    return path;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Logs `detail` (the whole error, `summary` when left out) and shows `summary`
+ * in a toast. The toast is gone quickly, so it points to the log for the rest.
+ */
+async function warn($: EngineInterface, summary: string, detail = summary): Promise<void> {
+  const logPath = await writeErrorLog($, detail);
   // Warn once per load, not on every pull.
   if (!hasWarned) {
     hasWarned = true;
-    $.ui.toast(`editprompt: ${message}`);
+    $.ui.toast(`editprompt: ${summary}${logPath ? ` (see ${logPath})` : ""}`, {
+      timeoutMs: 10000,
+    });
   }
+}
+
+/**
+ * Expands a leading `~` in each word to the home directory, as a shell would,
+ * so that the `command` option can be shared between machines.
+ */
+async function expandHome($: EngineInterface, words: string[]): Promise<string[]> {
+  const home = await $.env.get("HOME");
+  if (home === undefined || home === "") {
+    return words;
+  }
+  return words.map((word) =>
+    word === "~" || word.startsWith("~/") ? `${home}${word.slice(1)}` : word,
+  );
 }
 
 async function answerPull($: EngineInterface, id: number, keep: boolean): Promise<void> {
@@ -62,22 +105,29 @@ function handleEvent($: EngineInterface, line: string): void {
     return;
   }
   void answerPull($, event.id, event.keep).catch((error: unknown) => {
-    warn($, error instanceof Error ? error.message : String(error));
+    void warn($, error instanceof Error ? error.message : String(error));
   });
 }
 
 async function runBridge($: EngineInterface): Promise<void> {
-  const bridge = $.process.spawn({ argv: [...command, "bridge"] });
-  const iterator = bridge[Symbol.asyncIterator]();
+  let argv = [...command, "bridge"];
   let stdout = "";
   let stderr = "";
   try {
+    argv = [...(await expandHome($, command)), "bridge"];
+    const bridge = $.process.spawn({ argv });
+    const iterator = bridge[Symbol.asyncIterator]();
     for (;;) {
       const step = await iterator.next();
       if (step.done) {
         if (step.value.code !== 0 && step.value.code !== null) {
+          const exited = `bridge exited with ${step.value.code}`;
           const lines = stderr.trim().split("\n");
-          warn($, lines[lines.length - 1] || `bridge exited with ${step.value.code}`);
+          await warn(
+            $,
+            lines[lines.length - 1] || exited,
+            `${argv.join(" ")}: ${exited}\n${stderr.trim()}`,
+          );
         }
         return;
       }
@@ -93,7 +143,8 @@ async function runBridge($: EngineInterface): Promise<void> {
       }
     }
   } catch (error) {
-    warn($, error instanceof Error ? error.message : String(error));
+    const message = error instanceof Error ? error.message : String(error);
+    await warn($, message, `${argv.join(" ")}: ${message}`);
   }
 }
 

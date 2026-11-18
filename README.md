@@ -536,7 +536,9 @@ claude plugin marketplace add eetann/editprompt
 claude plugin install editprompt@editprompt
 ```
 
-For each session, the plugin runs `editprompt bridge`, which listens on a socket in `$XDG_RUNTIME_DIR/editprompt` (or the temporary directory) and records it on the pane, so `pull` can ask Claude Code for the prompt box. It runs the `editprompt` command by default; set the plugin's `command` option to use another one, such as `node /path/to/editprompt/dist/index.js`.
+For each session, the plugin runs `editprompt bridge`, which listens on a socket in `$XDG_RUNTIME_DIR/editprompt` (or the temporary directory) and records it on the pane, so `pull` can ask Claude Code for the prompt box. It runs the `editprompt` command by default; set the plugin's `command` option to use another one, such as `node /path/to/editprompt/dist/index.js`. The option is split on spaces without a shell, but a leading `~` is expanded, so `mise -C ~/path/to/editprompt exec -- node dist/index.js` runs a local build with the Node.js version of the repository.
+
+When the bridge fails, the plugin shows a toast once and appends the full error to `error.log` in the plugin's data folder (`~/.claude/plugins/data/editprompt-editprompt/`).
 
 Codex CLI has no way for a plugin to read its prompt box yet, so `pull` works with Claude Code only.
 

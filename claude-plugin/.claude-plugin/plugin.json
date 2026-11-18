@@ -9,7 +9,7 @@
     "command": {
       "type": "string",
       "title": "editprompt command",
-      "description": "Command that runs editprompt, split on spaces (e.g. \"node /path/to/editprompt/dist/index.js\")",
+      "description": "Command that runs editprompt, split on spaces, with a leading ~ expanded (e.g. \"mise -C ~/path/to/editprompt exec -- node dist/index.js\")",
       "default": "editprompt"
     }
   }
